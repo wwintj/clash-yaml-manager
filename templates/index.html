@@ -46,6 +46,13 @@
     .footer-note {
       font-size: 0.82rem;
     }
+    .aux-node-row {
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -167,7 +174,7 @@
           <h2 class="h5 mb-0">配置重构面板</h2>
         </div>
         <div class="card-body p-4">
-          <form action="/process" method="POST" enctype="multipart/form-data">
+          <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
             <div class="mb-4">
               <div class="section-title">1. 上传原始配置</div>
               <input class="form-control" type="file" name="yaml_file" accept=".yaml,.yml" required>
@@ -176,32 +183,47 @@
 
             <div class="mb-4">
               <div class="section-title">2. 批量添加节点</div>
-              <textarea class="form-control mono" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
+              <textarea id="batch_nodes" class="form-control mono" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
               <div class="form-text">每行格式：国家代码|节点名称|节点链接。支持 vmess:// 和 vless://。</div>
             </div>
 
             <div class="mb-4 p-3 bg-light rounded-3 border">
-              <div class="section-title">辅助添加单节点（可选）</div>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label class="form-label" for="single_country">国家/地区</label>
-                  <select id="single_country" name="single_country" class="form-select">
-                    <option value="">-- 选择国家/地区 --</option>
-                    {% for code, info in country_mapping.items() %}
-                      <option value="{{ code }}">{{ info.emoji }} {{ code }} - {{ info.label }}</option>
-                    {% endfor %}
-                  </select>
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+                <div>
+                  <div class="section-title mb-1">辅助添加多节点（可选）</div>
+                  <div class="form-text">可以点击“增加一行”继续添加，提交前会自动合并到上面的批量节点中一起处理。</div>
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label" for="single_name">节点名称</label>
-                  <input id="single_name" type="text" class="form-control" name="single_name" placeholder="例如：GIA">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="single_link">节点链接</label>
-                  <input id="single_link" type="text" class="form-control mono" name="single_link" placeholder="vmess:// 或 vless:// 链接">
+                <button type="button" id="add-node-row" class="btn btn-outline-primary btn-sm">+ 增加一行</button>
+              </div>
+
+              <div id="aux-node-rows">
+                <div class="aux-node-row">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                      <label class="form-label">国家/地区</label>
+                      <select class="form-select aux-country">
+                        <option value="">-- 选择国家/地区 --</option>
+                        {% for code, info in country_mapping.items() %}
+                          <option value="{{ code }}">{{ info.emoji }} {{ code }} - {{ info.label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">节点名称</label>
+                      <input type="text" class="form-control aux-name" placeholder="例如：GIA">
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label">节点链接</label>
+                      <input type="text" class="form-control mono aux-link" placeholder="vmess:// 或 vless:// 链接">
+                    </div>
+                    <div class="col-md-1 d-grid">
+                      <button type="button" class="btn btn-outline-danger remove-node-row">删除</button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="form-text mt-2">单节点输入会自动合并到批量节点中一起处理。</div>
+
+              <div id="aux-node-alert" class="alert alert-warning mt-3 d-none mb-0"></div>
             </div>
 
             <div class="mb-4">
@@ -257,6 +279,115 @@
     {% endif %}
   </main>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const rowsContainer = document.getElementById("aux-node-rows");
+      const addButton = document.getElementById("add-node-row");
+      const form = document.getElementById("process-form");
+      const batchTextarea = document.getElementById("batch_nodes");
+      const alertBox = document.getElementById("aux-node-alert");
+
+      function getFirstRow() {
+        return rowsContainer ? rowsContainer.querySelector(".aux-node-row") : null;
+      }
+
+      function resetRow(row) {
+        const country = row.querySelector(".aux-country");
+        const name = row.querySelector(".aux-name");
+        const link = row.querySelector(".aux-link");
+        if (country) country.value = "";
+        if (name) name.value = "";
+        if (link) link.value = "";
+      }
+
+      function updateRemoveButtons() {
+        if (!rowsContainer) return;
+        const rows = rowsContainer.querySelectorAll(".aux-node-row");
+        rows.forEach(function (row) {
+          const btn = row.querySelector(".remove-node-row");
+          if (btn) btn.disabled = rows.length <= 1;
+        });
+      }
+
+      function hideAuxAlert() {
+        if (!alertBox) return;
+        alertBox.classList.add("d-none");
+        alertBox.textContent = "";
+      }
+
+      function showAuxAlert(message) {
+        if (!alertBox) return;
+        alertBox.textContent = message;
+        alertBox.classList.remove("d-none");
+      }
+
+      if (addButton && rowsContainer) {
+        addButton.addEventListener("click", function () {
+          const firstRow = getFirstRow();
+          if (!firstRow) return;
+          const newRow = firstRow.cloneNode(true);
+          resetRow(newRow);
+          rowsContainer.appendChild(newRow);
+          updateRemoveButtons();
+          hideAuxAlert();
+        });
+      }
+
+      if (rowsContainer) {
+        rowsContainer.addEventListener("click", function (event) {
+          if (!event.target.classList.contains("remove-node-row")) return;
+          const rows = rowsContainer.querySelectorAll(".aux-node-row");
+          if (rows.length <= 1) {
+            resetRow(rows[0]);
+            updateRemoveButtons();
+            return;
+          }
+          event.target.closest(".aux-node-row").remove();
+          updateRemoveButtons();
+          hideAuxAlert();
+        });
+      }
+
+      if (form && batchTextarea && rowsContainer) {
+        form.addEventListener("submit", function (event) {
+          hideAuxAlert();
+
+          const generatedLines = [];
+          const rows = rowsContainer.querySelectorAll(".aux-node-row");
+
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const country = row.querySelector(".aux-country").value.trim();
+            const name = row.querySelector(".aux-name").value.trim();
+            const link = row.querySelector(".aux-link").value.trim();
+
+            const filledCount = [country, name, link].filter(Boolean).length;
+
+            if (filledCount === 0) {
+              continue;
+            }
+
+            if (filledCount !== 3) {
+              event.preventDefault();
+              showAuxAlert("辅助节点第 " + (i + 1) + " 行没有填写完整。请填写国家/地区、节点名称、节点链接，或整行留空。");
+              return;
+            }
+
+            generatedLines.push(country + "|" + name + "|" + link);
+          }
+
+          if (generatedLines.length > 0) {
+            const existingText = batchTextarea.value.trim();
+            batchTextarea.value = existingText
+              ? existingText + "\n" + generatedLines.join("\n")
+              : generatedLines.join("\n");
+          }
+        });
+      }
+
+      updateRemoveButtons();
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
