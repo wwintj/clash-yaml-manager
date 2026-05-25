@@ -6,6 +6,12 @@
 
 > 适用场景：你想保留朋友或第三方配置文件里的分流规则和策略组结构，但替换成自己的节点。
 
+如果需要修改样式，直接修改index.html文件，修改完成后，在vps上执行下述操作即可。
+
+```bash
+sudo bash -c 'set -e; REPO="https://github.com/wwintj/clash-yaml-manager.git"; TMP="/tmp/clash-yaml-manager-update"; APP="/opt/clash-yaml-manager"; rm -rf "$TMP"; git clone --depth=1 "$REPO" "$TMP"; cp "$APP/templates/index.html" "$APP/templates/index.html.bak.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true; cp "$TMP/templates/index.html" "$APP/templates/index.html"; chmod 644 "$APP/templates/index.html"; systemctl restart clash-yaml-manager'
+```
+
 ---
 
 ## ✨ 核心特性
