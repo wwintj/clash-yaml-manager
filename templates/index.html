@@ -467,9 +467,12 @@
               <div class="brand-meta mb-2">YAML NODE MANAGEMENT</div>
               <h1 class="brand-title">Clash YAML Manager</h1>
             </div>
-            <form action="/logout" method="POST" class="m-0">
-              <button type="submit" class="btn btn-outline-terminal btn-terminal">Logout</button>
-            </form>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+              <button type="button" class="btn btn-outline-terminal btn-terminal" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</button>
+              <form action="/logout" method="POST" class="m-0">
+                <button type="submit" class="btn btn-outline-terminal btn-terminal">Logout</button>
+              </form>
+            </div>
           </div>
 
           <div class="row g-4">
@@ -699,6 +702,42 @@
         </div>
       </section>
     {% endif %}
+
+      <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content" style="background:#1f1f1f;border:1px solid #343434;border-radius:2px;color:#e7eef6;">
+            <form action="/change-password" method="POST">
+              <div class="modal-header" style="border-bottom:1px solid #343434;">
+                <div>
+                  <div class="panel-subtitle mb-1">SECURITY</div>
+                  <h5 class="modal-title" id="changePasswordModalLabel" style="letter-spacing:.18em;text-transform:uppercase;">修改管理密碼</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">當前密碼</label>
+                  <input type="password" class="form-control terminal-input" name="current_password" required autocomplete="current-password">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">新密碼</label>
+                  <input type="password" class="form-control terminal-input" name="new_password" required minlength="8" autocomplete="new-password">
+                  <div class="form-text mt-2">至少 8 位；不要包含空格、制表符或換行。</div>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">再次輸入新密碼</label>
+                  <input type="password" class="form-control terminal-input" name="confirm_password" required minlength="8" autocomplete="new-password">
+                </div>
+              </div>
+              <div class="modal-footer" style="border-top:1px solid #343434;">
+                <button type="button" class="btn btn-danger-terminal btn-terminal" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-green btn-terminal">Update Password</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
   </main>
 
   <script>
