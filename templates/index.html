@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clash YAML Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111212;
+      --panel: #1f1f1f;
+      --panel-soft: #242424;
+      --line: #343434;
+      --line-soft: #292929;
+      --text: #e7eef6;
+      --muted: #8e969c;
+      --green: #62d34f;
+      --green-soft: rgba(98, 211, 79, 0.12);
+      --red: #ff5f64;
+      --amber: #d8aa4b;
+      --blue: #7aa7ff;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    html, body {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top center, rgba(80, 80, 80, 0.08), transparent 38%),
+        var(--bg);
+      color: var(--text);
+      font-family:
+        "Inter",
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei UI",
+        "Microsoft JhengHei",
+        "Heiti TC",
+        "HarmonyOS Sans TC",
+        "HarmonyOS Sans SC",
+        "MiSans",
+        Arial,
+        sans-serif;
+    }
+
+    .mono,
+    .status-value,
+    .brand-title,
+    .panel-title {
+      font-family:
+        "JetBrains Mono",
+        "SFMono-Regular",
+        Menlo,
+        Monaco,
+        Consolas,
+        "Liberation Mono",
+        "Courier New",
+        monospace;
+    }
+
+    .notes-list,
+    .helper-text,
+    .form-text,
+    .footer-mini,
+    .terminal-check,
+    .terminal-alert,
+    label.form-label,
+    button,
+    input,
+    select {
+      font-family:
+        "Inter",
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei UI",
+        "Microsoft JhengHei",
+        "Heiti TC",
+        "HarmonyOS Sans TC",
+        "HarmonyOS Sans SC",
+        "MiSans",
+        Arial,
+        sans-serif;
+    }
+
+    textarea.terminal-input,
+    input.aux-link,
+    #batch_nodes {
+      font-family:
+        "JetBrains Mono",
+        "SFMono-Regular",
+        Menlo,
+        Monaco,
+        Consolas,
+        "Liberation Mono",
+        "Courier New",
+        monospace;
+    }
+
+    body {
+      letter-spacing: 0.01em;
+    }
+
+    .app-shell {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 44px 18px 72px;
+    }
+
+    .terminal-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 22px 50px var(--shadow);
+      border-radius: 2px;
+    }
+
+    .panel-inner {
+      padding: 34px 44px;
+    }
+
+    .panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+    }
+
+    .panel-subtitle {
+      color: var(--muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.1em;
+    }
+
+    .brand-title {
+      color: var(--text);
+      font-size: 1.22rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .brand-meta {
+      color: var(--muted);
+      font-size: 0.84rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .green {
+      color: var(--green);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .section-gap {
+      margin-top: 26px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      border-top: 1px solid var(--line-soft);
+      border-left: 1px solid var(--line-soft);
+    }
+
+    .status-cell {
+      padding: 18px 16px;
+      border-right: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+      min-height: 92px;
+    }
+
+    .status-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .status-value {
+      color: var(--text);
+      font-size: 1.4rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .status-value.green {
+      color: var(--green);
+    }
+
+    .terminal-input,
+    .terminal-select,
+    .terminal-file {
+      background: #181818 !important;
+      border: 1px solid #3b3b3b !important;
+      color: var(--text) !important;
+      border-radius: 2px !important;
+      min-height: 46px;
+      box-shadow: none !important;
+    }
+
+    .terminal-input:focus,
+    .terminal-select:focus,
+    .terminal-file:focus {
+      border-color: var(--green) !important;
+      box-shadow: 0 0 0 0.18rem rgba(98, 211, 79, 0.12) !important;
+    }
+
+    .terminal-input::placeholder,
+    textarea::placeholder {
+      color: #5f686d !important;
+    }
+
+    .terminal-file::file-selector-button {
+      background: #2c2c2c;
+      color: var(--text);
+      border: 0;
+      border-right: 1px solid var(--line);
+      margin-right: 16px;
+      height: 44px;
+    }
+
+    textarea.terminal-input {
+      min-height: 190px;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    label.form-label {
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.84rem;
+      margin-bottom: 8px;
+    }
+
+    .form-text,
+    .helper-text {
+      color: var(--muted) !important;
+      font-size: 0.82rem;
+    }
+
+    .node-row {
+      background: #1a1a1a;
+      border: 1px solid var(--line-soft);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .btn-terminal {
+      border-radius: 2px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+      min-height: 46px;
+    }
+
+    .btn-green {
+      background: var(--green);
+      border-color: var(--green);
+      color: #0b0d0b;
+    }
+
+    .btn-green:hover {
+      background: #75ed60;
+      border-color: #75ed60;
+      color: #0b0d0b;
+    }
+
+    .btn-outline-terminal {
+      color: var(--text);
+      border-color: #555;
+      background: transparent;
+    }
+
+    .btn-outline-terminal:hover {
+      color: #0b0d0b;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .btn-danger-terminal {
+      color: var(--red);
+      border-color: rgba(255, 95, 100, 0.55);
+      background: transparent;
+    }
+
+    .btn-danger-terminal:hover {
+      color: #fff;
+      background: rgba(255, 95, 100, 0.22);
+      border-color: var(--red);
+    }
+
+    .terminal-alert {
+      border-radius: 2px;
+      border: 1px solid var(--line);
+      background: #1a1a1a;
+      color: var(--text);
+      box-shadow: 0 18px 36px var(--shadow);
+    }
+
+    .terminal-alert.error {
+      border-color: rgba(255, 95, 100, 0.55);
+      background: rgba(255, 95, 100, 0.08);
+    }
+
+    .terminal-alert.success {
+      border-color: rgba(98, 211, 79, 0.55);
+      background: rgba(98, 211, 79, 0.08);
+    }
+
+    .table-terminal {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-terminal th,
+    .table-terminal td {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .table-terminal th {
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+
+    .table-terminal td {
+      color: var(--text);
+      font-size: 0.94rem;
+    }
+
+    .terminal-check {
+      border: 1px solid var(--line-soft);
+      background: #1a1a1a;
+      padding: 14px 16px;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-check-input {
+      background-color: #151515;
+      border-color: #555;
+    }
+
+    .form-check-input:checked {
+      background-color: var(--green);
+      border-color: var(--green);
+    }
+
+    .login-wrap {
+      min-height: calc(100vh - 120px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-panel {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .notes-list {
+      margin: 0;
+      padding-left: 22px;
+      color: var(--text);
+    }
+
+    .notes-list li {
+      margin-bottom: 10px;
+      color: #d4dde5;
+    }
+
+    .footer-mini {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 900px) {
+      .panel-inner {
+        padding: 26px 20px;
+      }
+
+      .status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .brand-title,
+      .panel-title {
+        letter-spacing: 0.18em;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app-shell {
+        padding: 24px 12px 48px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    {% if not logged_in %}
+      <div class="login-wrap">
+        <div class="terminal-panel login-panel">
+          <div class="panel-inner">
+            <div class="panel-title-row">
+              <div>
+                <div class="brand-meta mb-2">Private VPS Tool</div>
+                <h1 class="brand-title">Clash YAML Manager</h1>
+              </div>
+              <div class="green">ONLINE</div>
+            </div>
+
+            {% if error_messages %}
+              <div class="terminal-alert error p-3 mb-4">
+                <div class="panel-subtitle mb-2">ERROR LOG</div>
+                <ul class="mb-0 ps-3">
+                  {% for error in error_messages %}
+                    <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+
+            <form action="/login" method="POST">
+              <div class="mb-4">
+                <label for="password" class="form-label">ACCESS PASSWORD</label>
+                <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="請輸入管理密碼" required autofocus>
+                <div class="form-text mt-2">請輸入管理密碼後使用</div>
+              </div>
+              <button type="submit" class="btn btn-green btn-terminal w-100">Login</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <section class="terminal-panel mb-4">
+        <div class="panel-inner">
+          <div class="panel-title-row">
+            <div>
+              <div class="brand-meta mb-2">YAML NODE MANAGEMENT</div>
+              <h1 class="brand-title">Clash YAML Manager</h1>
+            </div>
+            <form action="/logout" method="POST" class="m-0">
+              <button type="submit" class="btn btn-outline-terminal btn-terminal">Logout</button>
+            </form>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-md-3">
+              <div class="status-label">Service</div>
+              <div class="status-value green">ONLINE</div>
+            </div>
+            <div class="col-md-3">
+              <div class="status-label">Mode</div>
+              <div class="status-value">YAML</div>
+            </div>
+            <div class="col-md-3">
+              <div class="status-label">Parser</div>
+              <div class="status-value">VMESS / VLESS</div>
+            </div>
+            <div class="col-md-3">
+              <div class="status-label">Backend</div>
+              <div class="status-value">FLASK</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {% if error_messages %}
+        <div class="terminal-alert error p-4 mb-4">
+          <div class="panel-subtitle mb-2">ERROR LOG</div>
+          <ul class="mb-0 ps-3">
+            {% for error in error_messages %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if success_message %}
+        <div class="terminal-alert success p-4 mb-4">
+          <div class="panel-subtitle mb-1">PROCESS COMPLETE</div>
+          <p class="mb-0">{{ success_message }}</p>
+        </div>
+      {% endif %}
+
+      <section class="terminal-panel mb-4">
+        <div class="panel-inner">
+          <div class="panel-title-row">
+            <h2 class="panel-title">Config Input</h2>
+            <span class="panel-subtitle">Upload / Nodes</span>
+          </div>
+
+          <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
+            <div class="mb-4">
+              <label class="form-label">01 / Upload YAML</label>
+              <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml" required>
+              <div class="form-text mt-2">上傳朋友的 Clash/Mihomo YAML。系統會保留 rules、rule-providers、dns、proxy-groups 等設定。</div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">02 / Batch Nodes</label>
+              <textarea id="batch_nodes" class="form-control terminal-input" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
+              <div class="form-text mt-2">每行格式：國家代碼|節點名稱|節點連結。支援 vmess:// 和 vless://。</div>
+            </div>
+
+            <div class="mb-4">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                <div>
+                  <label class="form-label mb-1">03 / Auxiliary Multi Nodes</label>
+                  <div class="form-text">點擊增加一行，可以新增多個節點；提交前會自動合併到批量節點。</div>
+                </div>
+                <button type="button" id="add-node-row" class="btn btn-outline-terminal btn-terminal">+ Add Row</button>
+              </div>
+
+              <div id="aux-node-rows">
+                <div class="node-row">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                      <label class="form-label">Country</label>
+                      <select class="form-select terminal-select aux-country">
+                        <option value="">-- 選擇 --</option>
+                        {% for code, info in country_mapping.items() %}
+                          <option value="{{ code }}">{{ info.emoji }} {{ code }} - {{ info.label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Node Name</label>
+                      <input type="text" class="form-control terminal-input aux-name" placeholder="GIA">
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label">Node Link</label>
+                      <input type="text" class="form-control terminal-input aux-link" placeholder="vmess:// 或 vless:// 連結">
+                    </div>
+                    <div class="col-md-1 d-grid">
+                      <button type="button" class="btn btn-danger-terminal btn-terminal remove-node-row">DEL</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="aux-node-alert" class="terminal-alert error p-3 mt-3 d-none"></div>
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="terminal-panel mb-4">
+        <div class="panel-inner">
+          <div class="panel-title-row">
+            <h2 class="panel-title">Generate Result</h2>
+            <span class="panel-subtitle">{% if result %}Ready{% else %}Waiting{% endif %}</span>
+          </div>
+
+          {% if result %}
+            <div class="status-grid mb-4">
+              <div class="status-cell">
+                <div class="status-label">Old Nodes Removed</div>
+                <div class="status-value">{{ result.old_node_count }}</div>
+              </div>
+              <div class="status-cell">
+                <div class="status-label">New Nodes Added</div>
+                <div class="status-value green">{{ result.new_node_count }}</div>
+              </div>
+              <div class="status-cell">
+                <div class="status-label">Proxy Groups</div>
+                <div class="status-value">{{ result.group_count }}</div>
+              </div>
+              <div class="status-cell">
+                <div class="status-label">Rules</div>
+                <div class="status-value">{{ result.rule_count }}</div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row gap-3">
+              {% if output_filename %}
+                <a href="/download/{{ output_filename }}" class="btn btn-green btn-terminal btn-lg flex-fill">Download YAML</a>
+              {% endif %}
+
+              {% if upload_filename or output_filename %}
+                <form action="/delete-temp" method="POST" class="flex-fill" onsubmit="return confirm('確定要刪除伺服器上的上傳檔案和輸出檔案嗎？備份檔案不會刪除。');">
+                  <input type="hidden" name="upload_filename" value="{{ upload_filename }}">
+                  <input type="hidden" name="output_filename" value="{{ output_filename }}">
+                  <button type="submit" class="btn btn-danger-terminal btn-terminal btn-lg w-100">Delete Temp Files</button>
+                </form>
+              {% endif %}
+            </div>
+
+            {% if upload_filename or output_filename %}
+              <div class="footer-mini mt-3">BACKUPS WILL BE KEPT / backups 目錄中的原始設定備份不會刪除。</div>
+            {% endif %}
+          {% else %}
+            <table class="table-terminal">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="text-end">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>YAML Output</td>
+                  <td class="text-end muted">Not generated</td>
+                </tr>
+                <tr>
+                  <td>Download File</td>
+                  <td class="text-end muted">Waiting</td>
+                </tr>
+                <tr>
+                  <td>Temp Cleanup</td>
+                  <td class="text-end muted">Waiting</td>
+                </tr>
+              </tbody>
+            </table>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="terminal-panel mb-4">
+        <div class="panel-inner">
+          <div class="panel-title-row">
+            <h2 class="panel-title">Policy Options</h2>
+            <span class="panel-subtitle">Optional Groups</span>
+          </div>
+
+          <p class="helper-text mb-3">勾選後，所有新節點會加入對應特殊策略組。預設不勾選。</p>
+
+          <div class="row g-3">
+            {% for group in default_special_groups %}
+              <div class="col-md-6">
+                <label class="terminal-check">
+                  <input class="form-check-input" type="checkbox" name="special_groups" value="{{ group }}" form="process-form" id="special_group_{{ loop.index }}">
+                  <span>{{ group }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <section class="terminal-panel">
+        <div class="panel-inner">
+          <div class="panel-title-row">
+            <h2 class="panel-title">Notes</h2>
+            <span class="panel-subtitle">Usage / Security</span>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <ol class="notes-list">
+                <li>上傳朋友的 Clash/Mihomo YAML。</li>
+                <li>系統會刪除原 proxies 節點。</li>
+                <li>系統會保留 rules、rule-providers、dns、proxy-groups 等設定。</li>
+                <li>輸入你的 vmess/vless 節點。</li>
+                <li>系統會自動新增國旗、國家策略組、通用策略組。</li>
+                <li>下載生成後的 YAML 並匯入 Clash/Mihomo。</li>
+              </ol>
+            </div>
+            <div class="col-lg-5">
+              <div class="footer-mini">
+                <p class="mb-2">LOG SAFE / 不記錄完整 vmess/vless 連結。</p>
+                <p class="mb-2">FILE MODE / 上傳、輸出、備份檔案以 600 權限儲存。</p>
+                <p class="mb-0">ACCESS / 建議透過 HTTPS、Tailscale、WireGuard 或內網存取。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const rowsContainer = document.getElementById("aux-node-rows");
+      const addButton = document.getElementById("add-node-row");
+      const form = document.getElementById("process-form");
+      const batchTextarea = document.getElementById("batch_nodes");
+      const alertBox = document.getElementById("aux-node-alert");
+
+      function getFirstRow() {
+        return rowsContainer ? rowsContainer.querySelector(".node-row") : null;
+      }
+
+      function resetRow(row) {
+        const country = row.querySelector(".aux-country");
+        const name = row.querySelector(".aux-name");
+        const link = row.querySelector(".aux-link");
+        if (country) country.value = "";
+        if (name) name.value = "";
+        if (link) link.value = "";
+      }
+
+      function updateRemoveButtons() {
+        if (!rowsContainer) return;
+        const rows = rowsContainer.querySelectorAll(".node-row");
+        rows.forEach(function (row) {
+          const btn = row.querySelector(".remove-node-row");
+          if (btn) btn.disabled = rows.length <= 1;
+        });
+      }
+
+      function hideAuxAlert() {
+        if (!alertBox) return;
+        alertBox.classList.add("d-none");
+        alertBox.textContent = "";
+      }
+
+      function showAuxAlert(message) {
+        if (!alertBox) return;
+        alertBox.textContent = message;
+        alertBox.classList.remove("d-none");
+      }
+
+      if (addButton && rowsContainer) {
+        addButton.addEventListener("click", function () {
+          const firstRow = getFirstRow();
+          if (!firstRow) return;
+          const newRow = firstRow.cloneNode(true);
+          resetRow(newRow);
+          rowsContainer.appendChild(newRow);
+          updateRemoveButtons();
+          hideAuxAlert();
+        });
+      }
+
+      if (rowsContainer) {
+        rowsContainer.addEventListener("click", function (event) {
+          if (!event.target.classList.contains("remove-node-row")) return;
+          const rows = rowsContainer.querySelectorAll(".node-row");
+          if (rows.length <= 1) {
+            resetRow(rows[0]);
+            updateRemoveButtons();
+            return;
+          }
+          event.target.closest(".node-row").remove();
+          updateRemoveButtons();
+          hideAuxAlert();
+        });
+      }
+
+      if (form && batchTextarea && rowsContainer) {
+        form.addEventListener("submit", function (event) {
+          hideAuxAlert();
+
+          const generatedLines = [];
+          const rows = rowsContainer.querySelectorAll(".node-row");
+
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const country = row.querySelector(".aux-country").value.trim();
+            const name = row.querySelector(".aux-name").value.trim();
+            const link = row.querySelector(".aux-link").value.trim();
+
+            const filledCount = [country, name, link].filter(Boolean).length;
+
+            if (filledCount === 0) {
+              continue;
+            }
+
+            if (filledCount !== 3) {
+              event.preventDefault();
+              showAuxAlert("輔助節點第 " + (i + 1) + " 行沒有填寫完整。請填寫國家/地區、節點名稱、節點連結，或整行留空。");
+              return;
+            }
+
+            generatedLines.push(country + "|" + name + "|" + link);
+          }
+
+          if (generatedLines.length > 0) {
+            const existingText = batchTextarea.value.trim();
+            batchTextarea.value = existingText
+              ? existingText + "\n" + generatedLines.join("\n")
+              : generatedLines.join("\n");
+          }
+        });
+      }
+
+      updateRemoveButtons();
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
