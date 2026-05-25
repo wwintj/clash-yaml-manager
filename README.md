@@ -1,4 +1,3 @@
-```markdown
 # Clash YAML Manager
 
 这是一个专为部署在 VPS 上的轻量级 Clash/Mihomo YAML 节点管理面板。
