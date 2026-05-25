@@ -146,27 +146,56 @@ http://1.2.3.4:8899
 
 ---
 
-## 🚀 安装方式二：通过 GitHub 安装
+## 🚀 安装方式二：GitHub 一键部署
 
-如果你已经把项目上传到了 GitHub，可以使用下面方式安装。
+如果项目已经上传到 GitHub，可以在 VPS 上执行下面这一条命令完成拉取和安装。
 
-> 注意：请先确认仓库地址真实存在，并且仓库内已经包含完整项目文件。
+> 默认仓库地址：`https://github.com/wwintj/clash-yaml-manager.git`  
+> 如果你的仓库地址不同，请把命令里的 GitHub 地址替换成你自己的仓库地址。
 
 ```bash
-sudo apt update
-sudo apt install -y git
-git clone https://github.com/wwintj/clash-yaml-manager.git
-cd clash-yaml-manager
+sudo bash -c 'apt-get update -y && apt-get install -y git ca-certificates && rm -rf /tmp/clash-yaml-manager && git clone https://github.com/wwintj/clash-yaml-manager.git /tmp/clash-yaml-manager && cd /tmp/clash-yaml-manager && bash install.sh'
+```
+
+安装过程中会提示你输入：
+
+- Web 运行端口，默认 `8899`
+- Web 管理密码，必填
+
+安装完成后，浏览器访问：
+
+```text
+http://你的VPS_IP:端口
+```
+
+例如：
+
+```text
+http://1.2.3.4:8899
+```
+
+### 分步安装方式
+
+如果你想一步一步执行，也可以使用下面方式：
+
+```bash
+sudo apt-get update -y
+sudo apt-get install -y git ca-certificates
+rm -rf /tmp/clash-yaml-manager
+git clone https://github.com/wwintj/clash-yaml-manager.git /tmp/clash-yaml-manager
+cd /tmp/clash-yaml-manager
 sudo bash install.sh
 ```
 
-不要使用下面这种 Markdown 链接格式作为命令：
+> 注意：仓库需要是公开仓库，或者你的 VPS 已经配置好 GitHub SSH Key / Token，否则 `git clone` 会失败。
+
+不要使用下面这种 Markdown 链接格式作为 Linux 命令：
 
 ```text
 git clone [https://github.com/wwintj/clash-yaml-manager.git](https://github.com/wwintj/clash-yaml-manager.git)
 ```
 
-上面这种写法只适合 Markdown 文档展示，不能直接在 Linux 终端执行。
+上面这种写法只适合 Markdown 文档展示，不能直接在终端执行。
 
 ---
 
