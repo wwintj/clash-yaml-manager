@@ -19,7 +19,7 @@
 请通过 SSH 登录到你的 Ubuntu VPS (推荐 22.04 / 24.04)，直接复制并运行以下一键命令：
 
 ```bash
-git clone [https://github.com/wwintj/clash-yaml-manager.git](https://github.com/wwintj/clash-yaml-manager.git) && cd clash-yaml-manager && sudo bash install.sh
+sudo apt update && sudo apt install -y git && git clone [https://github.com/wwintj/clash-yaml-manager.git](https://github.com/wwintj/clash-yaml-manager.git) && cd clash-yaml-manager && sudo bash install.sh
 
 ```
 
