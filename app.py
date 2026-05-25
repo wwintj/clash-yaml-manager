@@ -1,4 +1,5 @@
 import hmac
+import subprocess
 import logging
 import os
 import sys
@@ -30,6 +31,7 @@ DIR_UPLOADS = os.path.join(BASE_DIR, "uploads")
 DIR_OUTPUTS = os.path.join(BASE_DIR, "outputs")
 DIR_BACKUPS = os.path.join(BASE_DIR, "backups")
 DIR_LOGS = os.path.join(BASE_DIR, "logs")
+ENV_FILE = os.path.join(BASE_DIR, ".env")
 
 ALLOWED_EXTENSIONS = {"yaml", "yml"}
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
