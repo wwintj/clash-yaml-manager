@@ -34,7 +34,7 @@ DIR_LOGS = os.path.join(BASE_DIR, "logs")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 
 ALLOWED_EXTENSIONS = {"yaml", "yml"}
-MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 
 DEFAULT_SPECIAL_GROUPS = [
     "🎥 奈飞节点",
