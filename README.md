@@ -1,5 +1,3 @@
-没问题，这里是纯净的 Markdown 版本。你可以点击代码块右上角的“复制”按钮，然后直接粘贴到你 GitHub 仓库里的 `README.md` 文件中：
-
 ```markdown
 # Clash YAML Manager
 
@@ -15,56 +13,47 @@
 * **安全隔离**：独立管理上传文件与生成文件，自动完成原始 YAML 配置的安全备份。
 * **脱敏日志**：完善的错误校验与提示机制，日志彻底脱敏，不记录任何敏感节点链接和 UUID。
 
-## 🚀 快速部署
+---
 
-本项目提供了一键部署脚本，支持 Ubuntu 22.04 / 24.04，自动配置 Python 虚拟环境并使用 Systemd + Gunicorn 进行服务守护。
+## 🚀 一键安装
 
-### 1. 克隆仓库
+请通过 SSH 登录到你的 Ubuntu VPS (推荐 22.04 / 24.04)，直接复制并运行以下一键命令：
+
 ```bash
-git clone [https://github.com/wwintj/clash-yaml-manager.git](https://github.com/wwintj/clash-yaml-manager.git)
-cd clash-yaml-manager
+git clone [https://github.com/wwintj/clash-yaml-manager.git](https://github.com/wwintj/clash-yaml-manager.git) && cd clash-yaml-manager && sudo bash install.sh
 
 ```
 
-### 2. 执行一键安装
+> **提示**：安装过程中系统会提示你设置**运行端口**（默认 8899）和**Web管理密码**（必填）。安装完成后，即可在浏览器访问 `http://你的服务器IP:端口`。
+
+---
+
+## 🗑️ 一键卸载
+
+如果你不再需要本工具，或者需要彻底清理环境，请运行以下一键卸载命令：
 
 ```bash
-sudo bash install.sh
+sudo bash /opt/clash-yaml-manager/uninstall.sh
 
 ```
 
-安装过程中，系统会提示你设置：
+> **提示**：卸载脚本会安全停止后台服务，并询问你是否需要打包备份生成的配置和历史文件。
 
-* **运行端口**（默认 8899）
-* **Web 管理面板密码**（必填，请务必设置强密码）
+---
 
-安装完成后，直接在浏览器访问 `http://你的服务器IP:端口` 即可使用。
+## 🛠️ 服务管理常用命令
 
-## 🛠️ 服务管理命令
+安装成功后，你可以随时使用以下系统标准命令来管理后台服务：
 
-安装成功后，你可以使用系统标准的 `systemctl` 命令来管理服务：
-
-* **查看服务状态**：`systemctl status clash-yaml-manager`
-* **重启服务**：`systemctl restart clash-yaml-manager`
-* **停止服务**：`systemctl stop clash-yaml-manager`
-* **查看运行日志**：`journalctl -u clash-yaml-manager -f`
-* **查看应用业务日志**：`tail -f /opt/clash-yaml-manager/logs/app.log`
-
-## 🗑️ 彻底卸载
-
-如果你不再需要本工具，或者需要彻底清理重装，只需在项目目录下执行：
-
-```bash
-sudo bash uninstall.sh
-
-```
-
-卸载脚本会引导你停止并清理后台服务，同时你可以选择是否保留 `backups/`（原始配置备份）和 `outputs/`（生成文件）目录的数据。
+* **查看运行状态**：`systemctl status clash-yaml-manager`
+* **重启应用服务**：`systemctl restart clash-yaml-manager`
+* **停止应用服务**：`systemctl stop clash-yaml-manager`
+* **查看脱敏日志**：`tail -f /opt/clash-yaml-manager/logs/app.log`
 
 ## ⚠️ 安全建议
 
-* 请确保你的 VPS 防火墙（如 UFW）已放行你在安装时设置的端口。
-* 强烈建议通过 Nginx 反向代理并配置 SSL 证书（HTTPS）来访问本面板，或者通过 Tailscale 等虚拟局域网限制公网直接访问。
+* 请确保你的 VPS 防火墙（如 UFW 或云服务商安全组）已放行你在安装时设置的端口。
+* 强烈建议搭配 Nginx 反向代理并配置 SSL 证书（HTTPS）来访问本面板，或者通过 Tailscale 组建虚拟局域网限制公网直接访问。
 
 ```
 
