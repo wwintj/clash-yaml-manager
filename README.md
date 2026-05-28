@@ -4,6 +4,13 @@
 
 上传 YAML 或使用内置默认 YAML，输入 `vmess://` / `vless://` 节点后，自动替换 `proxies`、清理旧节点引用、补齐策略组，并生成新的 Clash/Mihomo 配置文件。
 
+**Contact:** wwintj@gmail.com
+
+**GitHub About 建议：**
+
+- Description: `轻量级 Clash/Mihomo YAML 节点管理面板，支持默认规则、一键安装、一键升级、vmess/vless 节点注入。`
+- Topics: `clash`, `mihomo`, `yaml`, `flask`, `proxy`, `vmess`, `vless`, `vps`
+
 ---
 
 ## 一键安装
@@ -59,6 +66,18 @@ sudo bash /opt/clash-yaml-manager/uninstall.sh
 ```
 
 卸载脚本会停止服务、禁用开机自启、删除 systemd service，并询问是否删除项目目录。选择删除目录时，可以继续选择是否保留 `backups/` 和 `outputs/`。
+
+---
+
+## Releases
+
+当前版本发布说明见 [CHANGELOG.md](CHANGELOG.md)。
+
+建议首个 GitHub Release：
+
+- Tag: `v1.0.0`
+- Title: `v1.0.0 - Default YAML and Update Flow`
+- Notes: 复制 [CHANGELOG.md](CHANGELOG.md) 中 `v1.0.0` 小节
 
 ---
 
