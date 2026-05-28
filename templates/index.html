@@ -448,6 +448,13 @@
               </div>
             {% endif %}
 
+            {% if success_message %}
+              <div class="terminal-alert success p-3 mb-4">
+                <div class="panel-subtitle mb-1">SUCCESS</div>
+                <p class="mb-0">{{ success_message }}</p>
+              </div>
+            {% endif %}
+
             <form action="/login" method="POST">
               <div class="mb-4">
                 <label for="password" class="form-label">ACCESS PASSWORD</label>
@@ -524,8 +531,8 @@
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
             <div class="mb-4">
               <label class="form-label">01 / Upload YAML</label>
-              <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml" required>
-              <div class="form-text mt-2">上傳朋友的 Clash/Mihomo YAML。系統會保留 rules、rule-providers、dns、proxy-groups 等設定。</div>
+              <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml">
+              <div class="form-text mt-2">可上傳朋友的 Clash/Mihomo YAML；不選檔案時會使用伺服器內建的預設 YAML。</div>
             </div>
 
             <div class="mb-4">
@@ -721,12 +728,12 @@
                 </div>
                 <div class="mb-3">
                   <label class="form-label">新密碼</label>
-                  <input type="password" class="form-control terminal-input" name="new_password" required minlength="8" autocomplete="new-password">
-                  <div class="form-text mt-2">至少 8 位；不要包含空格、制表符或換行。</div>
+                  <input type="password" class="form-control terminal-input" name="new_password" required autocomplete="new-password">
+                  <div class="form-text mt-2">可使用任意字符，長度不限。</div>
                 </div>
                 <div class="mb-2">
                   <label class="form-label">再次輸入新密碼</label>
-                  <input type="password" class="form-control terminal-input" name="confirm_password" required minlength="8" autocomplete="new-password">
+                  <input type="password" class="form-control terminal-input" name="confirm_password" required autocomplete="new-password">
                 </div>
               </div>
               <div class="modal-footer" style="border-top:1px solid #343434;">

@@ -1,5 +1,5 @@
+import base64
 import hmac
-import subprocess
 import logging
 import os
 import sys
@@ -17,7 +17,20 @@ from core import yaml_utils
 # ==========================================
 # 环境变量与应用配置
 # ==========================================
-APP_PASSWORD = os.environ.get("APP_PASSWORD")
+def load_app_password() -> str:
+    """Load password from env. APP_PASSWORD_B64 supports spaces and special characters."""
+    password_b64 = os.environ.get("APP_PASSWORD_B64", "")
+    if password_b64:
+        try:
+            return base64.b64decode(password_b64.encode("ascii")).decode("utf-8")
+        except Exception:
+            print("❌ 启动失败: APP_PASSWORD_B64 不是有效的 Base64 UTF-8 字符串。")
+            sys.exit(1)
+
+    return os.environ.get("APP_PASSWORD", "")
+
+
+APP_PASSWORD = load_app_password()
 if not APP_PASSWORD:
     print("❌ 启动失败: 请务必设置环境变量 APP_PASSWORD 以保护 Web 面板。")
     sys.exit(1)
@@ -31,7 +44,9 @@ DIR_UPLOADS = os.path.join(BASE_DIR, "uploads")
 DIR_OUTPUTS = os.path.join(BASE_DIR, "outputs")
 DIR_BACKUPS = os.path.join(BASE_DIR, "backups")
 DIR_LOGS = os.path.join(BASE_DIR, "logs")
+DIR_DEFAULTS = os.path.join(BASE_DIR, "defaults")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
+DEFAULT_YAML_PATH = os.path.join(DIR_DEFAULTS, "default.yaml")
 
 ALLOWED_EXTENSIONS = {"yaml", "yml"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
@@ -49,7 +64,7 @@ DEFAULT_SPECIAL_GROUPS = [
 # ==========================================
 def ensure_directories() -> None:
     """确保必要目录存在。"""
-    for directory in [DIR_UPLOADS, DIR_OUTPUTS, DIR_BACKUPS, DIR_LOGS]:
+    for directory in [DIR_UPLOADS, DIR_OUTPUTS, DIR_BACKUPS, DIR_LOGS, DIR_DEFAULTS]:
         os.makedirs(directory, exist_ok=True)
 
 
@@ -137,6 +152,42 @@ def safe_delete_file(directory: str, filename: str) -> bool:
     return False
 
 
+def secure_password_equals(candidate: str, expected: str) -> bool:
+    """Compare passwords as UTF-8 bytes so non-ASCII characters are supported."""
+    return hmac.compare_digest(candidate.encode("utf-8"), expected.encode("utf-8"))
+
+
+def write_env_password(new_password: str) -> None:
+    """Persist password to .env using Base64 so spaces and symbols are safe."""
+    password_b64 = base64.b64encode(new_password.encode("utf-8")).decode("ascii")
+    existing_values: Dict[str, str] = {
+        "APP_PORT": str(APP_PORT),
+        "SECRET_KEY": SECRET_KEY or "",
+        "COOKIE_SECURE": "true" if COOKIE_SECURE else "false",
+    }
+
+    if os.path.exists(ENV_FILE):
+        with open(ENV_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.rstrip("\n")
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                if key != "APP_PASSWORD":
+                    existing_values[key] = value
+
+    existing_values["APP_PASSWORD_B64"] = password_b64
+
+    preferred_order = ["APP_PASSWORD_B64", "APP_PORT", "SECRET_KEY", "COOKIE_SECURE"]
+    ordered_keys = preferred_order + [key for key in existing_values if key not in preferred_order]
+
+    with open(ENV_FILE, "w", encoding="utf-8") as f:
+        for key in ordered_keys:
+            f.write(f"{key}={existing_values.get(key, '')}\n")
+
+    os.chmod(ENV_FILE, 0o600)
+
+
 def login_required(func):
     """登录保护装饰器。"""
     @wraps(func)
@@ -175,7 +226,7 @@ def login():
     password = request.form.get("password", "")
     context = get_base_context()
 
-    if hmac.compare_digest(password, APP_PASSWORD):
+    if secure_password_equals(password, APP_PASSWORD):
         session["logged_in"] = True
         logging.info(f"登录成功 (IP: {request.remote_addr})")
         return redirect(url_for("index"))
@@ -191,22 +242,52 @@ def logout():
     return redirect(url_for("index"))
 
 
+@app.route("/change-password", methods=["POST"])
+@login_required
+def change_password():
+    global APP_PASSWORD
+
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+    context = get_base_context()
+
+    if not secure_password_equals(current_password, APP_PASSWORD):
+        context["error_messages"].append("当前密码不正确。")
+        return render_template("index.html", **context)
+
+    if new_password != confirm_password:
+        context["error_messages"].append("两次输入的新密码不一致。")
+        return render_template("index.html", **context)
+
+    if not new_password:
+        context["error_messages"].append("新密码不能为空。")
+        return render_template("index.html", **context)
+
+    try:
+        write_env_password(new_password)
+    except Exception as e:
+        logging.error(f"更新密码失败: {str(e)}")
+        context["error_messages"].append(f"密码保存失败: {str(e)}")
+        return render_template("index.html", **context)
+
+    APP_PASSWORD = new_password
+    session.pop("logged_in", None)
+    logging.info(f"管理密码已更新 (IP: {request.remote_addr})")
+    context["success_message"] = "管理密码已更新，请使用新密码重新登录。"
+    context["logged_in"] = False
+    return render_template("index.html", **context)
+
+
 @app.route("/process", methods=["POST"])
 @login_required
 def process_config():
     context = get_base_context()
 
-    if "yaml_file" not in request.files:
-        context["error_messages"].append("未找到文件上传字段。")
-        return render_template("index.html", **context)
+    file = request.files.get("yaml_file")
+    use_default_yaml = file is None or file.filename == ""
 
-    file = request.files["yaml_file"]
-
-    if file.filename == "":
-        context["error_messages"].append("请选择一个 YAML 文件进行上传。")
-        return render_template("index.html", **context)
-
-    if not allowed_file(file.filename):
+    if not use_default_yaml and not allowed_file(file.filename):
         context["error_messages"].append("不支持的文件格式，仅支持 .yaml 或 .yml 文件。")
         return render_template("index.html", **context)
 
@@ -223,17 +304,24 @@ def process_config():
         context["error_messages"].append("没有提供任何有效的新节点信息。")
         return render_template("index.html", **context)
 
-    upload_filename = generate_safe_upload_filename(file.filename)
-    upload_path = os.path.join(DIR_UPLOADS, upload_filename)
+    if use_default_yaml:
+        if not os.path.exists(DEFAULT_YAML_PATH):
+            context["error_messages"].append("未上传 YAML，且默认 YAML 模板不存在。请先放置 defaults/default.yaml。")
+            return render_template("index.html", **context)
+        upload_filename = ""
+        upload_path = DEFAULT_YAML_PATH
+    else:
+        upload_filename = generate_safe_upload_filename(file.filename)
+        upload_path = os.path.join(DIR_UPLOADS, upload_filename)
 
-    try:
-        file.save(upload_path)
-        os.chmod(upload_path, 0o600)
-    except Exception as e:
-        context["error_messages"].append(f"文件保存失败: {str(e)}")
-        return render_template("index.html", **context)
+        try:
+            file.save(upload_path)
+            os.chmod(upload_path, 0o600)
+        except Exception as e:
+            context["error_messages"].append(f"文件保存失败: {str(e)}")
+            return render_template("index.html", **context)
 
-    context["upload_filename"] = upload_filename
+        context["upload_filename"] = upload_filename
 
     parsed_result = parser.parse_batch_nodes(batch_text)
 
@@ -314,7 +402,7 @@ def delete_temp():
 @app.errorhandler(413)
 def request_entity_too_large(error):
     context = get_base_context()
-    context["error_messages"].append("上传文件过大，最大支持 5MB。")
+    context["error_messages"].append("上传文件过大，最大支持 50MB。")
     return render_template("index.html", **context), 413
 
 

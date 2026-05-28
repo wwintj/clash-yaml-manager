@@ -89,17 +89,21 @@ done
 
 APP_PASSWORD=""
 while [[ -z "${APP_PASSWORD}" ]]; do
-  read -r -s -p "请输入 Web 管理密码 APP_PASSWORD（必填，不显示）: " APP_PASSWORD
+  read -r -s -p "请输入 Web 管理密码（必填，可包含空格和特殊字符，不显示）: " APP_PASSWORD
   echo
   if [[ -z "${APP_PASSWORD}" ]]; then
     echo "错误：密码不能为空。"
     continue
   fi
-  if [[ "${APP_PASSWORD}" =~ [[:space:]] ]]; then
-    echo "错误：为避免 systemd EnvironmentFile 解析问题，密码请不要包含空格、制表符或换行。"
-    APP_PASSWORD=""
-  fi
 done
+
+APP_PASSWORD_B64="$(APP_PASSWORD="${APP_PASSWORD}" python3 - <<'PY'
+import base64
+import os
+
+print(base64.b64encode(os.environ["APP_PASSWORD"].encode("utf-8")).decode("ascii"))
+PY
+)"
 
 echo "正在生成随机 SECRET_KEY..."
 SECRET_KEY="$(python3 - <<'PY'
@@ -119,7 +123,7 @@ echo "正在安装 Python 依赖..."
 echo "正在写入环境变量配置文件..."
 ENV_FILE="${INSTALL_DIR}/.env"
 cat > "${ENV_FILE}" <<EOF
-APP_PASSWORD=${APP_PASSWORD}
+APP_PASSWORD_B64=${APP_PASSWORD_B64}
 APP_PORT=${APP_PORT}
 SECRET_KEY=${SECRET_KEY}
 COOKIE_SECURE=false
@@ -137,7 +141,7 @@ Type=simple
 User=root
 WorkingDirectory=${INSTALL_DIR}
 EnvironmentFile=${ENV_FILE}
-ExecStart=${INSTALL_DIR}/venv/bin/gunicorn -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app:app
+ExecStart=${INSTALL_DIR}/venv/bin/gunicorn -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
 Restart=always
 RestartSec=3
 
