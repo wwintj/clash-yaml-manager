@@ -514,9 +514,9 @@
         </div>
       {% endif %}
 
-      {% if success_message %}
+      {% if success_message and not result %}
         <div class="terminal-alert success p-4 mb-4">
-          <div class="panel-subtitle mb-1">PROCESS COMPLETE</div>
+          <div class="panel-subtitle mb-1">SUCCESS</div>
           <p class="mb-0">{{ success_message }}</p>
         </div>
       {% endif %}
@@ -587,7 +587,7 @@
         </div>
       </section>
 
-      <section class="terminal-panel mb-4">
+      <section id="generate-result" class="terminal-panel mb-4">
         <div class="panel-inner">
           <div class="panel-title-row">
             <h2 class="panel-title">Generate Result</h2>
@@ -595,6 +595,13 @@
           </div>
 
           {% if result %}
+            {% if success_message %}
+              <div class="terminal-alert success p-4 mb-4">
+                <div class="panel-subtitle mb-1">PROCESS COMPLETE</div>
+                <p class="mb-0">{{ success_message }}</p>
+              </div>
+            {% endif %}
+
             <div class="status-grid mb-4">
               <div class="status-cell">
                 <div class="status-label">Old Nodes Removed</div>
@@ -614,9 +621,25 @@
               </div>
             </div>
 
+            {% if output_filename %}
+              <div class="terminal-alert p-3 mb-4">
+                <div class="panel-subtitle mb-2">ONLINE DOWNLOAD LINK</div>
+                <div class="row g-3 align-items-center">
+                  <div class="col-lg-4">
+                    <div class="status-label mb-1">File Name</div>
+                    <div class="mono">{{ output_filename }}</div>
+                  </div>
+                  <div class="col-lg-8">
+                    <label class="form-label mb-1" for="download-url">Download URL</label>
+                    <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
             <div class="d-flex flex-column flex-md-row gap-3">
               {% if output_filename %}
-                <a href="/download/{{ output_filename }}" class="btn btn-green btn-terminal btn-lg flex-fill">Download YAML</a>
+                <a href="{{ download_url }}" class="btn btn-green btn-terminal btn-lg flex-fill">Download YAML</a>
               {% endif %}
 
               {% if upload_filename or output_filename %}
@@ -690,18 +713,19 @@
           <div class="row g-4">
             <div class="col-lg-7">
               <ol class="notes-list">
-                <li>上傳朋友的 Clash/Mihomo YAML。</li>
-                <li>系統會刪除原 proxies 節點。</li>
-                <li>系統會保留 rules、rule-providers、dns、proxy-groups 等設定。</li>
-                <li>輸入你的 vmess/vless 節點。</li>
+                <li>可上傳 Clash/Mihomo YAML；不選檔案時會使用內建預設 YAML。</li>
+                <li>輸入 vmess/vless 節點後，系統會替換原 proxies 節點。</li>
+                <li>rules、rule-providers、dns、proxy-groups 等設定會盡量保留。</li>
                 <li>系統會自動新增國旗、國家策略組、通用策略組。</li>
-                <li>下載生成後的 YAML 並匯入 Clash/Mihomo。</li>
+                <li>勾選 Policy Options 後，新節點會加入對應特殊策略組。</li>
+                <li>生成完成後會自動跳到 Generate Result，並提供線上下載連結。</li>
+                <li>輸出檔名格式為 tim_日期_當日序號.yaml。</li>
               </ol>
             </div>
             <div class="col-lg-5">
               <div class="footer-mini">
-                <p class="mb-2">LOG SAFE / 不記錄完整 vmess/vless 連結。</p>
-                <p class="mb-2">FILE MODE / 上傳、輸出、備份檔案以 600 權限儲存。</p>
+                <p class="mb-2">LOG SAFE / 不記錄完整節點連結、UUID 或密碼。</p>
+                <p class="mb-2">UPDATE SAFE / 一鍵升級會保留 .env、預設 YAML、輸出與備份。</p>
                 <p class="mb-0">ACCESS / 建議透過 HTTPS、Tailscale、WireGuard 或內網存取。</p>
               </div>
             </div>
@@ -854,6 +878,12 @@
       }
 
       updateRemoveButtons();
+
+      const shouldScrollToResult = {{ "true" if result else "false" }};
+      const resultPanel = document.getElementById("generate-result");
+      if (shouldScrollToResult && resultPanel) {
+        resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -45,7 +45,7 @@ http://1.2.3.4:8899
 适用于已经安装过的 VPS。升级会保留 `.env`、默认 YAML、上传文件、输出文件、备份和日志。
 
 ```bash
-sudo bash -c 'apt-get update -y && apt-get install -y git ca-certificates && rm -rf /tmp/clash-yaml-manager-update && git clone https://github.com/wwintj/clash-yaml-manager.git /tmp/clash-yaml-manager-update && cd /tmp/clash-yaml-manager-update && bash update.sh'
+sudo bash -c 'set -e; apt-get update -y; apt-get install -y git ca-certificates; TMP="/tmp/clash-yaml-manager-update"; rm -rf "$TMP"; git clone --depth=1 https://github.com/wwintj/clash-yaml-manager.git "$TMP"; cd "$TMP"; sed -i "s/\r$//" update.sh; bash update.sh'
 ```
 
 保留内容：
@@ -156,7 +156,7 @@ HK|GIA|vmess://xxxx
 - 支持解析 `vmess://` 和 `vless://`。
 - 自动给节点名添加国旗。
 - 自动把节点加入通用策略组和对应国家/地区策略组。
-- 可选加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、X/Twitter 等特殊策略组。
+- 可选加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略组。
 - 尽量保留原配置里的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自定义字段。
 - 上传、输出、备份、日志分目录保存。
 - 日志不会记录完整节点链接、UUID 或密码。

@@ -58,6 +58,7 @@ DEFAULT_SPECIAL_GROUPS = [
     "📲 电报消息",
     "🎵 TikTok",
     "🎬 HBO",
+    "🏰 Disney+",
     "𝕏 X/Twitter",
 ]
 
@@ -210,6 +211,7 @@ def get_base_context() -> Dict[str, Any]:
         "success_message": "",
         "result": None,
         "output_filename": "",
+        "download_url": "",
         "upload_filename": "",
         "country_mapping": parser.get_country_mapping(),
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
@@ -352,6 +354,7 @@ def process_config():
 
     context["success_message"] = "配置已成功更新，您可以下载或清理临时文件。"
     context["output_filename"] = output_filename
+    context["download_url"] = url_for("download_file", filename=output_filename, _external=True)
     context["result"] = {
         "old_node_count": yaml_result["old_node_count"],
         "new_node_count": yaml_result["new_node_count"],

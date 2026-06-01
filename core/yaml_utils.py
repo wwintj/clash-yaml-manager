@@ -33,8 +33,8 @@ def get_yaml_engine() -> YAML:
 # ==========================================
 # 文件操作
 # ==========================================
-def generate_output_filename(original_filename: str) -> str:
-    """生成带时间戳和短 UUID 的输出文件名，避免覆盖。"""
+def generate_backup_filename(original_filename: str) -> str:
+    """生成带时间戳和短 UUID 的备份文件名，避免覆盖。"""
     base_name = os.path.basename(original_filename)
     name_part, ext_part = os.path.splitext(base_name)
 
@@ -46,6 +46,24 @@ def generate_output_filename(original_filename: str) -> str:
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     short_uuid = uuid.uuid4().hex[:6]
     return f"{name_part}_{timestamp}_{short_uuid}{ext_part}"
+
+
+def generate_output_filename(output_dir: str) -> str:
+    """生成 tim_日期_当天序号.yaml 格式的输出文件名。"""
+    today = time.strftime("%Y%m%d")
+    prefix = f"tim_{today}_"
+    next_index = 1
+
+    if os.path.isdir(output_dir):
+        for filename in os.listdir(output_dir):
+            if not filename.startswith(prefix) or not filename.endswith(".yaml"):
+                continue
+
+            number_part = filename[len(prefix):-5]
+            if number_part.isdigit():
+                next_index = max(next_index, int(number_part) + 1)
+
+    return f"{prefix}{next_index}.yaml"
 
 
 def load_yaml(file_path: str) -> Dict[str, Any]:
@@ -71,7 +89,7 @@ def backup_yaml(input_path: str, backup_dir: str) -> str:
     """备份原始 YAML 文件，并设置权限为 600。"""
     os.makedirs(backup_dir, exist_ok=True)
 
-    backup_filename = generate_output_filename(os.path.basename(input_path))
+    backup_filename = generate_backup_filename(os.path.basename(input_path))
     backup_path = os.path.join(backup_dir, backup_filename)
 
     shutil.copy2(input_path, backup_path)
@@ -398,7 +416,7 @@ def process_yaml_config(
         result["group_count"] = len(data.get("proxy-groups", []))
         result["rule_count"] = len(data.get("rules", []))
 
-        output_filename = generate_output_filename(os.path.basename(input_path))
+        output_filename = generate_output_filename(output_dir)
         output_path = os.path.join(output_dir, output_filename)
 
         save_yaml(data, output_path)
