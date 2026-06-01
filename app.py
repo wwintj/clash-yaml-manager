@@ -56,6 +56,9 @@ DEFAULT_SPECIAL_GROUPS = [
     "📹 油管视频",
     "💬 Ai平台",
     "📲 电报消息",
+    "🎵 TikTok",
+    "🎬 HBO",
+    "𝕏 X/Twitter",
 ]
 
 
