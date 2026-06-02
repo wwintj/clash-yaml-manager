@@ -9,6 +9,7 @@ from functools import wraps
 from typing import Any, Dict
 
 from flask import Flask, redirect, render_template, request, send_from_directory, session, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 
 from core import parser
@@ -38,6 +39,8 @@ if not APP_PASSWORD:
 APP_PORT = int(os.environ.get("APP_PORT", 8899))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
+DOWNLOAD_BASE_URL = os.environ.get("DOWNLOAD_BASE_URL", "").rstrip("/")
+DOWNLOAD_URL_SCHEME = os.environ.get("DOWNLOAD_URL_SCHEME", "https").lower()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DIR_UPLOADS = os.path.join(BASE_DIR, "uploads")
@@ -96,11 +99,13 @@ setup_logging()
 # Flask 应用初始化
 # ==========================================
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = COOKIE_SECURE
+app.config["PREFERRED_URL_SCHEME"] = DOWNLOAD_URL_SCHEME
 
 if not SECRET_KEY:
     app.secret_key = os.urandom(24)
@@ -168,6 +173,7 @@ def write_env_password(new_password: str) -> None:
         "APP_PORT": str(APP_PORT),
         "SECRET_KEY": SECRET_KEY or "",
         "COOKIE_SECURE": "true" if COOKIE_SECURE else "false",
+        "DOWNLOAD_URL_SCHEME": DOWNLOAD_URL_SCHEME,
     }
 
     if os.path.exists(ENV_FILE):
@@ -182,7 +188,7 @@ def write_env_password(new_password: str) -> None:
 
     existing_values["APP_PASSWORD_B64"] = password_b64
 
-    preferred_order = ["APP_PASSWORD_B64", "APP_PORT", "SECRET_KEY", "COOKIE_SECURE"]
+    preferred_order = ["APP_PASSWORD_B64", "APP_PORT", "SECRET_KEY", "COOKIE_SECURE", "DOWNLOAD_BASE_URL", "DOWNLOAD_URL_SCHEME"]
     ordered_keys = preferred_order + [key for key in existing_values if key not in preferred_order]
 
     with open(ENV_FILE, "w", encoding="utf-8") as f:
@@ -216,6 +222,14 @@ def get_base_context() -> Dict[str, Any]:
         "country_mapping": parser.get_country_mapping(),
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
     }
+
+
+def build_download_url(filename: str) -> str:
+    """生成下载链接；优先使用显式公网地址，否则按 HTTPS 生成外部链接。"""
+    path = url_for("download_file", filename=filename)
+    if DOWNLOAD_BASE_URL:
+        return f"{DOWNLOAD_BASE_URL}{path}"
+    return url_for("download_file", filename=filename, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
 
 
 # ==========================================
@@ -354,7 +368,7 @@ def process_config():
 
     context["success_message"] = "配置已成功更新，您可以下载或清理临时文件。"
     context["output_filename"] = output_filename
-    context["download_url"] = url_for("download_file", filename=output_filename, _external=True)
+    context["download_url"] = build_download_url(output_filename)
     context["result"] = {
         "old_node_count": yaml_result["old_node_count"],
         "new_node_count": yaml_result["new_node_count"],

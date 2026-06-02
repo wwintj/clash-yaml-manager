@@ -201,7 +201,11 @@ logs/
 
 ```text
 COOKIE_SECURE=true
+DOWNLOAD_URL_SCHEME=https
+DOWNLOAD_BASE_URL=https://你的域名
 ```
+
+`DOWNLOAD_BASE_URL` 可留空；留空时系统会按当前访问域名生成下载链接。反向代理 HTTPS 时，建议在 Nginx 中传递 `X-Forwarded-Proto` 和 `X-Forwarded-Host`。
 
 ---
 

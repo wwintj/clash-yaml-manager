@@ -631,7 +631,10 @@
                   </div>
                   <div class="col-lg-8">
                     <label class="form-label mb-1" for="download-url">Download URL</label>
-                    <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                      <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
+                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal">Copy</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -778,6 +781,8 @@
       const form = document.getElementById("process-form");
       const batchTextarea = document.getElementById("batch_nodes");
       const alertBox = document.getElementById("aux-node-alert");
+      const downloadUrlInput = document.getElementById("download-url");
+      const copyDownloadUrlButton = document.getElementById("copy-download-url");
 
       function getFirstRow() {
         return rowsContainer ? rowsContainer.querySelector(".node-row") : null;
@@ -878,6 +883,31 @@
       }
 
       updateRemoveButtons();
+
+      if (copyDownloadUrlButton && downloadUrlInput) {
+        copyDownloadUrlButton.addEventListener("click", async function () {
+          const originalText = copyDownloadUrlButton.textContent;
+
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(downloadUrlInput.value);
+            } else {
+              downloadUrlInput.focus();
+              downloadUrlInput.select();
+              document.execCommand("copy");
+              downloadUrlInput.setSelectionRange(0, 0);
+            }
+
+            copyDownloadUrlButton.textContent = "Copied";
+          } catch (error) {
+            copyDownloadUrlButton.textContent = "Failed";
+          }
+
+          window.setTimeout(function () {
+            copyDownloadUrlButton.textContent = originalText;
+          }, 1600);
+        });
+      }
 
       const shouldScrollToResult = {{ "true" if result else "false" }};
       const resultPanel = document.getElementById("generate-result");
