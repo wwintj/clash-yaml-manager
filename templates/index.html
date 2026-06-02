@@ -1000,13 +1000,7 @@
       }
 
       if (deleteTempForm) {
-        deleteTempForm.addEventListener("submit", function (event) {
-          const confirmed = window.confirm("確定要刪除伺服器上的上傳檔案和輸出檔案嗎？備份檔案不會刪除。");
-          if (!confirmed) {
-            event.preventDefault();
-            return;
-          }
-
+        deleteTempForm.addEventListener("submit", function () {
           showDeleteProgress();
         });
       }

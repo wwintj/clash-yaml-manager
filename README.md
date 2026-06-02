@@ -1,35 +1,35 @@
 # Clash YAML Manager
 
-一个适合部署在 Ubuntu VPS 上的轻量级 Clash/Mihomo YAML 节点管理面板。
+適合部署在 Ubuntu VPS 上的輕量級 Clash/Mihomo YAML 節點管理面板。
 
-上传 YAML 或使用内置默认 YAML，输入 `vmess://` / `vless://` 节点后，自动替换 `proxies`、清理旧节点引用、补齐策略组，并生成新的 Clash/Mihomo 配置文件。
+可上傳現有 YAML，也可直接使用內建預設 YAML。輸入 `vmess://` / `vless://` 節點後，系統會自動替換 `proxies`、清理舊節點引用、補齊策略組，並產生新的 Clash/Mihomo 設定檔。
 
-**Contact:** wwintj@gmail.com
+**聯絡信箱：** wwintj@gmail.com
 
-**GitHub About 建议：**
+**GitHub About 建議：**
 
-- Description: `轻量级 Clash/Mihomo YAML 节点管理面板，支持默认规则、一键安装、一键升级、vmess/vless 节点注入。`
+- Description: `輕量級 Clash/Mihomo YAML 節點管理面板，支援預設規則、一鍵安裝、一鍵升級、vmess/vless 節點注入。`
 - Topics: `clash`, `mihomo`, `yaml`, `flask`, `proxy`, `vmess`, `vless`, `vps`
 
 ---
 
-## 一键安装
+## 一鍵安裝
 
-在 Ubuntu VPS 上执行：
+在 Ubuntu VPS 上執行：
 
 ```bash
 sudo bash -c 'apt-get update -y && apt-get install -y git ca-certificates && rm -rf /tmp/clash-yaml-manager && git clone https://github.com/wwintj/clash-yaml-manager.git /tmp/clash-yaml-manager && cd /tmp/clash-yaml-manager && bash install.sh'
 ```
 
-安装时会提示输入：
+安裝時會提示輸入：
 
-- Web 端口，默认 `8899`
-- Web 管理密码
+- Web 連接埠，預設 `8899`
+- Web 管理密碼
 
-安装完成后访问：
+安裝完成後訪問：
 
 ```text
-http://你的VPS_IP:端口
+http://你的VPS_IP:連接埠
 ```
 
 例如：
@@ -40,15 +40,15 @@ http://1.2.3.4:8899
 
 ---
 
-## 一键升级
+## 一鍵升級
 
-适用于已经安装过的 VPS。升级会保留 `.env`、默认 YAML、上传文件、输出文件、备份和日志。
+適用於已經安裝過的 VPS。升級會保留 `.env`、預設 YAML、上傳檔案、輸出檔案、備份和日誌。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh | sudo bash
 ```
 
-保留内容：
+保留內容：
 
 - `/opt/clash-yaml-manager/.env`
 - `/opt/clash-yaml-manager/defaults/default.yaml`
@@ -59,25 +59,13 @@ curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remo
 
 ---
 
-## 一键卸载
+## 一鍵卸載
 
 ```bash
 sudo bash /opt/clash-yaml-manager/uninstall.sh
 ```
 
-卸载脚本会停止服务、禁用开机自启、删除 systemd service，并询问是否删除项目目录。选择删除目录时，可以继续选择是否保留 `backups/` 和 `outputs/`。
-
----
-
-## Releases
-
-当前版本发布说明见 [CHANGELOG.md](CHANGELOG.md)。
-
-建议首个 GitHub Release：
-
-- Tag: `v1.0.0`
-- Title: `v1.0.0 - Default YAML and Update Flow`
-- Notes: 复制 [CHANGELOG.md](CHANGELOG.md) 中 `v1.0.0` 小节
+卸載腳本會停止服務、停用開機自啟、刪除 systemd service，並詢問是否刪除專案目錄。選擇刪除目錄時，可以繼續選擇是否保留 `backups/` 和 `outputs/`。
 
 ---
 
@@ -91,7 +79,7 @@ journalctl -u clash-yaml-manager -f
 tail -f /opt/clash-yaml-manager/logs/app.log
 ```
 
-如果使用默认端口 `8899` 且启用了 UFW：
+如果使用預設連接埠 `8899` 且啟用了 UFW：
 
 ```bash
 ufw allow 8899/tcp
@@ -100,9 +88,21 @@ ufw reload
 
 ---
 
-## 手动安装
+## Releases
 
-如果你想先把项目上传到 VPS，再手动安装：
+目前版本發布說明請看 [CHANGELOG.md](CHANGELOG.md)。
+
+建議首個 GitHub Release：
+
+- Tag: `v1.0.0`
+- Title: `v1.0.0 - Default YAML and Update Flow`
+- Notes: 複製 [CHANGELOG.md](CHANGELOG.md) 中 `v1.0.0` 小節
+
+---
+
+## 手動安裝
+
+如果想先把專案上傳到 VPS，再手動安裝：
 
 ```bash
 cd /root/clash-yaml-manager
@@ -113,15 +113,15 @@ sudo bash install.sh
 
 ---
 
-## 节点输入格式
+## 節點輸入格式
 
-Web 页面支持批量输入节点，每行一个：
+Web 頁面支援批量輸入節點，每行一個：
 
 ```text
-国家代码|节点名称|节点链接
+國家代碼|節點名稱|節點連結
 ```
 
-示例：
+範例：
 
 ```text
 US|tim|vmess://xxxx
@@ -130,43 +130,43 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-支持的国家/地区代码：
+支援的國家 / 地區代碼：
 
-| 代码 | 策略组 |
+| 代碼 | 策略組 |
 |---|---|
-| US | 🇺🇸 美国节点 |
-| HK | 🇭🇰 香港节点 |
-| TW | 🇹🇼 台湾节点 |
-| JP | 🇯🇵 日本节点 |
-| KR | 🇰🇷 韩国节点 |
-| SG | 🇸🇬 狮城节点 |
-| KP | 🇰🇵 朝鲜节点 |
-| MY | 🇲🇾 马来西亚节点 |
-| DE | 🇩🇪 德国节点 |
-| GB | 🇬🇧 英国节点 |
-| CA | 🇨🇦 加拿大节点 |
+| US | 美國節點 |
+| HK | 香港節點 |
+| TW | 台灣節點 |
+| JP | 日本節點 |
+| KR | 韓國節點 |
+| SG | 獅城節點 |
+| KP | 朝鮮節點 |
+| MY | 馬來西亞節點 |
+| DE | 德國節點 |
+| GB | 英國節點 |
+| CA | 加拿大節點 |
 
 ---
 
-## 功能说明
+## 功能說明
 
-- 可以上传现有 Clash/Mihomo YAML，也可以不上传，直接使用内置默认 YAML。
-- 自动删除原 `proxies` 中的旧节点。
-- 自动清理 `proxy-groups` 里失效的旧节点引用。
-- 支持解析 `vmess://` 和 `vless://`。
-- 自动给节点名添加国旗。
-- 自动把节点加入通用策略组和对应国家/地区策略组。
-- 可选加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略组。
-- 生成超短带签名 YAML 订阅直链，例如 `/s/2606021a1b2c3d`，可复制到 Clash/Mihomo 客户端使用。
-- 生成 YAML 和删除临时文件时都会显示进度提示。
-- 内置浏览器 favicon，访问面板时浏览器标签页会显示图标。
-- 尽量保留原配置里的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自定义字段。
-- 上传、输出、备份、日志分目录保存。
-- 日志不会记录完整节点链接、UUID 或密码。
+- 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。
+- 自動刪除原 `proxies` 中的舊節點。
+- 自動清理 `proxy-groups` 裡失效的舊節點引用。
+- 支援解析 `vmess://` 和 `vless://`。
+- 自動為節點名稱加入國旗。
+- 自動把節點加入通用策略組和對應國家 / 地區策略組。
+- 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。
+- 產生超短帶簽名 YAML 訂閱直鏈，例如 `/s/2606021a1b2c3d`，可複製到 Clash/Mihomo 客戶端使用。
+- 產生 YAML 和刪除臨時檔案時都會顯示進度提示。
+- 內建瀏覽器 favicon，訪問面板時瀏覽器標籤頁會顯示圖示。
+- 盡量保留原設定裡的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自訂欄位。
+- 上傳、輸出、備份、日誌分目錄保存。
+- 日誌不會記錄完整節點連結、UUID 或密碼。
 
 ---
 
-## 项目结构
+## 專案結構
 
 ```text
 clash-yaml-manager/
@@ -187,7 +187,7 @@ clash-yaml-manager/
     └── index.html
 ```
 
-运行后会自动创建：
+執行後會自動建立：
 
 ```text
 uploads/
@@ -198,30 +198,30 @@ logs/
 
 ---
 
-## 安全建议
+## 安全建議
 
-- 建议使用复杂密码。
-- 不建议长期把面板直接暴露在公网。
-- 推荐通过 Nginx HTTPS、Tailscale、WireGuard 或 SSH 隧道访问。
-- 如果启用 HTTPS，可以在 `/opt/clash-yaml-manager/.env` 中设置：
+- 建議使用複雜密碼。
+- 不建議長期把管理面板直接暴露在公網。
+- 推薦透過 Nginx HTTPS、Tailscale、WireGuard 或 SSH 隧道訪問。
+- 如果啟用 HTTPS，可以在 `/opt/clash-yaml-manager/.env` 中設定：
 
 ```text
 COOKIE_SECURE=true
 DOWNLOAD_URL_SCHEME=https
-DOWNLOAD_BASE_URL=https://你的域名
+DOWNLOAD_BASE_URL=https://你的網域
 FILE_RETENTION_DAYS=7
 CLEANUP_INTERVAL_DAYS=7
 ```
 
-`DOWNLOAD_BASE_URL` 可留空；留空时系统会按当前访问域名生成下载链接。反向代理 HTTPS 时，建议在 Nginx 中传递 `X-Forwarded-Proto` 和 `X-Forwarded-Host`。
+`DOWNLOAD_BASE_URL` 可以留空；留空時系統會按目前訪問網域產生下載連結。反向代理 HTTPS 時，建議在 Nginx 中傳遞 `X-Forwarded-Proto` 和 `X-Forwarded-Host`。
 
-`uploads/`、`outputs/`、`backups/` 会按上面的配置自动清理：默认最多每 7 天检查一次，并删除 7 天前的文件。
+`uploads/`、`outputs/`、`backups/` 會按上面的設定自動清理：預設最多每 7 天檢查一次，並刪除 7 天前的檔案。
 
 ---
 
-## 常见问题
+## 常見問題
 
-### 浏览器打不开
+### 瀏覽器打不開
 
 ```bash
 systemctl status clash-yaml-manager
@@ -231,9 +231,9 @@ ss -tulnp | grep 8899
 
 ### 提示 `proxy not found`
 
-说明策略组里还有不存在的节点或策略组引用。工具会尽量自动清理，但遇到特殊 YAML 结构时，建议检查生成后的 `proxy-groups`。
+說明策略組裡還有不存在的節點或策略組引用。工具會盡量自動清理，但遇到特殊 YAML 結構時，建議檢查產生後的 `proxy-groups`。
 
-### 想修改默认 YAML
+### 想修改預設 YAML
 
 修改：
 
@@ -241,13 +241,13 @@ ss -tulnp | grep 8899
 /opt/clash-yaml-manager/defaults/default.yaml
 ```
 
-然后重启：
+然後重啟：
 
 ```bash
 systemctl restart clash-yaml-manager
 ```
 
-### 想修改页面样式
+### 想修改頁面樣式
 
 修改：
 
@@ -255,7 +255,7 @@ systemctl restart clash-yaml-manager
 /opt/clash-yaml-manager/templates/index.html
 ```
 
-然后重启：
+然後重啟：
 
 ```bash
 systemctl restart clash-yaml-manager
