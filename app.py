@@ -297,11 +297,11 @@ def redirect_to_index(context: Dict[str, Any], anchor: str = ""):
 
 
 def build_download_url(filename: str) -> str:
-    token = generate_download_token(filename)
-    path = url_for("subscribe_file", token=token, filename=filename)
+    slug = build_short_subscription_slug(filename)
+    path = url_for("short_subscribe_file", slug=slug)
     if DOWNLOAD_BASE_URL:
         return f"{DOWNLOAD_BASE_URL}{path}"
-    return url_for("subscribe_file", token=token, filename=filename, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
+    return url_for("short_subscribe_file", slug=slug, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
 
 
 def build_file_download_url(filename: str) -> str:
@@ -327,7 +327,36 @@ def generate_download_token(filename: str) -> str:
 
 def is_valid_download_token(filename: str, token: str) -> bool:
     expected_token = generate_download_token(filename)
-    return hmac.compare_digest(token, expected_token)
+    expected_short_token = generate_short_download_signature(filename)
+    return hmac.compare_digest(token, expected_token) or hmac.compare_digest(token, expected_short_token)
+
+
+def generate_short_download_signature(filename: str) -> str:
+    return generate_download_token(filename)[:12]
+
+
+def build_short_subscription_slug(filename: str) -> str:
+    safe_filename = os.path.basename(filename)
+    stem, _ = os.path.splitext(safe_filename)
+    signature = generate_short_download_signature(safe_filename)
+    return f"{stem}-{signature}"
+
+
+def parse_short_subscription_slug(slug: str) -> tuple[str, str]:
+    safe_slug = os.path.basename(slug)
+    if "-" not in safe_slug:
+        return "", ""
+
+    stem, signature = safe_slug.rsplit("-", 1)
+    if not stem or len(signature) != 12:
+        return "", ""
+
+    filename = f"{stem}.yaml"
+    expected_signature = generate_short_download_signature(filename)
+    if not hmac.compare_digest(signature, expected_signature):
+        return "", ""
+
+    return filename, signature
 
 
 def send_yaml_output(filename: str, token: str, as_attachment: bool):
@@ -514,6 +543,14 @@ def download_file(filename):
 @app.route("/sub/<token>/<path:filename>", methods=["GET"])
 def subscribe_file(token, filename):
     return send_yaml_output(filename, token, as_attachment=False)
+
+
+@app.route("/s/<slug>", methods=["GET"])
+def short_subscribe_file(slug):
+    filename, signature = parse_short_subscription_slug(slug)
+    if not filename:
+        return "Invalid download token.", 403, {"Content-Type": "text/plain; charset=utf-8"}
+    return send_yaml_output(filename, signature, as_attachment=False)
 
 
 @app.route("/delete-temp", methods=["POST"])
