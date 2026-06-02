@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import hmac
 import logging
 import os
@@ -295,10 +296,28 @@ def redirect_to_index(context: Dict[str, Any], anchor: str = ""):
 
 def build_download_url(filename: str) -> str:
     """生成下载链接；优先使用显式公网地址，否则按 HTTPS 生成外部链接。"""
-    path = url_for("download_file", filename=filename)
+    token = generate_download_token(filename)
+    path = url_for("download_file", filename=filename, token=token)
     if DOWNLOAD_BASE_URL:
         return f"{DOWNLOAD_BASE_URL}{path}"
     return url_for("download_file", filename=filename, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
+
+
+def get_secret_key_bytes() -> bytes:
+    key = app.secret_key
+    if isinstance(key, bytes):
+        return key
+    return str(key).encode("utf-8")
+
+
+def generate_download_token(filename: str) -> str:
+    """为公开 YAML 下载链接生成签名，避免未授权枚举下载。"""
+    return hmac.new(get_secret_key_bytes(), filename.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def is_valid_download_token(filename: str, token: str) -> bool:
+    expected_token = generate_download_token(filename)
+    return hmac.compare_digest(token, expected_token)
 
 
 # ==========================================
@@ -459,10 +478,19 @@ def process_config():
 
 
 @app.route("/download/<path:filename>", methods=["GET"])
-@login_required
 def download_file(filename):
     safe_filename = os.path.basename(filename)
-    return send_from_directory(DIR_OUTPUTS, safe_filename, as_attachment=True)
+    token = request.args.get("token", "")
+
+    if not session.get("logged_in") and not is_valid_download_token(safe_filename, token):
+        return redirect(url_for("index"))
+
+    return send_from_directory(
+        DIR_OUTPUTS,
+        safe_filename,
+        as_attachment=True,
+        mimetype="application/x-yaml",
+    )
 
 
 @app.route("/delete-temp", methods=["POST"])

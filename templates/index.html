@@ -324,6 +324,45 @@
       background: rgba(98, 211, 79, 0.08);
     }
 
+    .progress-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(10, 11, 11, 0.86);
+    }
+
+    .progress-overlay.active {
+      display: flex;
+    }
+
+    .progress-box {
+      width: 100%;
+      max-width: 560px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 22px 50px var(--shadow);
+      padding: 28px;
+      border-radius: 2px;
+    }
+
+    .progress-track {
+      height: 12px;
+      background: #151515;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .progress-bar-terminal {
+      width: 0;
+      height: 100%;
+      background: var(--green);
+      transition: width 0.45s ease;
+    }
+
     .table-terminal {
       width: 100%;
       border-collapse: collapse;
@@ -774,6 +813,20 @@
 
   </main>
 
+  <div id="generation-progress" class="progress-overlay" aria-hidden="true">
+    <div class="progress-box">
+      <div class="panel-subtitle mb-2">GENERATING YAML</div>
+      <h2 class="panel-title mb-4">Please Wait</h2>
+      <div class="progress-track mb-3">
+        <div id="generation-progress-bar" class="progress-bar-terminal"></div>
+      </div>
+      <div class="d-flex justify-content-between gap-3 footer-mini">
+        <span id="generation-progress-text">正在解析节点并生成 YAML...</span>
+        <span id="generation-progress-percent" class="mono">0%</span>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const rowsContainer = document.getElementById("aux-node-rows");
@@ -783,6 +836,10 @@
       const alertBox = document.getElementById("aux-node-alert");
       const downloadUrlInput = document.getElementById("download-url");
       const copyDownloadUrlButton = document.getElementById("copy-download-url");
+      const generationProgress = document.getElementById("generation-progress");
+      const generationProgressBar = document.getElementById("generation-progress-bar");
+      const generationProgressPercent = document.getElementById("generation-progress-percent");
+      const generationProgressText = document.getElementById("generation-progress-text");
 
       function getFirstRow() {
         return rowsContainer ? rowsContainer.querySelector(".node-row") : null;
@@ -816,6 +873,35 @@
         if (!alertBox) return;
         alertBox.textContent = message;
         alertBox.classList.remove("d-none");
+      }
+
+      function showGenerationProgress() {
+        if (!generationProgress || !generationProgressBar || !generationProgressPercent) return;
+
+        let percent = 8;
+        const messages = [
+          "正在解析节点链接...",
+          "正在清理旧 proxies...",
+          "正在修复策略组引用...",
+          "正在写入新 YAML..."
+        ];
+        let messageIndex = 0;
+
+        generationProgress.classList.add("active");
+        generationProgress.setAttribute("aria-hidden", "false");
+        generationProgressBar.style.width = percent + "%";
+        generationProgressPercent.textContent = percent + "%";
+
+        window.setInterval(function () {
+          percent = Math.min(percent + 7, 96);
+          generationProgressBar.style.width = percent + "%";
+          generationProgressPercent.textContent = percent + "%";
+
+          if (generationProgressText) {
+            generationProgressText.textContent = messages[messageIndex % messages.length];
+            messageIndex += 1;
+          }
+        }, 650);
       }
 
       if (addButton && rowsContainer) {
@@ -879,6 +965,8 @@
               ? existingText + "\n" + generatedLines.join("\n")
               : generatedLines.join("\n");
           }
+
+          showGenerationProgress();
         });
       }
 
