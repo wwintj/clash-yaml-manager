@@ -662,14 +662,14 @@
 
             {% if output_filename %}
               <div class="terminal-alert p-3 mb-4">
-                <div class="panel-subtitle mb-2">ONLINE DOWNLOAD LINK</div>
+                <div class="panel-subtitle mb-2">CLASH SUBSCRIPTION LINK</div>
                 <div class="row g-3 align-items-center">
                   <div class="col-lg-4">
                     <div class="status-label mb-1">File Name</div>
                     <div class="mono">{{ output_filename }}</div>
                   </div>
                   <div class="col-lg-8">
-                    <label class="form-label mb-1" for="download-url">Download URL</label>
+                    <label class="form-label mb-1" for="download-url">Clash URL</label>
                     <div class="d-flex flex-column flex-sm-row gap-2">
                       <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
                       <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal">Copy</button>
@@ -681,7 +681,7 @@
 
             <div class="d-flex flex-column flex-md-row gap-3">
               {% if output_filename %}
-                <a href="{{ download_url }}" class="btn btn-green btn-terminal btn-lg flex-fill">Download YAML</a>
+                <a href="{{ file_download_url }}" class="btn btn-green btn-terminal btn-lg flex-fill">Download YAML</a>
               {% endif %}
 
               {% if upload_filename or output_filename %}

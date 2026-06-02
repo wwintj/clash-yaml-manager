@@ -267,6 +267,7 @@ def get_base_context() -> Dict[str, Any]:
         "result": None,
         "output_filename": "",
         "download_url": "",
+        "file_download_url": "",
         "upload_filename": "",
         "country_mapping": parser.get_country_mapping(),
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
@@ -281,6 +282,7 @@ def flash_page_context(context: Dict[str, Any]) -> None:
         "result": context.get("result"),
         "output_filename": context.get("output_filename", ""),
         "download_url": context.get("download_url", ""),
+        "file_download_url": context.get("file_download_url", ""),
         "upload_filename": context.get("upload_filename", ""),
     }
 
@@ -295,12 +297,20 @@ def redirect_to_index(context: Dict[str, Any], anchor: str = ""):
 
 
 def build_download_url(filename: str) -> str:
-    """生成下载链接；优先使用显式公网地址，否则按 HTTPS 生成外部链接。"""
+    token = generate_download_token(filename)
+    path = url_for("subscribe_file", token=token, filename=filename)
+    if DOWNLOAD_BASE_URL:
+        return f"{DOWNLOAD_BASE_URL}{path}"
+    return url_for("subscribe_file", token=token, filename=filename, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
+
+
+def build_file_download_url(filename: str) -> str:
+    """生成浏览器下载按钮链接。"""
     token = generate_download_token(filename)
     path = url_for("download_file", filename=filename, token=token)
     if DOWNLOAD_BASE_URL:
         return f"{DOWNLOAD_BASE_URL}{path}"
-    return url_for("download_file", filename=filename, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
+    return url_for("download_file", filename=filename, token=token, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
 
 
 def get_secret_key_bytes() -> bytes:
@@ -318,6 +328,24 @@ def generate_download_token(filename: str) -> str:
 def is_valid_download_token(filename: str, token: str) -> bool:
     expected_token = generate_download_token(filename)
     return hmac.compare_digest(token, expected_token)
+
+
+def send_yaml_output(filename: str, token: str, as_attachment: bool):
+    safe_filename = os.path.basename(filename)
+
+    if not session.get("logged_in") and not is_valid_download_token(safe_filename, token):
+        return "Invalid download token.", 403, {"Content-Type": "text/plain; charset=utf-8"}
+
+    output_path = os.path.join(DIR_OUTPUTS, safe_filename)
+    if not os.path.isfile(output_path):
+        return "YAML file not found.", 404, {"Content-Type": "text/plain; charset=utf-8"}
+
+    return send_from_directory(
+        DIR_OUTPUTS,
+        safe_filename,
+        as_attachment=as_attachment,
+        mimetype="application/x-yaml",
+    )
 
 
 # ==========================================
@@ -459,6 +487,7 @@ def process_config():
     context["success_message"] = "配置已成功更新，您可以下载或清理临时文件。"
     context["output_filename"] = output_filename
     context["download_url"] = build_download_url(output_filename)
+    context["file_download_url"] = build_file_download_url(output_filename)
     context["result"] = {
         "old_node_count": yaml_result["old_node_count"],
         "new_node_count": yaml_result["new_node_count"],
@@ -479,18 +508,12 @@ def process_config():
 
 @app.route("/download/<path:filename>", methods=["GET"])
 def download_file(filename):
-    safe_filename = os.path.basename(filename)
-    token = request.args.get("token", "")
+    return send_yaml_output(filename, request.args.get("token", ""), as_attachment=True)
 
-    if not session.get("logged_in") and not is_valid_download_token(safe_filename, token):
-        return redirect(url_for("index"))
 
-    return send_from_directory(
-        DIR_OUTPUTS,
-        safe_filename,
-        as_attachment=True,
-        mimetype="application/x-yaml",
-    )
+@app.route("/sub/<token>/<path:filename>", methods=["GET"])
+def subscribe_file(token, filename):
+    return send_yaml_output(filename, token, as_attachment=False)
 
 
 @app.route("/delete-temp", methods=["POST"])
