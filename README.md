@@ -203,9 +203,13 @@ logs/
 COOKIE_SECURE=true
 DOWNLOAD_URL_SCHEME=https
 DOWNLOAD_BASE_URL=https://你的域名
+FILE_RETENTION_DAYS=7
+CLEANUP_INTERVAL_DAYS=7
 ```
 
 `DOWNLOAD_BASE_URL` 可留空；留空时系统会按当前访问域名生成下载链接。反向代理 HTTPS 时，建议在 Nginx 中传递 `X-Forwarded-Proto` 和 `X-Forwarded-Host`。
+
+`uploads/`、`outputs/`、`backups/` 会按上面的配置自动清理：默认最多每 7 天检查一次，并删除 7 天前的文件。
 
 ---
 

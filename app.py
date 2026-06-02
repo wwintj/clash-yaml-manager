@@ -41,6 +41,8 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
 DOWNLOAD_BASE_URL = os.environ.get("DOWNLOAD_BASE_URL", "").rstrip("/")
 DOWNLOAD_URL_SCHEME = os.environ.get("DOWNLOAD_URL_SCHEME", "https").lower()
+FILE_RETENTION_DAYS = int(os.environ.get("FILE_RETENTION_DAYS", os.environ.get("BACKUP_RETENTION_DAYS", 7)))
+CLEANUP_INTERVAL_DAYS = int(os.environ.get("CLEANUP_INTERVAL_DAYS", os.environ.get("BACKUP_CLEANUP_INTERVAL_DAYS", 7)))
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DIR_UPLOADS = os.path.join(BASE_DIR, "uploads")
@@ -50,6 +52,7 @@ DIR_LOGS = os.path.join(BASE_DIR, "logs")
 DIR_DEFAULTS = os.path.join(BASE_DIR, "defaults")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 DEFAULT_YAML_PATH = os.path.join(DIR_DEFAULTS, "default.yaml")
+CLEANUP_MARKER = os.path.join(BASE_DIR, ".last_cleanup")
 
 ALLOWED_EXTENSIONS = {"yaml", "yml"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
@@ -91,8 +94,42 @@ def setup_logging() -> None:
     )
 
 
+def cleanup_old_files() -> None:
+    """每隔指定天数清理一次过期上传、输出和备份文件。"""
+    now = time.time()
+    cleanup_interval = max(CLEANUP_INTERVAL_DAYS, 1) * 86400
+    retention_seconds = max(FILE_RETENTION_DAYS, 1) * 86400
+
+    try:
+        if os.path.exists(CLEANUP_MARKER):
+            last_cleanup = os.path.getmtime(CLEANUP_MARKER)
+            if now - last_cleanup < cleanup_interval:
+                return
+
+        deleted_count = 0
+        for directory in [DIR_UPLOADS, DIR_OUTPUTS, DIR_BACKUPS]:
+            for filename in os.listdir(directory):
+                file_path = os.path.join(directory, filename)
+                if not os.path.isfile(file_path):
+                    continue
+
+                if now - os.path.getmtime(file_path) >= retention_seconds:
+                    os.remove(file_path)
+                    deleted_count += 1
+
+        with open(CLEANUP_MARKER, "w", encoding="utf-8") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
+        os.chmod(CLEANUP_MARKER, 0o600)
+
+        if deleted_count > 0:
+            logging.info(f"自动清理过期文件: {deleted_count} 个文件")
+    except Exception as e:
+        logging.warning(f"自动清理文件失败: {str(e)}")
+
+
 ensure_directories()
 setup_logging()
+cleanup_old_files()
 
 
 # ==========================================
@@ -174,6 +211,8 @@ def write_env_password(new_password: str) -> None:
         "SECRET_KEY": SECRET_KEY or "",
         "COOKIE_SECURE": "true" if COOKIE_SECURE else "false",
         "DOWNLOAD_URL_SCHEME": DOWNLOAD_URL_SCHEME,
+        "FILE_RETENTION_DAYS": str(FILE_RETENTION_DAYS),
+        "CLEANUP_INTERVAL_DAYS": str(CLEANUP_INTERVAL_DAYS),
     }
 
     if os.path.exists(ENV_FILE):
@@ -188,7 +227,16 @@ def write_env_password(new_password: str) -> None:
 
     existing_values["APP_PASSWORD_B64"] = password_b64
 
-    preferred_order = ["APP_PASSWORD_B64", "APP_PORT", "SECRET_KEY", "COOKIE_SECURE", "DOWNLOAD_BASE_URL", "DOWNLOAD_URL_SCHEME"]
+    preferred_order = [
+        "APP_PASSWORD_B64",
+        "APP_PORT",
+        "SECRET_KEY",
+        "COOKIE_SECURE",
+        "DOWNLOAD_BASE_URL",
+        "DOWNLOAD_URL_SCHEME",
+        "FILE_RETENTION_DAYS",
+        "CLEANUP_INTERVAL_DAYS",
+    ]
     ordered_keys = preferred_order + [key for key in existing_values if key not in preferred_order]
 
     with open(ENV_FILE, "w", encoding="utf-8") as f:
@@ -224,6 +272,27 @@ def get_base_context() -> Dict[str, Any]:
     }
 
 
+def flash_page_context(context: Dict[str, Any]) -> None:
+    """暂存一次性页面状态，用于 POST 后重定向回首页。"""
+    session["page_context"] = {
+        "error_messages": context.get("error_messages", []),
+        "success_message": context.get("success_message", ""),
+        "result": context.get("result"),
+        "output_filename": context.get("output_filename", ""),
+        "download_url": context.get("download_url", ""),
+        "upload_filename": context.get("upload_filename", ""),
+    }
+
+
+def redirect_to_index(context: Dict[str, Any], anchor: str = ""):
+    """POST/Redirect/GET，避免刷新时重复提交表单。"""
+    flash_page_context(context)
+    target = url_for("index")
+    if anchor:
+        target = f"{target}#{anchor}"
+    return redirect(target)
+
+
 def build_download_url(filename: str) -> str:
     """生成下载链接；优先使用显式公网地址，否则按 HTTPS 生成外部链接。"""
     path = url_for("download_file", filename=filename)
@@ -237,7 +306,9 @@ def build_download_url(filename: str) -> str:
 # ==========================================
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html", **get_base_context())
+    context = get_base_context()
+    context.update(session.pop("page_context", {}))
+    return render_template("index.html", **context)
 
 
 @app.route("/login", methods=["POST"])
@@ -252,7 +323,7 @@ def login():
 
     logging.warning(f"密码尝试失败 (IP: {request.remote_addr})")
     context["error_messages"].append("登录失败，密码错误。")
-    return render_template("index.html", **context)
+    return redirect_to_index(context)
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -273,42 +344,42 @@ def change_password():
 
     if not secure_password_equals(current_password, APP_PASSWORD):
         context["error_messages"].append("当前密码不正确。")
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     if new_password != confirm_password:
         context["error_messages"].append("两次输入的新密码不一致。")
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     if not new_password:
         context["error_messages"].append("新密码不能为空。")
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     try:
         write_env_password(new_password)
     except Exception as e:
         logging.error(f"更新密码失败: {str(e)}")
         context["error_messages"].append(f"密码保存失败: {str(e)}")
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     APP_PASSWORD = new_password
     session.pop("logged_in", None)
     logging.info(f"管理密码已更新 (IP: {request.remote_addr})")
     context["success_message"] = "管理密码已更新，请使用新密码重新登录。"
-    context["logged_in"] = False
-    return render_template("index.html", **context)
+    return redirect_to_index(context)
 
 
 @app.route("/process", methods=["POST"])
 @login_required
 def process_config():
     context = get_base_context()
+    cleanup_old_files()
 
     file = request.files.get("yaml_file")
     use_default_yaml = file is None or file.filename == ""
 
     if not use_default_yaml and not allowed_file(file.filename):
         context["error_messages"].append("不支持的文件格式，仅支持 .yaml 或 .yml 文件。")
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     batch_text = request.form.get("batch_nodes", "").strip()
     single_country = request.form.get("single_country", "").strip()
@@ -321,12 +392,12 @@ def process_config():
 
     if not batch_text.strip():
         context["error_messages"].append("没有提供任何有效的新节点信息。")
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     if use_default_yaml:
         if not os.path.exists(DEFAULT_YAML_PATH):
             context["error_messages"].append("未上传 YAML，且默认 YAML 模板不存在。请先放置 defaults/default.yaml。")
-            return render_template("index.html", **context)
+            return redirect_to_index(context)
         upload_filename = ""
         upload_path = DEFAULT_YAML_PATH
     else:
@@ -338,7 +409,7 @@ def process_config():
             os.chmod(upload_path, 0o600)
         except Exception as e:
             context["error_messages"].append(f"文件保存失败: {str(e)}")
-            return render_template("index.html", **context)
+            return redirect_to_index(context)
 
         context["upload_filename"] = upload_filename
 
@@ -346,7 +417,7 @@ def process_config():
 
     if parsed_result["errors"]:
         context["error_messages"].extend(parsed_result["errors"])
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     raw_special_groups = request.form.getlist("special_groups")
     special_groups = [group for group in raw_special_groups if group in DEFAULT_SPECIAL_GROUPS]
@@ -362,7 +433,7 @@ def process_config():
 
     if not yaml_result["success"]:
         context["error_messages"].extend(yaml_result["errors"])
-        return render_template("index.html", **context)
+        return redirect_to_index(context)
 
     output_filename = os.path.basename(yaml_result["output_path"])
 
@@ -384,7 +455,7 @@ def process_config():
         f"注入新节点: {yaml_result['new_node_count']} 个"
     )
 
-    return render_template("index.html", **context)
+    return redirect_to_index(context, anchor="generate-result")
 
 
 @app.route("/download/<path:filename>", methods=["GET"])
@@ -416,14 +487,14 @@ def delete_temp():
     else:
         context["error_messages"].append("未找到可删除的文件或文件已被清理。")
 
-    return render_template("index.html", **context)
+    return redirect_to_index(context)
 
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
     context = get_base_context()
     context["error_messages"].append("上传文件过大，最大支持 50MB。")
-    return render_template("index.html", **context), 413
+    return redirect_to_index(context)
 
 
 if __name__ == "__main__":
