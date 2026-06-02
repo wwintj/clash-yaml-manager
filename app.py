@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import logging
 import os
+import re
 import sys
 import time
 import uuid
@@ -327,16 +328,40 @@ def generate_download_token(filename: str) -> str:
 
 def is_valid_download_token(filename: str, token: str) -> bool:
     expected_token = generate_download_token(filename)
-    expected_short_token = generate_short_download_signature(filename)
-    return hmac.compare_digest(token, expected_token) or hmac.compare_digest(token, expected_short_token)
+    expected_short_token = expected_token[:len(token)]
+    return hmac.compare_digest(token, expected_token) or (
+        len(token) in {8, 12} and hmac.compare_digest(token, expected_short_token)
+    )
 
 
 def generate_short_download_signature(filename: str) -> str:
-    return generate_download_token(filename)[:12]
+    return generate_download_token(filename)[:8]
+
+
+def encode_base36(number: int) -> str:
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    if number == 0:
+        return "0"
+
+    encoded = ""
+    while number > 0:
+        number, remainder = divmod(number, 36)
+        encoded = alphabet[remainder] + encoded
+    return encoded
+
+
+def decode_base36(value: str) -> int:
+    return int(value, 36)
 
 
 def build_short_subscription_slug(filename: str) -> str:
     safe_filename = os.path.basename(filename)
+    match = re.fullmatch(r"tim_(\d{8})_(\d+)\.yaml", safe_filename)
+    if match:
+        date_part, count_part = match.groups()
+        signature = generate_short_download_signature(safe_filename)
+        return f"{date_part[2:]}{encode_base36(int(count_part))}{signature}"
+
     stem, _ = os.path.splitext(safe_filename)
     signature = generate_short_download_signature(safe_filename)
     return f"{stem}-{signature}"
@@ -344,16 +369,25 @@ def build_short_subscription_slug(filename: str) -> str:
 
 def parse_short_subscription_slug(slug: str) -> tuple[str, str]:
     safe_slug = os.path.basename(slug)
+    compact_match = re.fullmatch(r"(\d{6})([0-9a-z]+)([0-9a-f]{8})", safe_slug)
+    if compact_match:
+        date_part, count_part, signature = compact_match.groups()
+        try:
+            filename = f"tim_20{date_part}_{decode_base36(count_part)}.yaml"
+        except ValueError:
+            return "", ""
+
+        if is_valid_download_token(filename, signature):
+            return filename, signature
+
+        return "", ""
+
     if "-" not in safe_slug:
         return "", ""
 
     stem, signature = safe_slug.rsplit("-", 1)
-    if not stem or len(signature) != 12:
-        return "", ""
-
     filename = f"{stem}.yaml"
-    expected_signature = generate_short_download_signature(filename)
-    if not hmac.compare_digest(signature, expected_signature):
+    if not stem or not is_valid_download_token(filename, signature):
         return "", ""
 
     return filename, signature

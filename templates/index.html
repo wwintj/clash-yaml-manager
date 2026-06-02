@@ -686,7 +686,7 @@
               {% endif %}
 
               {% if upload_filename or output_filename %}
-                <form action="/delete-temp" method="POST" class="flex-fill" onsubmit="return confirm('確定要刪除伺服器上的上傳檔案和輸出檔案嗎？備份檔案不會刪除。');">
+                <form id="delete-temp-form" action="/delete-temp" method="POST" class="flex-fill">
                   <input type="hidden" name="upload_filename" value="{{ upload_filename }}">
                   <input type="hidden" name="output_filename" value="{{ output_filename }}">
                   <button type="submit" class="btn btn-danger-terminal btn-terminal btn-lg w-100">Delete Temp Files</button>
@@ -814,16 +814,16 @@
 
   </main>
 
-  <div id="generation-progress" class="progress-overlay" aria-hidden="true">
+  <div id="operation-progress" class="progress-overlay" aria-hidden="true">
     <div class="progress-box">
-      <div class="panel-subtitle mb-2">GENERATING YAML</div>
-      <h2 class="panel-title mb-4">Please Wait</h2>
+      <div id="operation-progress-kicker" class="panel-subtitle mb-2">GENERATING YAML</div>
+      <h2 id="operation-progress-title" class="panel-title mb-4">Please Wait</h2>
       <div class="progress-track mb-3">
-        <div id="generation-progress-bar" class="progress-bar-terminal"></div>
+        <div id="operation-progress-bar" class="progress-bar-terminal"></div>
       </div>
       <div class="d-flex justify-content-between gap-3 footer-mini">
-        <span id="generation-progress-text">正在解析节点并生成 YAML...</span>
-        <span id="generation-progress-percent" class="mono">0%</span>
+        <span id="operation-progress-text">Working...</span>
+        <span id="operation-progress-percent" class="mono">0%</span>
       </div>
     </div>
   </div>
@@ -833,14 +833,17 @@
       const rowsContainer = document.getElementById("aux-node-rows");
       const addButton = document.getElementById("add-node-row");
       const form = document.getElementById("process-form");
+      const deleteTempForm = document.getElementById("delete-temp-form");
       const batchTextarea = document.getElementById("batch_nodes");
       const alertBox = document.getElementById("aux-node-alert");
       const downloadUrlInput = document.getElementById("download-url");
       const copyDownloadUrlButton = document.getElementById("copy-download-url");
-      const generationProgress = document.getElementById("generation-progress");
-      const generationProgressBar = document.getElementById("generation-progress-bar");
-      const generationProgressPercent = document.getElementById("generation-progress-percent");
-      const generationProgressText = document.getElementById("generation-progress-text");
+      const operationProgress = document.getElementById("operation-progress");
+      const operationProgressKicker = document.getElementById("operation-progress-kicker");
+      const operationProgressTitle = document.getElementById("operation-progress-title");
+      const operationProgressBar = document.getElementById("operation-progress-bar");
+      const operationProgressPercent = document.getElementById("operation-progress-percent");
+      const operationProgressText = document.getElementById("operation-progress-text");
 
       function getFirstRow() {
         return rowsContainer ? rowsContainer.querySelector(".node-row") : null;
@@ -876,33 +879,58 @@
         alertBox.classList.remove("d-none");
       }
 
-      function showGenerationProgress() {
-        if (!generationProgress || !generationProgressBar || !generationProgressPercent) return;
+      function showOperationProgress(options) {
+        if (!operationProgress || !operationProgressBar || !operationProgressPercent) return;
 
         let percent = 8;
-        const messages = [
-          "正在解析节点链接...",
-          "正在清理旧 proxies...",
-          "正在修复策略组引用...",
-          "正在写入新 YAML..."
-        ];
+        const messages = options.messages;
         let messageIndex = 0;
 
-        generationProgress.classList.add("active");
-        generationProgress.setAttribute("aria-hidden", "false");
-        generationProgressBar.style.width = percent + "%";
-        generationProgressPercent.textContent = percent + "%";
+        if (operationProgressKicker) operationProgressKicker.textContent = options.kicker;
+        if (operationProgressTitle) operationProgressTitle.textContent = options.title;
+        if (operationProgressText) operationProgressText.textContent = messages[0];
+
+        operationProgress.classList.add("active");
+        operationProgress.setAttribute("aria-hidden", "false");
+        operationProgressBar.style.width = percent + "%";
+        operationProgressPercent.textContent = percent + "%";
 
         window.setInterval(function () {
           percent = Math.min(percent + 7, 96);
-          generationProgressBar.style.width = percent + "%";
-          generationProgressPercent.textContent = percent + "%";
+          operationProgressBar.style.width = percent + "%";
+          operationProgressPercent.textContent = percent + "%";
 
-          if (generationProgressText) {
-            generationProgressText.textContent = messages[messageIndex % messages.length];
+          if (operationProgressText) {
+            operationProgressText.textContent = messages[messageIndex % messages.length];
             messageIndex += 1;
           }
         }, 650);
+      }
+
+      function showGenerationProgress() {
+        showOperationProgress({
+          kicker: "GENERATING YAML",
+          title: "Please Wait",
+          messages: [
+            "Parsing node links...",
+            "Cleaning old proxies...",
+            "Repairing policy group references...",
+            "Writing new YAML..."
+          ]
+        });
+      }
+
+      function showDeleteProgress() {
+        showOperationProgress({
+          kicker: "DELETING TEMP FILES",
+          title: "Cleaning Up",
+          messages: [
+            "Checking selected temp files...",
+            "Deleting upload and output files...",
+            "Keeping backup files untouched...",
+            "Returning to the home page..."
+          ]
+        });
       }
 
       if (addButton && rowsContainer) {
@@ -968,6 +996,18 @@
           }
 
           showGenerationProgress();
+        });
+      }
+
+      if (deleteTempForm) {
+        deleteTempForm.addEventListener("submit", function (event) {
+          const confirmed = window.confirm("確定要刪除伺服器上的上傳檔案和輸出檔案嗎？備份檔案不會刪除。");
+          if (!confirmed) {
+            event.preventDefault();
+            return;
+          }
+
+          showDeleteProgress();
         });
       }
 

@@ -157,7 +157,8 @@ HK|GIA|vmess://xxxx
 - 自动给节点名添加国旗。
 - 自动把节点加入通用策略组和对应国家/地区策略组。
 - 可选加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略组。
-- 生成较短的带签名 YAML 订阅直链，可复制到 Clash/Mihomo 客户端使用。
+- 生成超短带签名 YAML 订阅直链，例如 `/s/2606021a1b2c3d`，可复制到 Clash/Mihomo 客户端使用。
+- 生成 YAML 和删除临时文件时都会显示进度提示。
 - 内置浏览器 favicon，访问面板时浏览器标签页会显示图标。
 - 尽量保留原配置里的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自定义字段。
 - 上传、输出、备份、日志分目录保存。

@@ -18,7 +18,8 @@ Initial public release focused on one-command VPS deployment and Clash/Mihomo YA
 - `install.sh` for one-command install.
 - `update.sh` for upgrading code while preserving deployed configuration and runtime data.
 - `uninstall.sh` for service cleanup and optional data backup.
-- Short `/s/...` YAML subscription links for Clash/Mihomo clients, while keeping older signed links compatible.
+- Compact `/s/...` YAML subscription links for Clash/Mihomo clients, while keeping older signed links compatible.
+- Progress feedback when deleting temporary upload and output files.
 - Built-in SVG favicon for the browser tab.
 
 ### Changed
