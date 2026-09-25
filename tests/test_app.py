@@ -65,8 +65,10 @@ def test_size_limit(web, logged_in):
 def test_legacy_download_signatures(web, length):
     filename = 'tim_20260602_1.yaml'
     token = web.generate_download_token(filename)[:length]
-    assert web.is_valid_download_token(filename, token)
-    assert not web.is_valid_download_token('other.yaml', token)
+    validator = web.is_valid_download_token if length == 64 else web.is_valid_legacy_download_token
+    assert validator(filename, token)
+    assert not validator('other.yaml', token)
+    assert web.is_valid_download_token(filename, token) == (length == 64)
     assert web.parse_short_subscription_slug(filename[:-5] + '-' + token) == (filename, token)
 
 

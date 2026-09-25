@@ -157,6 +157,7 @@ def test_concurrent_output_cannot_overwrite(tmp_path, monkeypatch):
         calls.append(name)
         if len(calls) <= 2:
             barrier.wait(timeout=10)
+            return 'tim_20260925_1_AAAAAAAAAAAAAAAAAAAAAA.yaml'
         return name
     monkeypatch.setattr(y, 'generate_output_filename', race)
     sources = []

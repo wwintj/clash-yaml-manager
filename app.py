@@ -1,8 +1,5 @@
-import hashlib
-import hmac
 import logging
 import os
-import re
 import sys
 import time
 import uuid
@@ -20,6 +17,7 @@ from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
 from core.state import StateError
 from core.rate_limit import LoginLimiter
+from core.subscriptions import SubscriptionSigner, safe_filename
 
 # ==========================================
 # 环境变量与应用配置
@@ -289,93 +287,53 @@ def get_secret_key_bytes() -> bytes:
     return str(key).encode("utf-8")
 
 
+def subscription_signer() -> SubscriptionSigner:
+    return SubscriptionSigner(get_secret_key_bytes())
+
+
 def generate_download_token(filename: str) -> str:
-    """为公开 YAML 下载链接生成签名，避免未授权枚举下载。"""
-    return hmac.new(get_secret_key_bytes(), filename.encode("utf-8"), hashlib.sha256).hexdigest()
+    return subscription_signer().full_token(filename)
 
 
 def is_valid_download_token(filename: str, token: str) -> bool:
-    if not isinstance(token, str) or not re.fullmatch(r"(?:[0-9a-f]{8}|[0-9a-f]{12}|[0-9a-f]{64})", token):
-        return False
-    expected_token = generate_download_token(filename)
-    expected_short_token = expected_token[:len(token)]
-    return hmac.compare_digest(token, expected_token) or (
-        len(token) in {8, 12} and hmac.compare_digest(token, expected_short_token)
-    )
+    return subscription_signer().valid_full_token(filename, token)
 
 
-def generate_short_download_signature(filename: str) -> str:
-    return generate_download_token(filename)[:8]
-
-
-def encode_base36(number: int) -> str:
-    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-    if number == 0:
-        return "0"
-
-    encoded = ""
-    while number > 0:
-        number, remainder = divmod(number, 36)
-        encoded = alphabet[remainder] + encoded
-    return encoded
-
-
-def decode_base36(value: str) -> int:
-    return int(value, 36)
+def is_valid_legacy_download_token(filename: str, token: str) -> bool:
+    return subscription_signer().valid_legacy_token(filename, token)
 
 
 def build_short_subscription_slug(filename: str) -> str:
-    safe_filename = os.path.basename(filename)
-    match = re.fullmatch(r"tim_(\d{8})_(\d+)\.yaml", safe_filename)
-    if match:
-        date_part, count_part = match.groups()
-        signature = generate_short_download_signature(safe_filename)
-        return f"{date_part[2:]}{encode_base36(int(count_part))}{signature}"
-
-    stem, _ = os.path.splitext(safe_filename)
-    signature = generate_short_download_signature(safe_filename)
-    return f"{stem}-{signature}"
+    return subscription_signer().build_slug(filename)
 
 
 def parse_short_subscription_slug(slug: str) -> tuple[str, str]:
-    safe_slug = os.path.basename(slug)
-    compact_match = re.fullmatch(r"(\d{6})([0-9a-z]+)([0-9a-f]{8})", safe_slug)
-    if compact_match:
-        date_part, count_part, signature = compact_match.groups()
-        try:
-            filename = f"tim_20{date_part}_{decode_base36(count_part)}.yaml"
-        except ValueError:
-            return "", ""
-
-        if is_valid_download_token(filename, signature):
-            return filename, signature
-
-        return "", ""
-
-    if "-" not in safe_slug:
-        return "", ""
-
-    stem, signature = safe_slug.rsplit("-", 1)
-    filename = f"{stem}.yaml"
-    if not stem or not is_valid_download_token(filename, signature):
-        return "", ""
-
-    return filename, signature
+    return subscription_signer().parse_slug(slug)
 
 
-def send_yaml_output(filename: str, token: str, as_attachment: bool):
-    safe_filename = os.path.basename(filename)
+def invalid_download():
+    return "Invalid download token.", 403, {"Content-Type": "text/plain; charset=utf-8"}
 
-    if not session.get("logged_in") and not is_valid_download_token(safe_filename, token):
-        return "Invalid download token.", 403, {"Content-Type": "text/plain; charset=utf-8"}
 
-    output_path = os.path.join(DIR_OUTPUTS, safe_filename)
-    if not os.path.isfile(output_path):
+def authorized_download(filename: str, token: str, as_attachment: bool):
+    if not safe_filename(filename):
+        return invalid_download()
+    if not (session.get("logged_in") or is_valid_download_token(filename, token)
+            or is_valid_legacy_download_token(filename, token)):
+        return invalid_download()
+    return send_yaml_output(filename, as_attachment)
+
+
+def send_yaml_output(filename: str, as_attachment: bool):
+    """Serve only after the route has verified its specific credential format."""
+    if not safe_filename(filename):
+        return invalid_download()
+    output_path = os.path.join(DIR_OUTPUTS, filename)
+    if os.path.islink(output_path) or not os.path.isfile(output_path):
         return "YAML file not found.", 404, {"Content-Type": "text/plain; charset=utf-8"}
-
     return send_from_directory(
         DIR_OUTPUTS,
-        safe_filename,
+        filename,
         as_attachment=as_attachment,
         mimetype="application/x-yaml",
     )
@@ -547,20 +505,20 @@ def process_config():
 
 @app.route("/download/<path:filename>", methods=["GET"])
 def download_file(filename):
-    return send_yaml_output(filename, request.args.get("token", ""), as_attachment=True)
+    return authorized_download(filename, request.args.get("token", ""), as_attachment=True)
 
 
 @app.route("/sub/<token>/<path:filename>", methods=["GET"])
 def subscribe_file(token, filename):
-    return send_yaml_output(filename, token, as_attachment=False)
+    return authorized_download(filename, token, as_attachment=False)
 
 
 @app.route("/s/<slug>", methods=["GET"])
 def short_subscribe_file(slug):
-    filename, signature = parse_short_subscription_slug(slug)
+    filename, _signature = parse_short_subscription_slug(slug)
     if not filename:
         return "Invalid download token.", 403, {"Content-Type": "text/plain; charset=utf-8"}
-    return send_yaml_output(filename, signature, as_attachment=False)
+    return send_yaml_output(filename, as_attachment=False)
 
 
 @app.route("/delete-temp", methods=["POST"])

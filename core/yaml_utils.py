@@ -1,4 +1,6 @@
 import os
+import re
+import secrets
 import shutil
 import tempfile
 import time
@@ -55,7 +57,7 @@ def generate_backup_filename(original_filename: str) -> str:
 
 
 def generate_output_filename(output_dir: str) -> str:
-    """生成 tim_日期_当天序号.yaml 格式的输出文件名。"""
+    """日期和序号便于识别；128 位随机标识避免删除后复用订阅地址。"""
     today = time.strftime("%Y%m%d")
     prefix = f"tim_{today}_"
     next_index = 1
@@ -65,11 +67,11 @@ def generate_output_filename(output_dir: str) -> str:
             if not filename.startswith(prefix) or not filename.endswith(".yaml"):
                 continue
 
-            number_part = filename[len(prefix):-5]
-            if number_part.isdigit():
-                next_index = max(next_index, int(number_part) + 1)
+            match = re.fullmatch(r'([1-9][0-9]{0,15})(?:_[A-Za-z0-9_-]{22})?', filename[len(prefix):-5])
+            if match:
+                next_index = max(next_index, int(match.group(1)) + 1)
 
-    return f"{prefix}{next_index}.yaml"
+    return f"{prefix}{next_index}_{secrets.token_urlsafe(16)}.yaml"
 
 
 def load_yaml(file_path: str) -> Dict[str, Any]:
