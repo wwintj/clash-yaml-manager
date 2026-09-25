@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import hmac
 import logging
@@ -18,28 +17,12 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 
 from core import parser
 from core import yaml_utils
+from core.security import AuthStore, CREDENTIAL_KEYS
+from core.state import StateError
 
 # ==========================================
 # 环境变量与应用配置
 # ==========================================
-def load_app_password() -> str:
-    """Load password from env. APP_PASSWORD_B64 supports spaces and special characters."""
-    password_b64 = os.environ.get("APP_PASSWORD_B64", "")
-    if password_b64:
-        try:
-            return base64.b64decode(password_b64.encode("ascii")).decode("utf-8")
-        except Exception:
-            print("❌ 启动失败: APP_PASSWORD_B64 不是有效的 Base64 UTF-8 字符串。")
-            sys.exit(1)
-
-    return os.environ.get("APP_PASSWORD", "")
-
-
-APP_PASSWORD = load_app_password()
-if not APP_PASSWORD:
-    print("❌ 启动失败: 请务必设置环境变量 APP_PASSWORD 以保护 Web 面板。")
-    sys.exit(1)
-
 APP_PORT = int(os.environ.get("APP_PORT", 8899))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
@@ -57,9 +40,9 @@ DIR_OUTPUTS = os.path.join(BASE_DIR, "outputs")
 DIR_BACKUPS = os.path.join(BASE_DIR, "backups")
 DIR_LOGS = os.path.join(BASE_DIR, "logs")
 DIR_DEFAULTS = os.path.join(BASE_DIR, "defaults")
-ENV_FILE = os.path.join(BASE_DIR, ".env")
+DIR_STATE = os.path.join(BASE_DIR, "state")
 DEFAULT_YAML_PATH = os.path.join(DIR_DEFAULTS, "default.yaml")
-CLEANUP_MARKER = os.path.join(BASE_DIR, ".last_cleanup")
+CLEANUP_MARKER = os.path.join(DIR_STATE, ".last_cleanup")
 
 ALLOWED_EXTENSIONS = {"yaml", "yml"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
@@ -81,8 +64,8 @@ DEFAULT_SPECIAL_GROUPS = [
 # ==========================================
 def ensure_directories() -> None:
     """确保必要目录存在。"""
-    for directory in [DIR_UPLOADS, DIR_OUTPUTS, DIR_BACKUPS, DIR_LOGS, DIR_DEFAULTS]:
-        os.makedirs(directory, exist_ok=True)
+    for directory in [DIR_UPLOADS, DIR_OUTPUTS, DIR_BACKUPS, DIR_LOGS, DIR_STATE]:
+        os.makedirs(directory, mode=0o700, exist_ok=True)
 
 
 def setup_logging() -> None:
@@ -135,6 +118,14 @@ def cleanup_old_files() -> None:
 
 
 ensure_directories()
+auth_store = AuthStore(DIR_STATE)
+try:
+    auth_store.initialize(os.environ)
+except (StateError, OSError):
+    sys.exit("认证状态初始化失败，请检查 state/ 权限或执行凭据迁移。")
+# Compatibility bootstrap is one-way: stale environment credentials are not reused.
+for credential_key in CREDENTIAL_KEYS:
+    os.environ.pop(credential_key, None)
 setup_logging()
 cleanup_old_files()
 
@@ -155,10 +146,18 @@ app.config["PREFERRED_URL_SCHEME"] = DOWNLOAD_URL_SCHEME or "http"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
 
 if not SECRET_KEY:
-    app.secret_key = os.urandom(24)
-    logging.warning("未设置 SECRET_KEY 环境变量，已生成临时 Key。生产环境建议设置固定 SECRET_KEY。")
+    sys.exit("请设置固定 SECRET_KEY，所有 worker 必须使用同一密钥。")
 else:
     app.secret_key = SECRET_KEY
+
+@app.before_request
+def invalidate_old_sessions():
+    if session.get('logged_in'):
+        state = auth_store.read()
+        if (session.get('auth_version') != state['auth_version'] or
+                session.get('auth_instance') != state['instance_id']):
+            session.clear()
+
 
 CSRFProtect(app)
 
@@ -208,54 +207,6 @@ def safe_delete_file(directory: str, filename: str) -> bool:
             return False
 
     return False
-
-
-def secure_password_equals(candidate: str, expected: str) -> bool:
-    """Compare passwords as UTF-8 bytes so non-ASCII characters are supported."""
-    return hmac.compare_digest(candidate.encode("utf-8"), expected.encode("utf-8"))
-
-
-def write_env_password(new_password: str) -> None:
-    """Persist password to .env using Base64 so spaces and symbols are safe."""
-    password_b64 = base64.b64encode(new_password.encode("utf-8")).decode("ascii")
-    existing_values: Dict[str, str] = {
-        "APP_PORT": str(APP_PORT),
-        "SECRET_KEY": SECRET_KEY or "",
-        "COOKIE_SECURE": "true" if COOKIE_SECURE else "false",
-        "DOWNLOAD_URL_SCHEME": DOWNLOAD_URL_SCHEME,
-        "FILE_RETENTION_DAYS": str(FILE_RETENTION_DAYS),
-        "CLEANUP_INTERVAL_DAYS": str(CLEANUP_INTERVAL_DAYS),
-    }
-
-    if os.path.exists(ENV_FILE):
-        with open(ENV_FILE, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.rstrip("\n")
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, value = line.split("=", 1)
-                if key != "APP_PASSWORD":
-                    existing_values[key] = value
-
-    existing_values["APP_PASSWORD_B64"] = password_b64
-
-    preferred_order = [
-        "APP_PASSWORD_B64",
-        "APP_PORT",
-        "SECRET_KEY",
-        "COOKIE_SECURE",
-        "DOWNLOAD_BASE_URL",
-        "DOWNLOAD_URL_SCHEME",
-        "FILE_RETENTION_DAYS",
-        "CLEANUP_INTERVAL_DAYS",
-    ]
-    ordered_keys = preferred_order + [key for key in existing_values if key not in preferred_order]
-
-    with open(ENV_FILE, "w", encoding="utf-8") as f:
-        for key in ordered_keys:
-            f.write(f"{key}={existing_values.get(key, '')}\n")
-
-    os.chmod(ENV_FILE, 0o600)
 
 
 def login_required(func):
@@ -438,10 +389,13 @@ def login():
     password = request.form.get("password", "")
     context = get_base_context()
 
-    if secure_password_equals(password, APP_PASSWORD):
+    authenticated = auth_store.authenticate(password)
+    if authenticated:
         session.clear()
         session.permanent = True
         session["logged_in"] = True
+        session["auth_version"] = authenticated["auth_version"]
+        session["auth_instance"] = authenticated["instance_id"]
         logging.info(f"登录成功 (IP: {request.remote_addr})")
         return redirect(url_for("index"))
 
@@ -459,16 +413,10 @@ def logout():
 @app.route("/change-password", methods=["POST"])
 @login_required
 def change_password():
-    global APP_PASSWORD
-
     current_password = request.form.get("current_password", "")
     new_password = request.form.get("new_password", "")
     confirm_password = request.form.get("confirm_password", "")
     context = get_base_context()
-
-    if not secure_password_equals(current_password, APP_PASSWORD):
-        context["error_messages"].append("当前密码不正确。")
-        return redirect_to_index(context)
 
     if new_password != confirm_password:
         context["error_messages"].append("两次输入的新密码不一致。")
@@ -479,13 +427,16 @@ def change_password():
         return redirect_to_index(context)
 
     try:
-        write_env_password(new_password)
+        changed = auth_store.change_password(current_password, new_password,
+                                             session.get('auth_version'), session.get('auth_instance'))
+        if not changed:
+            context['error_messages'].append('当前密码不正确或登录状态已失效。')
+            return redirect_to_index(context)
     except Exception:
-        logging.error("更新密码失败，请检查配置文件权限。")
-        context["error_messages"].append("密码保存失败，请检查配置文件权限。")
+        logging.error("更新密码失败，请检查认证状态文件权限。")
+        context["error_messages"].append("密码保存失败，请检查认证状态文件权限。")
         return redirect_to_index(context)
 
-    APP_PASSWORD = new_password
     session.clear()
     logging.info(f"管理密码已更新 (IP: {request.remote_addr})")
     context["success_message"] = "管理密码已更新，请使用新密码重新登录。"
@@ -624,6 +575,12 @@ def delete_temp():
         context["error_messages"].append("未找到可删除的文件或文件已被清理。")
 
     return redirect_to_index(context)
+
+
+@app.errorhandler(StateError)
+def state_unavailable(error):
+    logging.error('共享安全状态不可用，请检查权限或恢复备份。')
+    return '安全状态暂不可用，请联系管理员检查 state/。', 503
 
 
 @app.errorhandler(413)

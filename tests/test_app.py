@@ -1,6 +1,5 @@
 import io
 import time
-import base64
 from pathlib import Path
 
 import pytest
@@ -132,17 +131,15 @@ def test_login_rotates_session(client):
 
 
 def test_legacy_base64_password_and_change(web, monkeypatch, logged_in):
-    monkeypatch.setenv('APP_PASSWORD_B64', base64.b64encode('legacy 密码'.encode()).decode())
-    assert web.load_app_password() == 'legacy 密码'
     new = 'new 密码 $ symbols'
     post(logged_in, '/change-password', {'current_password': 'test 密码', 'new_password': new,
                                         'confirm_password': new})
     with logged_in.session_transaction() as s:
         assert not s.get('logged_in')
-    assert web.APP_PASSWORD == new
-    env = Path(web.ENV_FILE).read_text()
-    assert new not in env
-    assert Path(web.ENV_FILE).stat().st_mode & 0o777 == 0o600
+    assert web.auth_store.authenticate(new)
+    assert new not in web.auth_store.path.read_text()
+    assert not (Path(web.BASE_DIR) / '.env').exists()
+    assert web.auth_store.path.stat().st_mode & 0o777 == 0o600
     post(logged_in, '/login', {'password': new})
     with logged_in.session_transaction() as s:
         assert s['logged_in']
@@ -153,8 +150,8 @@ def test_legacy_base64_password_and_change(web, monkeypatch, logged_in):
 def test_password_failure_keeps_existing_password(web, logged_in, current, new, confirm):
     post(logged_in, '/change-password', {'current_password': current, 'new_password': new,
                                         'confirm_password': confirm})
-    assert web.APP_PASSWORD == 'test 密码'
-    assert not Path(web.ENV_FILE).exists()
+    assert web.auth_store.authenticate('test 密码')
+    assert not (Path(web.BASE_DIR) / '.env').exists()
 
 
 def test_forwarded_host_ignored_in_generated_links(web, logged_in):
@@ -197,3 +194,45 @@ def test_cookie_security_defaults(web, client):
     cookie = response.headers['Set-Cookie']
     assert 'HttpOnly' in cookie and 'SameSite=Lax' in cookie and 'Expires=' in cookie
     assert web.app.config['PERMANENT_SESSION_LIFETIME'].total_seconds() == 43200
+
+
+def test_password_change_invalidates_all_sessions_and_download_bypass(web):
+    a, b = web.app.test_client(), web.app.test_client()
+    for browser in (a, b):
+        post(browser, '/login', {'password': 'test 密码'})
+    (Path(web.DIR_OUTPUTS) / 'private.yaml').write_text('{}')
+    assert b.get('/download/private.yaml').status_code == 200
+    post(a, '/change-password', {'current_password': 'test 密码', 'new_password': 'new password',
+                                'confirm_password': 'new password'})
+    with a.session_transaction() as session:
+        assert not session.get('logged_in')
+    assert b.get('/download/private.yaml').status_code == 403
+    with b.session_transaction() as session:
+        assert not session.get('logged_in')
+    post(b, '/login', {'password': 'test 密码'})
+    with b.session_transaction() as session:
+        assert not session.get('logged_in')
+    post(b, '/login', {'password': 'new password'})
+    with b.session_transaction() as session:
+        assert session['logged_in'] and session['auth_version'] == 2
+
+
+def test_cleanup_never_removes_auth_state(web):
+    import os
+    path = web.auth_store.path
+    before = path.read_bytes()
+    os.utime(path, (time.time() - 30 * 86400,) * 2)
+    Path(web.CLEANUP_MARKER).unlink()
+    web.cleanup_old_files()
+    assert path.read_bytes() == before
+
+
+def test_runtime_password_change_does_not_touch_env(web, logged_in):
+    env = Path(web.BASE_DIR) / '.env'
+    original = b'SECRET_KEY=not-for-runtime-reading\nAPP_PASSWORD=legacy\n'
+    env.write_bytes(original)
+    env.chmod(0o400)
+    post(logged_in, '/change-password', {'current_password': 'test 密码', 'new_password': 'new',
+                                        'confirm_password': 'new'})
+    assert web.auth_store.authenticate('new')
+    assert env.read_bytes() == original
