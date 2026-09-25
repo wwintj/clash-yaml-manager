@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 
 import pytest
 
@@ -24,7 +25,8 @@ def deployment(tmp_path):
     installed, source, commands = [tmp_path / name for name in ('installed', 'source', 'commands')]
     for directory in (installed, source, commands):
         directory.mkdir()
-    (source / 'core').mkdir()
+    shutil.copytree(ROOT / 'core', source / 'core', ignore=shutil.ignore_patterns('__pycache__'))
+    shutil.copytree(ROOT / 'scripts', source / 'scripts')
     (source / 'app.py').write_text('VERSION = "new"\n')
     (source / 'requirements.txt').write_text('Flask\n')
     (source / '.env').write_text('DO_NOT_COPY=source-secret\n')
@@ -42,13 +44,29 @@ def deployment(tmp_path):
     events = tmp_path / 'events'
     env = os.environ.copy()
     env.update(PATH=str(commands) + os.pathsep + env['PATH'], TEST_EVENTS=str(events),
-               TMPDIR=str(tmp_path), TEST_PIP_FAIL='0', TEST_HEALTH_FAIL='0')
+               TMPDIR=str(tmp_path), TEST_PIP_FAIL='0', TEST_HEALTH_FAIL='0',
+               TEST_ACCOUNT=str(tmp_path / 'account.db'), TEST_PYTHON=sys.executable)
     (commands / 'python3').symlink_to(sys.executable)
     executable(commands / 'systemctl', 'echo "systemctl $*" >> "$TEST_EVENTS"\n')
     executable(commands / 'curl', 'echo "curl" >> "$TEST_EVENTS"\nexit "$TEST_HEALTH_FAIL"\n')
     executable(commands / 'sleep', ':\n')
     executable(commands / 'apt-get', 'echo apt-get >> "$TEST_EVENTS"\n')
     executable(installed / 'venv/bin/pip', 'echo "pip $*" >> "$TEST_EVENTS"\nexit "$TEST_PIP_FAIL"\n')
+    executable(installed / 'venv/bin/python', 'exec "$TEST_PYTHON" "$@"\n')
+    executable(commands / 'getent', '''[[ -f "$TEST_ACCOUNT" ]] || exit 2
+if [[ "$1" == passwd ]]; then
+  cat "$TEST_ACCOUNT"
+else
+  echo clashyaml:x:998:
+fi
+''')
+    executable(commands / 'id', '[[ -f "$TEST_ACCOUNT" ]] || exit 1\necho 998\n')
+    executable(commands / 'useradd', '''echo "useradd $*" >> "$TEST_EVENTS"
+echo 'clashyaml:x:998:998:Clash YAML Manager service:/nonexistent:/usr/sbin/nologin' > "$TEST_ACCOUNT"
+''')
+    executable(commands / 'userdel', 'echo "userdel $*" >> "$TEST_EVENTS"\nrm "$TEST_ACCOUNT"\n')
+    executable(commands / 'pgrep', 'exit 1\n')
+    executable(commands / 'chown', 'echo "chown $*" >> "$TEST_EVENTS"\n')
 
     def run(script_name='update.sh', cwd=None, input_text=None):
         script = (ROOT / script_name).read_text()
@@ -58,6 +76,7 @@ def deployment(tmp_path):
         script = script.replace('SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"', f'SERVICE_FILE="{service}"')
         script = script.replace('/root/${SERVICE_NAME}-update-backup-', str(tmp_path / 'upgrade-backup-'))
         script = script.replace('/root/${SERVICE_NAME}-backup-', str(tmp_path / 'uninstall-backup-'))
+        script = script.replace('${SCRIPT_DIR}/scripts/deploy-common.sh', str(ROOT / 'scripts/deploy-common.sh'))
         path = tmp_path / ('run-' + script_name)
         path.write_text(script)
         return subprocess.run(['bash', str(path)], cwd=cwd or source, env=env,
@@ -68,21 +87,34 @@ def deployment(tmp_path):
 def test_upgrade_preserves_data_and_checks_health(deployment):
     installed, source, service, events, env, run = deployment
     original = {p.relative_to(installed): p.read_bytes() for p in installed.rglob('*')
-                if p.is_file() and p.name not in ('app.py', 'pip')}
+                if p.is_file() and p.name not in ('app.py', 'pip', 'python')}
     result = run()
     assert result.returncode == 0, result.stderr + result.stdout
     assert (installed / 'app.py').read_text() == (source / 'app.py').read_text()
     assert not (installed / '.venv').exists()
     for path, content in original.items():
-        assert (installed / path).read_bytes() == content
+        expected = content.replace(b'APP_PASSWORD_B64=dGVzdA==\n', b'') if path == Path('.env') else content
+        assert (installed / path).read_bytes() == expected
+    from core.security import AuthStore
+    assert AuthStore(installed / 'state').authenticate('test')
     assert (installed / 'outputs').stat().st_mode & 0o777 == 0o700
+    assert (installed / 'app.py').stat().st_mode & 0o777 == 0o644
+    assert (installed / 'core').stat().st_mode & 0o777 == 0o755
+    assert (installed / '.env').stat().st_mode & 0o777 == 0o600
     assert 'UMask=0077' in service.read_text()
+    assert 'User=clashyaml' in service.read_text() and 'Group=clashyaml' in service.read_text()
+    assert 'User=root' not in service.read_text()
+    assert 'NoNewPrivileges=true' in service.read_text() and 'PrivateTmp=true' in service.read_text()
     assert f'WorkingDirectory={installed}' in service.read_text()
     assert f'ExecStart={installed}/venv/bin/gunicorn' in service.read_text()
     assert '${APP_PORT}' in service.read_text()
     log = events.read_text()
     assert log.index('pip install') < log.index('systemctl stop')
     assert log.index('systemctl daemon-reload') < log.index('systemctl restart') < log.index('curl')
+    assert 'useradd --system --user-group' in log
+    assert f'chown -hR root:root {installed}/core' in log
+    assert f'chown -h clashyaml:clashyaml {installed}/state' in log
+    assert f'chown -R clashyaml:clashyaml {installed}\n' not in log
     backup = next(installed.parent.glob('upgrade-backup-*'))
     assert (backup / 'app.py').read_text() == 'VERSION = "old"\n'
     assert (backup / '.env').read_bytes() == original[Path('.env')]
@@ -164,9 +196,11 @@ def test_fresh_install_default_url_and_private_files(deployment):
     (commands / 'python3').unlink()  # remove test symlink before writing a wrapper
     env['TEST_PYTHON'] = sys.executable
     env['TEST_FAKE_PIP'] = str(previous / 'venv/bin/pip')
+    env['TEST_FAKE_PYTHON'] = str(previous / 'venv/bin/python')
     executable(commands / 'python3', '''if [[ "$1" == -m && "$2" == venv ]]; then
   mkdir -p "$3/bin"
   cp "$TEST_FAKE_PIP" "$3/bin/pip"
+  cp "$TEST_FAKE_PYTHON" "$3/bin/python"
   exit 0
 fi
 exec "$TEST_PYTHON" "$@"
@@ -179,9 +213,13 @@ exec "$TEST_PYTHON" "$@"
     assert 'DOWNLOAD_URL_SCHEME=\n' in configuration
     assert 'TRUST_PROXY_HEADERS=false\n' in configuration
     assert 'DO_NOT_COPY' not in configuration
+    assert 'APP_PASSWORD' not in configuration
+    from core.security import AuthStore
+    assert AuthStore(installed / 'state').authenticate('test-install-password')
     assert (installed / '.env').stat().st_mode & 0o777 == 0o600
     assert (installed / 'outputs').stat().st_mode & 0o777 == 0o700
     assert 'UMask=0077' in service.read_text()
+    assert 'User=clashyaml' in service.read_text() and 'Group=clashyaml' in service.read_text()
     assert not (installed / '.venv').exists()
 
 
@@ -198,3 +236,85 @@ def test_uninstall_keep_data_choice(deployment):
 def test_shell_syntax(script):
     result = subprocess.run(['bash', '-n', str(ROOT / script)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_upgrade_preserves_existing_state_and_ignores_source_state(deployment):
+    installed, source, _, _, _, run = deployment
+    from core.security import AuthStore
+    store = AuthStore(installed / 'state')
+    original = store.initialize({'APP_PASSWORD': 'current state password'})
+    (installed / 'state/login_attempts.json').write_text('{"version": 1, "ips": {}}')
+    (source / 'state').mkdir()
+    (source / 'state/auth.json').write_text('untrusted source state')
+    before = store.path.read_bytes()
+    result = run()
+    assert result.returncode == 0, result.stderr
+    assert store.path.read_bytes() == before
+    assert store.authenticate('current state password')['auth_version'] == original['auth_version']
+    assert not store.authenticate('test')
+    assert (installed / 'state/login_attempts.json').exists()
+    backup = next(installed.parent.glob('upgrade-backup-*'))
+    assert (backup / 'state/auth.json').read_bytes() == before
+
+
+def test_script_migration_failure_preserves_env_and_old_code(deployment):
+    installed, _, _, events, _, run = deployment
+    original = b'APP_PASSWORD_HASH=not-a-hash\nAPP_PORT=8899\nSECRET_KEY=unchanged\n'
+    (installed / '.env').write_bytes(original)
+    result = run()
+    assert result.returncode != 0
+    assert (installed / '.env').read_bytes() == original
+    assert (installed / 'app.py').read_text() == 'VERSION = "old"\n'
+    assert 'systemctl restart' not in events.read_text()
+    assert '回滚' in result.stderr
+
+
+def test_existing_unrelated_user_is_never_repurposed(deployment):
+    installed, _, _, events, env, run = deployment
+    Path(env['TEST_ACCOUNT']).write_text('clashyaml:x:998:998:Other app:/other:/bin/bash\n')
+    result = run()
+    assert result.returncode != 0
+    assert 'systemctl stop' not in events.read_text()
+    assert 'useradd' not in events.read_text() and 'userdel' not in events.read_text()
+    assert (installed / 'app.py').read_text() == 'VERSION = "old"\n'
+
+
+@pytest.mark.parametrize('choice', ['n\n', 'y\n\n'])
+def test_uninstall_managed_user_and_auth_state(deployment, choice):
+    installed, _, _, events, env, run = deployment
+    assert run().returncode == 0
+    before = (installed / 'state/auth.json').read_bytes()
+    result = run('uninstall.sh', input_text=choice)
+    assert result.returncode == 0, result.stderr
+    if choice.startswith('n'):
+        assert (installed / 'state/auth.json').read_bytes() == before
+        assert Path(env['TEST_ACCOUNT']).exists()
+        assert 'userdel' not in events.read_text()
+    else:
+        assert not installed.exists()
+        assert not Path(env['TEST_ACCOUNT']).exists()
+        log = events.read_text()
+        assert log.rindex('systemctl stop') < log.index('userdel clashyaml')
+        backup = next(installed.parent.glob('uninstall-backup-*'))
+        assert (backup / 'state/auth.json').read_bytes() == before
+        assert (backup / '.env').exists() and (backup / 'outputs/keep').exists()
+
+
+def test_uninstall_never_deletes_unmanaged_user(deployment):
+    installed, _, _, events, env, run = deployment
+    Path(env['TEST_ACCOUNT']).write_text('clashyaml:x:998:998:Other app:/other:/bin/bash\n')
+    result = run('uninstall.sh', input_text='y\nn\n')
+    assert result.returncode == 0, result.stderr
+    assert not installed.exists() and Path(env['TEST_ACCOUNT']).exists()
+    assert 'userdel' not in events.read_text()
+
+
+def test_low_port_grants_only_bind_capability(deployment):
+    installed, _, service, _, _, run = deployment
+    path = installed / '.env'
+    path.write_text(path.read_text().replace('APP_PORT=8899', 'APP_PORT=80'))
+    result = run()
+    assert result.returncode == 0, result.stderr
+    assert 'User=clashyaml' in service.read_text()
+    assert 'AmbientCapabilities=CAP_NET_BIND_SERVICE' in service.read_text()
+    assert 'CapabilityBoundingSet=CAP_NET_BIND_SERVICE' in service.read_text()

@@ -32,30 +32,40 @@ if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
   exit 1
 fi
 
-for command in python3 systemctl curl; do
+source "${CURRENT_DIR}/scripts/deploy-common.sh"
+
+for command in python3 systemctl curl getent useradd chown; do
   command -v "${command}" >/dev/null || { echo "缺少必要命令：${command}"; exit 1; }
 done
 
 # Validate Python syntax and existing environment before changing deployed files.
 APP_PORT="$(python3 - "${CURRENT_DIR}" "${INSTALL_DIR}/.env" <<'PY'
 import base64
+import json
 import pathlib
 import sys
 try:
     source = pathlib.Path(sys.argv[1])
+    sys.path.insert(0, str(source))
+    from core.envfile import values as env_values
     for path in [source / 'app.py', *sorted((source / 'core').glob('*.py'))]:
         compile(path.read_bytes(), str(path), 'exec')
-    values = {}
-    for line in pathlib.Path(sys.argv[2]).read_text().splitlines():
-        if line.strip() and not line.lstrip().startswith('#') and '=' in line:
-            key, value = line.split('=', 1)
-            values[key.strip()] = value.strip().strip(chr(34) + chr(39))
+    env_path = pathlib.Path(sys.argv[2])
+    if env_path.is_symlink():
+        raise ValueError
+    values = env_values(env_path.read_bytes().decode('utf-8'))
     port = int(values.get('APP_PORT', '8899'))
     assert 1 <= port <= 65535
     assert values.get('SECRET_KEY')
-    assert values.get('APP_PASSWORD_B64') or values.get('APP_PASSWORD')
-    if values.get('APP_PASSWORD_B64'):
+    state_path = env_path.parent / 'state/auth.json'
+    assert state_path.is_file() or any(values.get(k) for k in ('APP_PASSWORD_HASH', 'APP_PASSWORD_B64', 'APP_PASSWORD'))
+    if state_path.exists():
+        state = json.loads(state_path.read_text())
+        assert state.get('password_hash') and state.get('auth_version')
+    elif not values.get('APP_PASSWORD_HASH') and values.get('APP_PASSWORD_B64'):
         assert base64.b64decode(values['APP_PASSWORD_B64'], validate=True).decode('utf-8')
+    for key, default in [('LOGIN_MAX_FAILURES', 5), ('LOGIN_WINDOW_SECONDS', 600), ('LOGIN_LOCKOUT_SECONDS', 900)]:
+        assert int(values.get(key, default)) > 0
     assert values.get('DOWNLOAD_URL_SCHEME', '') in ('', 'http', 'https')
     print(port)
 except Exception:
@@ -70,7 +80,7 @@ BACKUP_DIR="$(mktemp -d "/root/${SERVICE_NAME}-update-backup-${TIMESTAMP}.XXXXXX
 
 upgrade_failed() {
   echo "升级失败。备份保留于 ${BACKUP_DIR}，请勿再次运行 install.sh。" >&2
-  echo "回滚：停止 ${SERVICE_NAME}；从备份恢复应用代码、venv、.env 和 defaults；将 service 文件恢复到 ${SERVICE_FILE}；daemon-reload 后重启。保留 uploads/outputs/backups/logs。" >&2
+  echo "回滚：停止 ${SERVICE_NAME}；恢复备份应用代码、venv、.env、defaults 和原 service；若回到旧 root 版本，恢复备份 .env 中的旧凭据。保留 uploads/outputs/backups/logs/state；已有 state 的回滚须同时核对密码版本，详见 docs/PHASE2.md。daemon-reload 后重启。" >&2
 }
 trap upgrade_failed ERR
 
@@ -84,7 +94,7 @@ echo "备份目录: ${BACKUP_DIR}"
 echo "正在备份当前安装目录..."
 mkdir -p "${BACKUP_DIR}"
 
-for item in app.py requirements.txt install.sh uninstall.sh update.sh remote-update.sh core templates static venv; do
+for item in app.py requirements.txt install.sh uninstall.sh update.sh remote-update.sh core templates static scripts venv .service-account; do
   if [[ -e "${INSTALL_DIR}/${item}" ]]; then
     cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DIR}/"
   fi
@@ -110,18 +120,26 @@ if [[ ! -d "${INSTALL_DIR}/venv" ]]; then
 fi
 "${INSTALL_DIR}/venv/bin/pip" install -r "${CURRENT_DIR}/requirements.txt"
 "${INSTALL_DIR}/venv/bin/pip" check
+ensure_service_user
 
 if [[ -f "${SERVICE_FILE}" ]]; then
   echo "正在停止服务..."
   systemctl stop "${SERVICE_NAME}"
 fi
 
+# Stop writers before backing up/migrating shared auth state. Legacy .env was
+# backed up above; the runtime never edits it after this migration.
+if [[ -d "${INSTALL_DIR}/state" ]]; then
+  cp -a "${INSTALL_DIR}/state" "${BACKUP_DIR}/state"
+fi
+"${INSTALL_DIR}/venv/bin/python" -m core.migrate --env-file "${INSTALL_DIR}/.env" --state-dir "${INSTALL_DIR}/state"
+
 echo "正在复制新版应用代码..."
 shopt -s dotglob nullglob
 for item in "${CURRENT_DIR}"/*; do
   name="$(basename "${item}")"
   case "${name}" in
-    .env|.git|.venv|venv|uploads|outputs|backups|logs|.last_cleanup|.pytest_cache|__pycache__)
+    .env|.git|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
       continue
       ;;
     defaults)
@@ -158,24 +176,8 @@ if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
 fi
 
 echo "正在刷新 systemd 服务文件..."
-cat > "${SERVICE_FILE}" <<EOF
-[Unit]
-Description=clash-yaml-manager
-After=network.target
-
-[Service]
-Type=simple
-User=root
-UMask=0077
-WorkingDirectory=${INSTALL_DIR}
-EnvironmentFile=${INSTALL_DIR}/.env
-ExecStart=${INSTALL_DIR}/venv/bin/gunicorn -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
+repair_permissions
+write_service_unit
 
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
@@ -197,7 +199,8 @@ fi
 
 echo "=========================================================="
 echo "升级完成。"
-echo "已保留: .env、defaults/default.yaml、uploads、outputs、backups、logs"
+echo "已保留: 非认证 .env 配置、defaults/default.yaml、uploads、outputs、backups、logs、state"
+echo "旧凭据已迁入 state/auth.json；服务用户为 clashyaml。"
 echo "备份目录: ${BACKUP_DIR}"
 echo "查看状态: systemctl status ${SERVICE_NAME}"
 echo "=========================================================="

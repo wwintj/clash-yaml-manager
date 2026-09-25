@@ -11,7 +11,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 # Reinstallation used to stop the service and rotate secrets before confirmation.
-if [[ -e "${INSTALL_DIR}/app.py" || -e "${INSTALL_DIR}/.env" ]]; then
+if [[ -e "${INSTALL_DIR}/app.py" || -e "${INSTALL_DIR}/.env" || -e "${INSTALL_DIR}/state/auth.json" ]]; then
   echo "错误：检测到已有安装，请从独立的新版源码目录运行 update.sh；不会覆盖现有配置。"
   exit 1
 fi
@@ -27,6 +27,7 @@ apt-get update -y
 apt-get install -y python3 python3-venv python3-pip curl iproute2 ca-certificates
 
 CURRENT_DIR="$(pwd)"
+source "${CURRENT_DIR}/scripts/deploy-common.sh"
 
 if [[ ! -f "${CURRENT_DIR}/app.py" || ! -f "${CURRENT_DIR}/requirements.txt" ]]; then
   echo "错误：请在 clash-yaml-manager 项目根目录下运行 install.sh。"
@@ -56,7 +57,7 @@ if [[ "${CURRENT_DIR}" != "${INSTALL_DIR}" ]]; then
   for item in "${CURRENT_DIR}"/*; do
     name="$(basename "${item}")"
     case "${name}" in
-      .env|.venv|venv|uploads|outputs|backups|logs|.git|.last_cleanup|.pytest_cache|__pycache__)
+      .env|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
         continue
         ;;
       *)
@@ -95,23 +96,16 @@ while true; do
   break
 done
 
-APP_PASSWORD=""
-while [[ -z "${APP_PASSWORD}" ]]; do
-  read -r -s -p "请输入 Web 管理密码（必填，可包含空格和特殊字符，不显示）: " APP_PASSWORD
+INSTALL_PASSWORD=""
+export -n INSTALL_PASSWORD
+while [[ -z "${INSTALL_PASSWORD}" ]]; do
+  read -r -s -p "请输入 Web 管理密码（必填，可包含空格和特殊字符，不显示）: " INSTALL_PASSWORD
   echo
-  if [[ -z "${APP_PASSWORD}" ]]; then
+  if [[ -z "${INSTALL_PASSWORD}" ]]; then
     echo "错误：密码不能为空。"
     continue
   fi
 done
-
-APP_PASSWORD_B64="$(APP_PASSWORD="${APP_PASSWORD}" python3 - <<'PY'
-import base64
-import os
-
-print(base64.b64encode(os.environ["APP_PASSWORD"].encode("utf-8")).decode("ascii"))
-PY
-)"
 
 echo "正在生成随机 SECRET_KEY..."
 SECRET_KEY="$(python3 - <<'PY'
@@ -127,11 +121,16 @@ python3 -m venv venv
 echo "正在安装 Python 依赖..."
 "${INSTALL_DIR}/venv/bin/pip" install --upgrade pip
 "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/requirements.txt"
+"${INSTALL_DIR}/venv/bin/pip" check
+
+# Password travels over stdin, never argv, .env, logs or reversible storage.
+printf '%s' "${INSTALL_PASSWORD}" | "${INSTALL_DIR}/venv/bin/python" -c \
+  'import sys; from core.security import AuthStore; AuthStore("state").initialize({"APP_PASSWORD": sys.stdin.read()})'
+unset INSTALL_PASSWORD
 
 echo "正在写入环境变量配置文件..."
 ENV_FILE="${INSTALL_DIR}/.env"
 cat > "${ENV_FILE}" <<EOF
-APP_PASSWORD_B64=${APP_PASSWORD_B64}
 APP_PORT=${APP_PORT}
 SECRET_KEY=${SECRET_KEY}
 COOKIE_SECURE=false
@@ -140,28 +139,16 @@ TRUST_PROXY_HEADERS=false
 DOWNLOAD_BASE_URL=
 FILE_RETENTION_DAYS=7
 CLEANUP_INTERVAL_DAYS=7
+LOGIN_MAX_FAILURES=5
+LOGIN_WINDOW_SECONDS=600
+LOGIN_LOCKOUT_SECONDS=900
 EOF
 chmod 600 "${ENV_FILE}"
 
 echo "正在配置 systemd 服务..."
-cat > "${SERVICE_FILE}" <<EOF
-[Unit]
-Description=clash-yaml-manager
-After=network.target
-
-[Service]
-Type=simple
-User=root
-UMask=0077
-WorkingDirectory=${INSTALL_DIR}
-EnvironmentFile=${ENV_FILE}
-ExecStart=${INSTALL_DIR}/venv/bin/gunicorn -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
+ensure_service_user
+repair_permissions
+write_service_unit
 
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"

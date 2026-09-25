@@ -18,7 +18,7 @@ trap 'rm -rf -- "${UPDATE_TMP}"' EXIT
 git clone --depth=1 "${REPO}" "${UPDATE_TMP}"
 
 cd "${UPDATE_TMP}"
-test -f app.py && test -f requirements.txt && test -f update.sh
+test -f app.py && test -f requirements.txt && test -f update.sh && test -f scripts/deploy-common.sh
 bash -n update.sh
 sed -i 's/\r$//' update.sh
 
