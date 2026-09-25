@@ -19,6 +19,7 @@ from core import parser
 from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
 from core.state import StateError
+from core.rate_limit import LoginLimiter
 
 # ==========================================
 # 环境变量与应用配置
@@ -119,6 +120,12 @@ def cleanup_old_files() -> None:
 
 ensure_directories()
 auth_store = AuthStore(DIR_STATE)
+login_limiter = LoginLimiter(
+    DIR_STATE,
+    max_failures=int(os.environ.get('LOGIN_MAX_FAILURES', '5')),
+    window=int(os.environ.get('LOGIN_WINDOW_SECONDS', '600')),
+    lockout=int(os.environ.get('LOGIN_LOCKOUT_SECONDS', '900')),
+)
 try:
     auth_store.initialize(os.environ)
 except (StateError, OSError):
@@ -389,7 +396,11 @@ def login():
     password = request.form.get("password", "")
     context = get_base_context()
 
-    authenticated = auth_store.authenticate(password)
+    authenticated, retry = login_limiter.attempt(request.remote_addr or 'unknown',
+                                                lambda: auth_store.authenticate(password))
+    if retry:
+        context['error_messages'].append(f'登录尝试过多，请在 {retry} 秒后重试。')
+        return render_template('index.html', **context), 429, {'Retry-After': str(retry)}
     if authenticated:
         session.clear()
         session.permanent = True
@@ -578,6 +589,7 @@ def delete_temp():
 
 
 @app.errorhandler(StateError)
+@app.errorhandler(OSError)
 def state_unavailable(error):
     logging.error('共享安全状态不可用，请检查权限或恢复备份。')
     return '安全状态暂不可用，请联系管理员检查 state/。', 503

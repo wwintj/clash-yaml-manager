@@ -236,3 +236,33 @@ def test_runtime_password_change_does_not_touch_env(web, logged_in):
                                         'confirm_password': 'new'})
     assert web.auth_store.authenticate('new')
     assert env.read_bytes() == original
+
+
+def test_login_rate_limit_429_retry_after_and_spoofed_xff(web, client):
+    for i in range(5):
+        response = post(client, '/login', {'password': 'wrong'}, headers={'X-Forwarded-For': f'192.0.2.{i}'})
+        assert response.status_code == (302 if i < 4 else 429)
+    assert response.headers['Retry-After'] == '900'
+    assert '登录尝试过多' in response.get_data(as_text=True)
+    assert post(client, '/login', {'password': 'test 密码'}).status_code == 429
+
+
+def test_login_success_clears_shared_failures(web, client):
+    post(client, '/login', {'password': 'wrong'})
+    assert post(client, '/login', {'password': 'test 密码'}).status_code == 302
+    import json
+    assert json.loads(web.login_limiter.path.read_text())['ips'] == {}
+
+
+def test_trusted_proxy_limiter_uses_effective_ip(web, client):
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    web.app.wsgi_app = ProxyFix(web.app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+    for _ in range(5):
+        response = post(client, '/login', {'password': 'wrong'}, headers={'X-Forwarded-For': '192.0.2.1'})
+    assert response.status_code == 429
+    assert post(client, '/login', {'password': 'test 密码'}, headers={'X-Forwarded-For': '192.0.2.2'}).status_code == 302
+
+
+def test_login_fails_closed_if_limiter_unreadable(web, client):
+    web.login_limiter.path.write_text('{broken')
+    assert post(client, '/login', {'password': 'test 密码'}).status_code == 503
