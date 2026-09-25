@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased - Regression baseline and scoped P0 fixes
+
+- Added isolated pytest coverage for parsers, YAML round trips, Flask flows, signed/short downloads, concurrent output and deployment script failure paths.
+- Reject invalid ports, empty node names, malformed YAML structures and duplicate policy groups instead of silently discarding configuration. Preserve singly encoded VLESS WS paths and repair MATCH flag references.
+- Block replacement when rules still target a removed node. Keep surviving group-list comments; publish complete private output files atomically without overwriting concurrent results.
+- Remove raw parser/YAML exception content and user-supplied filenames from diagnostics. Create uploads/backups/outputs with private permissions from the start.
+- Add Flask-WTF CSRF protection, POST-only logout, session reset on login/logout/password change and a 12-hour login session lifetime.
+- Make ProxyFix opt-in with `TRUST_PROXY_HEADERS`; default new download URLs to the request scheme, preserving `DOWNLOAD_BASE_URL` and explicit scheme overrides. Reject malformed download tokens without a server error.
+- Refuse destructive reinstall/in-place update, exclude `.env` and local environments from code copying, use unique remote staging directories, extend upgrade preflight/backups and report health-check failures with rollback guidance.
+- Keep the default YAML and historical templates unchanged. Password hashes, multi-worker credential consistency, login rate limits and dedicated system user migration remain next-stage work; this release is not a complete security migration.
+
 ## v1.0.0 - Default YAML and Update Flow
 
 Initial public release focused on one-command VPS deployment and Clash/Mihomo YAML node replacement.

@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 import urllib.parse
 from typing import Any, Dict, Tuple
 
@@ -76,6 +77,16 @@ def build_display_name(country_code: str, raw_name: str) -> str:
 # ==========================================
 # 协议解析核心
 # ==========================================
+def parse_port(value: Any) -> int:
+    """Do not coerce booleans/floats or echo untrusted port text."""
+    if isinstance(value, bool) or not re.fullmatch(r"[0-9]+", str(value)):
+        raise ValueError("端口必须是 1–65535 的整数。")
+    port = int(value)
+    if not 1 <= port <= 65535:
+        raise ValueError("端口必须是 1–65535 的整数。")
+    return port
+
+
 def parse_vmess_link(link: str, display_name: str) -> Dict[str, Any]:
     """解析 vmess:// 分享链接，返回 Clash/Mihomo proxies 可用的 dict。"""
     content = link[8:]
@@ -85,22 +96,23 @@ def parse_vmess_link(link: str, display_name: str) -> Dict[str, Any]:
     content += "=" * ((4 - len(content) % 4) % 4)
 
     try:
-        decoded = base64.b64decode(content).decode("utf-8")
+        decoded = base64.b64decode(content, validate=True).decode("utf-8")
         v_obj = json.loads(decoded)
     except Exception:
-        raise ValueError("Base64 或 JSON 结构解析失败")
+        raise ValueError("Base64 或 JSON 结构解析失败") from None
 
-    server = str(v_obj.get("add", "")).strip()
+    if not isinstance(v_obj, dict):
+        raise ValueError("VMess JSON 必须是对象。")
+
+    server = v_obj.get("add", "")
     port_raw = v_obj.get("port")
-    uuid_raw = str(v_obj.get("id", "")).strip()
+    uuid_raw = v_obj.get("id", "")
 
-    if not server or not port_raw or not uuid_raw:
+    if not isinstance(server, str) or not server.strip() or not isinstance(uuid_raw, str) or not uuid_raw.strip():
         raise ValueError("节点解析失败，缺失必填字段 (add/server, port, 或 id)")
+    server, uuid_raw = server.strip(), uuid_raw.strip()
 
-    try:
-        port = int(port_raw)
-    except (TypeError, ValueError):
-        raise ValueError("端口号必须为有效数字")
+    port = parse_port(port_raw)
 
     try:
         alter_id = int(v_obj.get("aid", 0))
@@ -159,19 +171,18 @@ def parse_vmess_link(link: str, display_name: str) -> Dict[str, Any]:
 
 def parse_vless_link(link: str, display_name: str) -> Dict[str, Any]:
     """解析 vless:// 分享链接，返回 Clash/Mihomo proxies 可用的 dict。"""
-    parsed = urllib.parse.urlparse(link)
-
-    server = parsed.hostname
-    port_raw = parsed.port
-    uuid_raw = urllib.parse.unquote(parsed.username) if parsed.username else ""
+    try:
+        parsed = urllib.parse.urlparse(link)
+        server = parsed.hostname
+        port_raw = parsed.port
+        uuid_raw = urllib.parse.unquote(parsed.username) if parsed.username else ""
+    except ValueError:
+        raise ValueError("VLESS 地址或端口格式无效。") from None
 
     if not server or not port_raw or not uuid_raw:
         raise ValueError("节点解析失败，缺失必填字段 (server, port, 或 uuid)")
 
-    try:
-        port = int(port_raw)
-    except (TypeError, ValueError):
-        raise ValueError("端口号必须为有效数字")
+    port = parse_port(port_raw)
 
     qs = urllib.parse.parse_qs(parsed.query)
 
@@ -227,7 +238,7 @@ def parse_vless_link(link: str, display_name: str) -> Dict[str, Any]:
 
         path = get_qs("path", "")
         if path:
-            ws_opts["path"] = urllib.parse.unquote(path)
+            ws_opts["path"] = path
 
         host = get_qs("host", "")
         if host:
@@ -253,7 +264,10 @@ def parse_node_line(line: str, line_number: int) -> Tuple[str, Dict[str, Any], D
 
     if code not in COUNTRY_MAPPING:
         supported = ", ".join(COUNTRY_MAPPING.keys())
-        raise ValueError(f"不支持的国家代码 '{raw_code}'。支持列表: {supported}")
+        raise ValueError(f"不支持的国家代码。支持列表: {supported}")
+
+    if not raw_name:
+        raise ValueError("节点名称不能为空。")
 
     if not (link.startswith("vmess://") or link.startswith("vless://")):
         raise ValueError("协议不支持，仅接受 vmess:// 或 vless://。")
@@ -265,9 +279,9 @@ def parse_node_line(line: str, line_number: int) -> Tuple[str, Dict[str, Any], D
             node = parse_vmess_link(link, display_name)
         else:
             node = parse_vless_link(link, display_name)
-    except Exception as e:
-        masked_link = mask_sensitive(link)
-        raise ValueError(f"解析异常 ({masked_link}): {str(e)}")
+    except Exception:
+        # Library exception text can contain URL credentials or raw JSON.
+        raise ValueError("节点解析失败，请检查链接格式、必填字段及端口范围。") from None
 
     country_info = {
         "code": code,
@@ -297,7 +311,7 @@ def parse_batch_nodes(text: str) -> Dict[str, Any]:
             display_name, node, country_info = parse_node_line(line, idx)
 
             if display_name in seen_names:
-                raise ValueError(f"节点名称 '{display_name}' 重复，请修改名称以防止冲突。")
+                raise ValueError("节点名称重复，请修改名称以防止冲突。")
 
             seen_names.add(display_name)
 
@@ -313,8 +327,8 @@ def parse_batch_nodes(text: str) -> Dict[str, Any]:
 
         except ValueError as ve:
             result["errors"].append(f"第 {idx} 行错误：{str(ve)}")
-        except Exception as e:
-            result["errors"].append(f"第 {idx} 行发生系统异常: {str(e)}")
+        except Exception:
+            result["errors"].append(f"第 {idx} 行解析失败，请检查节点格式。")
 
     return result
 

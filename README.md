@@ -209,13 +209,50 @@ logs/
 COOKIE_SECURE=true
 DOWNLOAD_URL_SCHEME=https
 DOWNLOAD_BASE_URL=https://你的網域
+TRUST_PROXY_HEADERS=true
 FILE_RETENTION_DAYS=7
 CLEANUP_INTERVAL_DAYS=7
 ```
 
-`DOWNLOAD_BASE_URL` 可以留空；留空時系統會按目前訪問網域產生下載連結。反向代理 HTTPS 時，建議在 Nginx 中傳遞 `X-Forwarded-Proto` 和 `X-Forwarded-Host`。
+`DOWNLOAD_BASE_URL` 優先於其他 URL 設定。新安裝的 `DOWNLOAD_URL_SCHEME` 預設留空，按請求協議產生連結：直接 IP:PORT 訪問為 HTTP。只透過單層可信 Nginx HTTPS 代理訪問時，才設定 `TRUST_PROXY_HEADERS=true`，由 Nginx 覆寫 `X-Forwarded-For`、`X-Forwarded-Proto`、`X-Forwarded-Host` 和 `X-Forwarded-Port`，並限制外部直接連到 Gunicorn。直接訪問時維持 `false`，不信任用戶傳入的轉發標頭。
+
+升級保留原 `.env`：如果舊安裝是直接 HTTP，卻已有 `DOWNLOAD_URL_SCHEME=https`，請手動改為空值或 `http` 並重啟服務。固定 `SECRET_KEY` 必須在所有 worker 間一致，且不能隨意更換，否則既有簽名訂閱和 session 會失效。
+
+五個 POST 表單已使用 Flask-WTF CSRF 保護；表單過期請重新整理。登出只接受 POST。session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態，登入 session 的有效期為 12 小時（活動時刷新）；HTTPS 部署需設定 `COOKIE_SECURE=true`。
+
+**尚待下一階段完成**：密碼仍使用舊版 Base64 儲存，沒有登入限速；改密碼的記憶體狀態仍只更新当前 worker，修改後應 `systemctl restart clash-yaml-manager` 使所有 worker 載入 `.env`。其他瀏覽器的登入 cookie 不會因此立即失效。systemd 仍使用 root。短訂閱簽名仍保留原 8 hex 格式以相容舊客戶端。完整風險和遷移順序見 [審計與計畫](docs/AUDIT.md)。
 
 `uploads/`、`outputs/`、`backups/` 會按上面的設定自動清理：預設最多每 7 天檢查一次，並刪除 7 天前的檔案。
+
+## 升級保護與回滾
+
+已有安裝請使用 `update.sh` 或 `remote-update.sh`；`install.sh` 會拒絕覆蓋已有應用或 `.env`。本地升級必須從獨立的新版本原始碼目錄執行，不能在 `/opt/clash-yaml-manager` 原地執行。`remote-update.sh` 使用獨立臨時目錄，下載失敗不執行升級。
+
+升級前會檢查原始碼語法、既有 `.env`、端口、固定 SECRET_KEY 及必要工具；備份程式、templates、static、四個部署腳本、requirements、venv、`.env`、預設 YAML 和原 systemd service。備份放在腳本輸出的 `/root/clash-yaml-manager-update-backup-*` 私有目錄。接著更新依賴並 `pip check`，再停止服務、複製程式、daemon-reload、重啟並檢查本機 HTTP 回應。備份 venv 需要额外磁碟空間。依賴仍在現有 venv 更新，失敗可能部分改動依賴；尚未實作完整 staging 或自動回滾。
+
+失敗時不要重新執行安裝。依照輸出的備份目錄手動回滾：
+
+1. 停止 `clash-yaml-manager`。
+2. 恢復備份中的應用程式檔案和目錄；將目前 `venv` 移到另一個保留目錄，再把備份 `venv` 放回原安裝路徑。
+3. 視需要恢復備份 `.env` 和 `defaults/default.yaml`（確認沒有較新的使用者修改）。
+4. 將備份的 `clash-yaml-manager.service` 恢復到 `/etc/systemd/system/`；執行 `systemctl daemon-reload` 和 `systemctl restart clash-yaml-manager`。
+5. 檢查 `systemctl status`、日誌和原本訪問地址。保留 `uploads/outputs/backups/logs`，不用刪除它們。
+
+## 開發驗證
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -q
+.venv/bin/python -m compileall -q app.py core tests
+for script in install.sh update.sh remote-update.sh uninstall.sh; do
+  bash -n "$script"
+done
+```
+
+如有 shellcheck，另執行 `shellcheck install.sh update.sh remote-update.sh uninstall.sh`。測試使用臨時資料和測試密碼，包含真實預設 YAML 的全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用替代 systemctl/curl/pip，不能取代 Ubuntu 上的 systemd 驗收。
+
+處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。Merge、Preview 和新協議會分階段加入。
 
 ---
 

@@ -496,6 +496,7 @@
             {% endif %}
 
             <form action="/login" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="mb-4">
                 <label for="password" class="form-label">ACCESS PASSWORD</label>
                 <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="請輸入管理密碼" required autofocus>
@@ -517,6 +518,7 @@
             <div class="d-flex flex-column flex-sm-row gap-2">
               <button type="button" class="btn btn-outline-terminal btn-terminal" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</button>
               <form action="/logout" method="POST" class="m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-terminal btn-terminal">Logout</button>
               </form>
             </div>
@@ -569,6 +571,7 @@
           </div>
 
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-4">
               <label class="form-label">01 / Upload YAML</label>
               <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml">
@@ -687,6 +690,7 @@
 
               {% if upload_filename or output_filename %}
                 <form id="delete-temp-form" action="/delete-temp" method="POST" class="flex-fill">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="upload_filename" value="{{ upload_filename }}">
                   <input type="hidden" name="output_filename" value="{{ output_filename }}">
                   <button type="submit" class="btn btn-danger-terminal btn-terminal btn-lg w-100">Delete Temp Files</button>
@@ -781,6 +785,7 @@
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content" style="background:#1f1f1f;border:1px solid #343434;border-radius:2px;color:#e7eef6;">
             <form action="/change-password" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="modal-header" style="border-bottom:1px solid #343434;">
                 <div>
                   <div class="panel-subtitle mb-1">SECURITY</div>

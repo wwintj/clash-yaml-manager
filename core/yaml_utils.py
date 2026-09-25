@@ -1,10 +1,12 @@
 import os
 import shutil
+import tempfile
 import time
 import uuid
 from typing import Any, Dict, List, Optional
 
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 # ==========================================
 # 常量配置
@@ -16,6 +18,10 @@ FLAG_CORRECTIONS = {
     "🇨🇳 台湾节点": "🇹🇼 台湾节点",
     "🇺🇲 美国节点": "🇺🇸 美国节点",
 }
+
+
+class ConfigValidationError(ValueError):
+    """Only fixed, non-sensitive validation messages may cross into the UI."""
 
 
 # ==========================================
@@ -75,14 +81,39 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
 
 
 def save_yaml(data: Dict[str, Any], output_path: str) -> None:
-    """保存 YAML 文件，并设置权限为 600。"""
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    """Serialize privately, then atomically replace; never expose partial YAML."""
+    directory = os.path.dirname(os.path.abspath(output_path))
+    os.makedirs(directory, exist_ok=True)
     yaml = get_yaml_engine()
+    fd, temporary = tempfile.mkstemp(prefix='.yaml-', dir=directory)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            yaml.dump(data, f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, output_path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        yaml.dump(data, f)
 
-    os.chmod(output_path, 0o600)
+def save_new_output(data: Dict[str, Any], output_dir: str) -> str:
+    """Publish a complete 600 file without overwriting another worker's output."""
+    os.makedirs(output_dir, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix='.pending-', dir=output_dir)
+    os.close(fd)
+    try:
+        save_yaml(data, temporary)
+        while True:
+            output_path = os.path.join(output_dir, generate_output_filename(output_dir))
+            try:
+                # Same filesystem: link is atomic and fails if the name exists.
+                os.link(temporary, output_path)
+                return output_path
+            except FileExistsError:
+                continue
+    finally:
+        os.unlink(temporary)
 
 
 def backup_yaml(input_path: str, backup_dir: str) -> str:
@@ -92,8 +123,9 @@ def backup_yaml(input_path: str, backup_dir: str) -> str:
     backup_filename = generate_backup_filename(os.path.basename(input_path))
     backup_path = os.path.join(backup_dir, backup_filename)
 
-    shutil.copy2(input_path, backup_path)
-    os.chmod(backup_path, 0o600)
+    fd = os.open(backup_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as target, open(input_path, 'rb') as source:
+        shutil.copyfileobj(source, target)
 
     return backup_path
 
@@ -116,19 +148,61 @@ def validate_new_nodes(new_nodes: Any) -> List[str]:
             continue
 
         name = node.get("name")
-        if not name:
+        if not isinstance(name, str) or not name.strip():
             errors.append(f"第 {i} 个节点缺失 name 字段或为空。")
         elif name in seen_names:
-            errors.append(f"新节点中存在重复名称: '{name}'。")
+            errors.append(f"第 {i} 个节点名称重复。")
         else:
             seen_names.add(name)
 
-        if not node.get("type"):
-            errors.append(f"节点 '{name or i}' 缺失 type 字段。")
-        if not node.get("server"):
-            errors.append(f"节点 '{name or i}' 缺失 server 字段。")
+        if not isinstance(node.get("type"), str) or not node["type"].strip():
+            errors.append(f"第 {i} 个节点缺失 type 字段。")
+        if not isinstance(node.get("server"), str) or not node["server"].strip():
+            errors.append(f"第 {i} 个节点缺失 server 字段。")
+        port = node.get('port')
+        if type(port) is not int or not 1 <= port <= 65535:
+            errors.append(f"第 {i} 个节点端口必须是 1–65535 的整数。")
+        if node.get('type') in ('vmess', 'vless') and (not isinstance(node.get('uuid'), str) or not node['uuid'].strip()):
+            errors.append(f"第 {i} 个节点缺失 uuid 字段。")
 
     return errors
+
+
+def validate_input_structure(data: Any) -> None:
+    """Reject destructive coercions before transforming, without echoing input."""
+    if not isinstance(data, dict):
+        raise ConfigValidationError('YAML 顶层必须是映射。')
+    for key in ('proxies', 'proxy-groups'):
+        if key not in data:
+            continue
+        if not isinstance(data[key], list):
+            raise ConfigValidationError(f'{key} 必须是列表。')
+        names = set()
+        for i, item in enumerate(data[key], 1):
+            if not isinstance(item, dict) or not isinstance(item.get('name'), str) or not item['name'].strip():
+                raise ConfigValidationError(f'{key} 第 {i} 项必须有有效名称。')
+            if item['name'] in names:
+                raise ConfigValidationError(f'{key} 第 {i} 项名称重复，请先处理冲突。')
+            names.add(item['name'])
+            if key == 'proxy-groups':
+                for field in ('proxies', 'use'):
+                    if field in item and (not isinstance(item[field], list) or
+                                          any(not isinstance(ref, str) for ref in item[field])):
+                        raise ConfigValidationError(f'proxy-groups 第 {i} 项的 {field} 必须是字符串列表。')
+    if 'rules' in data and (not isinstance(data['rules'], list) or
+                           any(not isinstance(rule, str) for rule in data['rules'])):
+        raise ConfigValidationError('rules 必须是字符串列表。')
+
+
+def validate_removed_rule_targets(data: Dict[str, Any], removed_names: set) -> None:
+    """Targeted replacement guard; a full Mihomo rule validator is a later step."""
+    remaining = {p['name'] for p in data['proxies']} | {g['name'] for g in data['proxy-groups']} | BUILT_IN_POLICIES
+    removed_targets = removed_names - remaining
+    for i, rule in enumerate(data.get('rules', []), 1):
+        parts = rule.split(',')
+        target = parts[-2] if len(parts) > 2 and parts[-1].strip().lower() == 'no-resolve' else parts[-1]
+        if target.strip() in removed_targets:
+            raise ConfigValidationError(f'rules 第 {i} 条引用了被替换的旧节点，请先改为保留的策略组。')
 
 
 def validate_proxy_references(data: Dict[str, Any]) -> List[str]:
@@ -147,25 +221,23 @@ def validate_proxy_references(data: Dict[str, Any]) -> List[str]:
     }
     valid_targets = valid_proxies | valid_groups | BUILT_IN_POLICIES
 
-    for group in data.get("proxy-groups", []):
+    for i, group in enumerate(data.get("proxy-groups", []), 1):
         if not isinstance(group, dict):
             continue
 
-        group_name = group.get("name", "UnknownGroup")
-
         has_proxies = "proxies" in group and isinstance(group["proxies"], list) and len(group["proxies"]) > 0
         has_use = "use" in group and bool(group["use"])
-        has_include_all = group.get("include-all", False) is True
+        has_include_all = any(group.get(key) is True for key in ('include-all', 'include-all-proxies', 'include-all-providers'))
 
         if not has_proxies and not has_use and not has_include_all:
-            errors.append(f"策略组 '{group_name}' 为空，且未引用 proxy-providers (use) 或 include-all。")
+            errors.append(f"第 {i} 个策略组为空，且未引用 proxy-providers 或 include-all。")
             continue
 
         for proxy_ref in group.get("proxies", []):
             if not proxy_ref:
                 continue
             if proxy_ref not in valid_targets:
-                errors.append(f"策略组 '{group_name}' 中存在无效的引用: '{proxy_ref}'。")
+                errors.append(f"第 {i} 个策略组中存在无效的节点或策略组引用。")
 
     return errors
 
@@ -195,7 +267,7 @@ def normalize_group_names(data: Dict[str, Any]) -> None:
                 continue
 
             parts = rule.split(",")
-            if len(parts) < 3:
+            if len(parts) < 2:
                 continue
 
             target_idx = -2 if parts[-1].strip().lower() == "no-resolve" else -1
@@ -287,7 +359,7 @@ def fill_empty_proxy_groups(data: Dict[str, Any], new_node_names: List[str]) -> 
 
         has_proxies = len(group["proxies"]) > 0
         has_use = "use" in group and bool(group["use"])
-        has_include_all = group.get("include-all", False) is True
+        has_include_all = any(group.get(key) is True for key in ('include-all', 'include-all-proxies', 'include-all-providers'))
 
         if has_proxies or has_use or has_include_all:
             continue
@@ -315,7 +387,7 @@ def process_yaml_config(
     countries: List[Dict[str, str]],
     special_groups: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """无损处理 Clash/Mihomo YAML：删除旧节点，注入新节点，修复策略组引用。"""
+    """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
     result: Dict[str, Any] = {
         "success": False,
         "output_path": "",
@@ -338,6 +410,7 @@ def process_yaml_config(
         result["backup_path"] = backup_yaml(input_path, backup_dir)
 
         data = load_yaml(input_path)
+        validate_input_structure(data)
 
         if "proxies" not in data or not isinstance(data["proxies"], list):
             data["proxies"] = []
@@ -345,7 +418,8 @@ def process_yaml_config(
             data["proxy-groups"] = []
 
         normalize_group_names(data)
-        merge_duplicate_groups(data)
+        # Normalization can itself introduce a duplicate name.
+        validate_input_structure(data)
 
         old_node_names = [
             p["name"]
@@ -368,15 +442,15 @@ def process_yaml_config(
             if "proxies" not in group or not isinstance(group["proxies"], list):
                 group["proxies"] = []
 
-            cleaned_proxies = []
-            for ref in group["proxies"]:
+            # Remove in-place so retained ruamel sequence comments survive.
+            for index in range(len(group['proxies']) - 1, -1, -1):
+                ref = group['proxies'][index]
                 if ref in old_nodes_set and ref not in group_names and ref not in BUILT_IN_POLICIES:
-                    continue
-                cleaned_proxies.append(ref)
-
-            group["proxies"] = cleaned_proxies
+                    del group['proxies'][index]
 
         data["proxies"] = new_nodes
+        if any(node['name'] in group_names | BUILT_IN_POLICIES for node in new_nodes):
+            raise ConfigValidationError('新节点名称与策略组或内置策略冲突。')
 
         special_groups = special_groups or []
 
@@ -406,6 +480,10 @@ def process_yaml_config(
 
         new_node_names = [node["name"] for node in new_nodes]
         fill_empty_proxy_groups(data, new_node_names)
+        validate_input_structure(data)
+        if {node['name'] for node in new_nodes} & {g['name'] for g in data['proxy-groups']}:
+            raise ConfigValidationError('新节点名称与策略组冲突。')
+        validate_removed_rule_targets(data, old_nodes_set)
 
         validation_errors = validate_proxy_references(data)
         if validation_errors:
@@ -416,17 +494,18 @@ def process_yaml_config(
         result["group_count"] = len(data.get("proxy-groups", []))
         result["rule_count"] = len(data.get("rules", []))
 
-        output_filename = generate_output_filename(output_dir)
-        output_path = os.path.join(output_dir, output_filename)
-
-        save_yaml(data, output_path)
+        output_path = save_new_output(data, output_dir)
 
         result["output_path"] = output_path
         result["success"] = True
 
-    except Exception as e:
+    except ConfigValidationError as e:
+        result['errors'].append(str(e))
+    except YAMLError:
+        result['errors'].append('YAML 格式错误，请检查缩进、引号和重复键。')
+    except Exception:
         result["success"] = False
-        result["errors"].append(f"YAML 核心处理崩溃: {str(e)}")
+        result["errors"].append('YAML 处理失败，请检查配置结构、磁盘空间及目录权限。')
 
     return result
 

@@ -7,12 +7,14 @@ import re
 import sys
 import time
 import uuid
+from datetime import timedelta
 from functools import wraps
 from typing import Any, Dict
 
 from flask import Flask, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 from core import parser
 from core import yaml_utils
@@ -42,7 +44,10 @@ APP_PORT = int(os.environ.get("APP_PORT", 8899))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
 DOWNLOAD_BASE_URL = os.environ.get("DOWNLOAD_BASE_URL", "").rstrip("/")
-DOWNLOAD_URL_SCHEME = os.environ.get("DOWNLOAD_URL_SCHEME", "https").lower()
+DOWNLOAD_URL_SCHEME = os.environ.get("DOWNLOAD_URL_SCHEME", "").lower()
+TRUST_PROXY_HEADERS = os.environ.get("TRUST_PROXY_HEADERS", "false").lower() == "true"
+if DOWNLOAD_URL_SCHEME not in ("", "http", "https"):
+    sys.exit("DOWNLOAD_URL_SCHEME 必须为空、http 或 https。")
 FILE_RETENTION_DAYS = int(os.environ.get("FILE_RETENTION_DAYS", os.environ.get("BACKUP_RETENTION_DAYS", 7)))
 CLEANUP_INTERVAL_DAYS = int(os.environ.get("CLEANUP_INTERVAL_DAYS", os.environ.get("BACKUP_CLEANUP_INTERVAL_DAYS", 7)))
 
@@ -125,8 +130,8 @@ def cleanup_old_files() -> None:
 
         if deleted_count > 0:
             logging.info(f"自动清理过期文件: {deleted_count} 个文件")
-    except Exception as e:
-        logging.warning(f"自动清理文件失败: {str(e)}")
+    except Exception:
+        logging.warning("自动清理文件失败，请检查目录权限。")
 
 
 ensure_directories()
@@ -138,19 +143,24 @@ cleanup_old_files()
 # Flask 应用初始化
 # ==========================================
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+if TRUST_PROXY_HEADERS:
+    # Enable only behind exactly one trusted proxy that overwrites these headers.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = COOKIE_SECURE
-app.config["PREFERRED_URL_SCHEME"] = DOWNLOAD_URL_SCHEME
+app.config["PREFERRED_URL_SCHEME"] = DOWNLOAD_URL_SCHEME or "http"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
 
 if not SECRET_KEY:
     app.secret_key = os.urandom(24)
     logging.warning("未设置 SECRET_KEY 环境变量，已生成临时 Key。生产环境建议设置固定 SECRET_KEY。")
 else:
     app.secret_key = SECRET_KEY
+
+CSRFProtect(app)
 
 
 # ==========================================
@@ -193,8 +203,8 @@ def safe_delete_file(directory: str, filename: str) -> bool:
         try:
             os.remove(target_path)
             return True
-        except Exception as e:
-            logging.error(f"删除文件失败 {safe_filename}: {str(e)}")
+        except Exception:
+            logging.error("删除临时文件失败，请检查目录权限。")
             return False
 
     return False
@@ -302,7 +312,7 @@ def build_download_url(filename: str) -> str:
     path = url_for("short_subscribe_file", slug=slug)
     if DOWNLOAD_BASE_URL:
         return f"{DOWNLOAD_BASE_URL}{path}"
-    return url_for("short_subscribe_file", slug=slug, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
+    return url_for("short_subscribe_file", slug=slug, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme)
 
 
 def build_file_download_url(filename: str) -> str:
@@ -311,7 +321,7 @@ def build_file_download_url(filename: str) -> str:
     path = url_for("download_file", filename=filename, token=token)
     if DOWNLOAD_BASE_URL:
         return f"{DOWNLOAD_BASE_URL}{path}"
-    return url_for("download_file", filename=filename, token=token, _external=True, _scheme=DOWNLOAD_URL_SCHEME)
+    return url_for("download_file", filename=filename, token=token, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme)
 
 
 def get_secret_key_bytes() -> bytes:
@@ -327,6 +337,8 @@ def generate_download_token(filename: str) -> str:
 
 
 def is_valid_download_token(filename: str, token: str) -> bool:
+    if not isinstance(token, str) or not re.fullmatch(r"(?:[0-9a-f]{8}|[0-9a-f]{12}|[0-9a-f]{64})", token):
+        return False
     expected_token = generate_download_token(filename)
     expected_short_token = expected_token[:len(token)]
     return hmac.compare_digest(token, expected_token) or (
@@ -427,6 +439,8 @@ def login():
     context = get_base_context()
 
     if secure_password_equals(password, APP_PASSWORD):
+        session.clear()
+        session.permanent = True
         session["logged_in"] = True
         logging.info(f"登录成功 (IP: {request.remote_addr})")
         return redirect(url_for("index"))
@@ -436,9 +450,9 @@ def login():
     return redirect_to_index(context)
 
 
-@app.route("/logout", methods=["GET", "POST"])
+@app.route("/logout", methods=["POST"])
 def logout():
-    session.pop("logged_in", None)
+    session.clear()
     return redirect(url_for("index"))
 
 
@@ -466,13 +480,13 @@ def change_password():
 
     try:
         write_env_password(new_password)
-    except Exception as e:
-        logging.error(f"更新密码失败: {str(e)}")
-        context["error_messages"].append(f"密码保存失败: {str(e)}")
+    except Exception:
+        logging.error("更新密码失败，请检查配置文件权限。")
+        context["error_messages"].append("密码保存失败，请检查配置文件权限。")
         return redirect_to_index(context)
 
     APP_PASSWORD = new_password
-    session.pop("logged_in", None)
+    session.clear()
     logging.info(f"管理密码已更新 (IP: {request.remote_addr})")
     context["success_message"] = "管理密码已更新，请使用新密码重新登录。"
     return redirect_to_index(context)
@@ -515,10 +529,11 @@ def process_config():
         upload_path = os.path.join(DIR_UPLOADS, upload_filename)
 
         try:
-            file.save(upload_path)
-            os.chmod(upload_path, 0o600)
-        except Exception as e:
-            context["error_messages"].append(f"文件保存失败: {str(e)}")
+            fd = os.open(upload_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'wb') as target:
+                file.save(target)
+        except Exception:
+            context["error_messages"].append("文件保存失败，请检查磁盘空间和目录权限。")
             return redirect_to_index(context)
 
         context["upload_filename"] = upload_filename
@@ -560,7 +575,6 @@ def process_config():
 
     logging.info(
         f"成功处理配置 | "
-        f"原始文件: {upload_filename} | "
         f"输出文件: {output_filename} | "
         f"清洗旧节点: {yaml_result['old_node_count']} 个 | "
         f"注入新节点: {yaml_result['new_node_count']} 个"
@@ -605,7 +619,7 @@ def delete_temp():
 
     if deleted_count > 0:
         context["success_message"] = f"已成功删除 {deleted_count} 个服务器临时文件。"
-        logging.info(f"清理临时文件: {upload_filename}, {output_filename}")
+        logging.info("手动清理临时文件: %d 个", deleted_count)
     else:
         context["error_messages"].append("未找到可删除的文件或文件已被清理。")
 
@@ -617,6 +631,13 @@ def request_entity_too_large(error):
     context = get_base_context()
     context["error_messages"].append("上传文件过大，最大支持 50MB。")
     return redirect_to_index(context)
+
+
+@app.errorhandler(CSRFError)
+def csrf_failed(error):
+    context = get_base_context()
+    context['error_messages'].append('表单已过期或安全令牌无效，请刷新页面后重试。')
+    return render_template('index.html', **context), 400
 
 
 if __name__ == "__main__":

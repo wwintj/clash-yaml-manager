@@ -10,6 +10,14 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+# Reinstallation used to stop the service and rotate secrets before confirmation.
+if [[ -e "${INSTALL_DIR}/app.py" || -e "${INSTALL_DIR}/.env" ]]; then
+  echo "错误：检测到已有安装，请从独立的新版源码目录运行 update.sh；不会覆盖现有配置。"
+  exit 1
+fi
+
+umask 077
+
 echo "=========================================================="
 echo "开始安装 clash-yaml-manager"
 echo "=========================================================="
@@ -48,7 +56,7 @@ if [[ "${CURRENT_DIR}" != "${INSTALL_DIR}" ]]; then
   for item in "${CURRENT_DIR}"/*; do
     name="$(basename "${item}")"
     case "${name}" in
-      venv|uploads|outputs|backups|logs|.git|__pycache__)
+      .env|.venv|venv|uploads|outputs|backups|logs|.git|.last_cleanup|.pytest_cache|__pycache__)
         continue
         ;;
       *)
@@ -127,7 +135,8 @@ APP_PASSWORD_B64=${APP_PASSWORD_B64}
 APP_PORT=${APP_PORT}
 SECRET_KEY=${SECRET_KEY}
 COOKIE_SECURE=false
-DOWNLOAD_URL_SCHEME=https
+DOWNLOAD_URL_SCHEME=
+TRUST_PROXY_HEADERS=false
 DOWNLOAD_BASE_URL=
 FILE_RETENTION_DAYS=7
 CLEANUP_INTERVAL_DAYS=7
@@ -143,6 +152,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
+UMask=0077
 WorkingDirectory=${INSTALL_DIR}
 EnvironmentFile=${ENV_FILE}
 ExecStart=${INSTALL_DIR}/venv/bin/gunicorn -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
@@ -156,6 +166,19 @@ EOF
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
+
+healthy=false
+for attempt in {1..15}; do
+  if systemctl is-active --quiet "${SERVICE_NAME}" && curl -fsS --max-time 2 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
+    healthy=true
+    break
+  fi
+  sleep 1
+done
+if [[ "${healthy}" != true ]]; then
+  echo "错误：安装后健康检查失败。请执行 systemctl status ${SERVICE_NAME} 和 journalctl -u ${SERVICE_NAME}。"
+  exit 1
+fi
 
 SERVER_IP="服务器IP"
 if command -v curl >/dev/null 2>&1; then
