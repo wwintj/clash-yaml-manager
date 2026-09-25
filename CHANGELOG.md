@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased - Regression baseline and scoped P0 fixes
+## Unreleased - Phase 2 security and runtime hardening
+
+- Store Werkzeug password hashes in atomic, flock-protected shared auth state. Migrate legacy hash/Base64/plain credentials without runtime `.env` writes; password changes propagate across workers and revoke existing sessions on their next request.
+- Add process-shared IP login limits, expiry/pruning, HTTP 429 and Retry-After; retain opt-in trusted proxy handling.
+- Run systemd under a dedicated, verified `clashyaml` account with root-owned application code, private service-owned runtime directories, UMask/NoNewPrivileges/PrivateTmp. Preserve auth state during upgrades and handle account/data lifecycle on uninstall.
+- Add 128-bit random output identities and V2 subscription HMACs. Retain legacy links only for old filenames and fixed-format full download tokens; deleted URLs cannot follow future generated output through sequence reuse.
+- Add migration failure, multi-worker, session, deployment and subscription regression tests. Document migration/rollback and remaining real-Ubuntu validation in `docs/PHASE2.md`.
+
+## Phase 1 checkpoint - Regression baseline and scoped P0 fixes
 
 - Added isolated pytest coverage for parsers, YAML round trips, Flask flows, signed/short downloads, concurrent output and deployment script failure paths.
 - Reject invalid ports, empty node names, malformed YAML structures and duplicate policy groups instead of silently discarding configuration. Preserve singly encoded VLESS WS paths and repair MATCH flag references.
@@ -9,7 +17,7 @@
 - Add Flask-WTF CSRF protection, POST-only logout, session reset on login/logout/password change and a 12-hour login session lifetime.
 - Make ProxyFix opt-in with `TRUST_PROXY_HEADERS`; default new download URLs to the request scheme, preserving `DOWNLOAD_BASE_URL` and explicit scheme overrides. Reject malformed download tokens without a server error.
 - Refuse destructive reinstall/in-place update, exclude `.env` and local environments from code copying, use unique remote staging directories, extend upgrade preflight/backups and report health-check failures with rollback guidance.
-- Keep the default YAML and historical templates unchanged. Password hashes, multi-worker credential consistency, login rate limits and dedicated system user migration remain next-stage work; this release is not a complete security migration.
+- Keep the default YAML and historical templates unchanged. At this checkpoint, password hashes, multi-worker credential consistency, login rate limits and dedicated system user migration were deferred to Phase 2 above.
 
 ## v1.0.0 - Default YAML and Update Flow
 
