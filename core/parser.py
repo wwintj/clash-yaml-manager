@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import re
 import urllib.parse
@@ -7,19 +8,7 @@ from typing import Any, Dict, Tuple
 # ==========================================
 # 国家代码与策略组映射字典
 # ==========================================
-COUNTRY_MAPPING: Dict[str, Dict[str, str]] = {
-    "US": {"emoji": "🇺🇸", "group": "🇺🇸 美国节点", "label": "美国"},
-    "HK": {"emoji": "🇭🇰", "group": "🇭🇰 香港节点", "label": "香港"},
-    "TW": {"emoji": "🇹🇼", "group": "🇹🇼 台湾节点", "label": "台湾"},
-    "JP": {"emoji": "🇯🇵", "group": "🇯🇵 日本节点", "label": "日本"},
-    "KR": {"emoji": "🇰🇷", "group": "🇰🇷 韩国节点", "label": "韩国"},
-    "SG": {"emoji": "🇸🇬", "group": "🇸🇬 狮城节点", "label": "狮城"},
-    "KP": {"emoji": "🇰🇵", "group": "🇰🇵 朝鲜节点", "label": "朝鲜"},
-    "MY": {"emoji": "🇲🇾", "group": "🇲🇾 马来西亚节点", "label": "马来西亚"},
-    "DE": {"emoji": "🇩🇪", "group": "🇩🇪 德国节点", "label": "德国"},
-    "GB": {"emoji": "🇬🇧", "group": "🇬🇧 英国节点", "label": "英国"},
-    "CA": {"emoji": "🇨🇦", "group": "🇨🇦 加拿大节点", "label": "加拿大"},
-}
+from core.countries import COUNTRY_MAPPING, detect_country
 
 
 # ==========================================
@@ -253,83 +242,110 @@ def parse_vless_link(link: str, display_name: str) -> Dict[str, Any]:
 # ==========================================
 # 批量处理层
 # ==========================================
-def parse_node_line(line: str, line_number: int) -> Tuple[str, Dict[str, Any], Dict[str, str]]:
-    """解析单行批量数据，返回：最终节点名、节点 dict、国家策略信息。"""
-    parts = line.split("|", 2)
-    if len(parts) != 3:
-        raise ValueError("缺少必填分隔符。需要 '国家代码|节点名称|节点链接'")
+def node_key(line: str, occurrence: int = 0) -> str:
+    # Key the complete input, not its line number: moving rows preserves overrides;
+    # changing the URI invalidates them. Never return the URI itself to preview.
+    return hashlib.sha256(line.strip().encode()).hexdigest() + ':' + str(occurrence)
 
-    raw_code, raw_name, link = [p.strip() for p in parts]
-    code = normalize_country_code(raw_code)
 
-    if code not in COUNTRY_MAPPING:
-        supported = ", ".join(COUNTRY_MAPPING.keys())
-        raise ValueError(f"不支持的国家代码。支持列表: {supported}")
+def split_node_input(line: str, line_num: int):
+    parts = [part.strip() for part in line.split('|', 2)]
+    if len(parts) == 3:
+        code, name, link = parts
+        code = normalize_country_code(code)
+        if code not in COUNTRY_MAPPING:
+            raise ValueError('不支持的国家代码。请使用 ISO alpha-2 或 UNKNOWN。')
+        if not name:
+            raise ValueError('节点名称不能为空。')
+        return code, name, link, 'Manual'
+    if len(parts) == 2:
+        name, link = parts
+        if not name:
+            raise ValueError('节点名称不能为空。')
+    else:
+        link = parts[0]
+        name = ''
+        try:
+            if link.startswith('vless://'):
+                name = urllib.parse.unquote(urllib.parse.urlsplit(link).fragment)
+            elif link.startswith('vmess://'):
+                payload, _, fragment = link[8:].partition('#')
+                payload += '=' * ((4 - len(payload) % 4) % 4)
+                obj = json.loads(base64.b64decode(payload, altchars=b'-_', validate=True).decode())
+                name = urllib.parse.unquote(fragment) or obj.get('ps', '')
+        except Exception:
+            raise ValueError('节点解析失败，请检查链接格式、必填字段及端口范围。') from None
+        if not isinstance(name, str):
+            name = ''
+        name = name.strip() or f'Node-{line_num:02d}'
+    code = detect_country(name)
+    return code, name, link, 'Unknown' if code == 'UNKNOWN' else 'Name Detection'
 
-    if not raw_name:
-        raise ValueError("节点名称不能为空。")
 
-    if not (link.startswith("vmess://") or link.startswith("vless://")):
-        raise ValueError("协议不支持，仅接受 vmess:// 或 vless://。")
-
+def parse_node_line(line: str, line_num: int = 1, override=None) -> Tuple[str, Dict[str, Any], Dict[str, str]]:
+    code, raw_name, link, source = split_node_input(line, line_num)
+    if override:
+        if 'name' in override:
+            raw_name = override['name'].strip()
+            if not raw_name:
+                raise ValueError('节点名称不能为空。')
+            if source != 'Manual':
+                code = detect_country(raw_name)
+                source = 'Unknown' if code == 'UNKNOWN' else 'Name Detection'
+        if 'country' in override:
+            code = normalize_country_code(override['country'])
+            if code not in COUNTRY_MAPPING:
+                raise ValueError('不支持的国家代码。')
+            source = 'Manual'
+    if not (link.startswith('vmess://') or link.startswith('vless://')):
+        raise ValueError('协议不支持，仅接受 vmess:// 或 vless://。')
     display_name = build_display_name(code, raw_name)
-
     try:
-        if link.startswith("vmess://"):
-            node = parse_vmess_link(link, display_name)
-        else:
-            node = parse_vless_link(link, display_name)
+        node = (parse_vmess_link(link.split('#', 1)[0], display_name) if link.startswith('vmess://')
+                else parse_vless_link(link, display_name))
     except Exception:
-        # Library exception text can contain URL credentials or raw JSON.
-        raise ValueError("节点解析失败，请检查链接格式、必填字段及端口范围。") from None
-
-    country_info = {
-        "code": code,
-        "group": COUNTRY_MAPPING[code]["group"],
-    }
-
-    return display_name, node, country_info
+        raise ValueError('节点解析失败，请检查链接格式、必填字段及端口范围。') from None
+    return display_name, node, dict(code=code, group=COUNTRY_MAPPING[code]['group'],
+                                    source=source, raw_name=raw_name)
 
 
-def parse_batch_nodes(text: str) -> Dict[str, Any]:
-    """解析批量节点文本。"""
-    result: Dict[str, Any] = {
-        "nodes": [],
-        "node_names": [],
-        "countries": [],
-        "errors": [],
-    }
+def preview_name(name: str) -> str:
+    """Do not echo a credential even if it was embedded in a user-provided remark."""
+    name = re.sub(r'(?i)(?:vmess|vless)://\S+', '[link hidden]', name)
+    return re.sub(r'(?i)\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b', '[UUID hidden]', name)
 
-    seen_names = set()
 
+def parse_batch_nodes(text: str, overrides=None) -> Dict[str, Any]:
+    result = dict(nodes=[], node_names=[], countries=[], errors=[], preview=[])
+    seen_names, occurrences = set(), {}
+    overrides = overrides or {}
     for idx, line in enumerate(text.splitlines(), 1):
         line = line.strip()
         if not line:
             continue
-
+        occurrence = occurrences.get(line, 0)
+        occurrences[line] = occurrence + 1
+        key = node_key(line, occurrence)
+        record = dict(key=key, line=idx, name='', country='UNKNOWN', protocol='—',
+                      status='Error', source='Unknown', message='')
         try:
-            display_name, node, country_info = parse_node_line(line, idx)
-
+            display_name, node, info = parse_node_line(line, idx, overrides.get(key))
+            record.update(name=preview_name(info['raw_name']), country=info['code'], protocol=node['type'].upper(), source=info['source'])
             if display_name in seen_names:
-                raise ValueError("节点名称重复，请修改名称以防止冲突。")
-
+                raise ValueError('节点名称重复，请修改名称以防止冲突。')
             seen_names.add(display_name)
-
-            result["nodes"].append(node)
-            result["node_names"].append(display_name)
-            result["countries"].append(
-                {
-                    "node_name": display_name,
-                    "code": country_info["code"],
-                    "group": country_info["group"],
-                }
-            )
-
-        except ValueError as ve:
-            result["errors"].append(f"第 {idx} 行错误：{str(ve)}")
-        except Exception:
-            result["errors"].append(f"第 {idx} 行解析失败，请检查节点格式。")
-
+            result['nodes'].append(node)
+            result['node_names'].append(display_name)
+            result['countries'].append(dict(node_name=display_name, code=info['code'], group=info['group']))
+            record['status'] = 'Warning' if info['code'] == 'UNKNOWN' else 'Ready'
+            if record['status'] == 'Warning':
+                record['message'] = 'Country Unknown — choose a country or generate as 其他节点.'
+        except (ValueError, TypeError, AttributeError) as error:
+            # Only fixed parser messages may be shown. Invalid override types are rejected.
+            message = str(error) if isinstance(error, ValueError) else '手工修改格式无效。'
+            record['message'] = message
+            result['errors'].append(f'第 {idx} 行错误：{message}')
+        result['preview'].append(record)
     return result
 
 

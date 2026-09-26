@@ -1,13 +1,14 @@
+import json
 import logging
 import os
 import sys
 import time
 import uuid
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 from functools import wraps
 from typing import Any, Dict
 
-from flask import Flask, redirect, render_template, request, send_from_directory, session, url_for
+from flask import jsonify, Flask, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, CSRFError
@@ -15,7 +16,9 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from core import parser
 from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
-from core.state import StateError
+from core.state import StateError, file_lock, atomic_write
+from core.temporary_links import TemporaryLinks
+from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
 from core.version import read_version
 from core.subscriptions import SubscriptionSigner, safe_filename
@@ -31,8 +34,11 @@ DOWNLOAD_URL_SCHEME = os.environ.get("DOWNLOAD_URL_SCHEME", "").lower()
 TRUST_PROXY_HEADERS = os.environ.get("TRUST_PROXY_HEADERS", "false").lower() == "true"
 if DOWNLOAD_URL_SCHEME not in ("", "http", "https"):
     sys.exit("DOWNLOAD_URL_SCHEME 必须为空、http 或 https。")
-FILE_RETENTION_DAYS = int(os.environ.get("FILE_RETENTION_DAYS", os.environ.get("BACKUP_RETENTION_DAYS", 7)))
-CLEANUP_INTERVAL_DAYS = int(os.environ.get("CLEANUP_INTERVAL_DAYS", os.environ.get("BACKUP_CLEANUP_INTERVAL_DAYS", 7)))
+UPLOAD_RETENTION_SECONDS = seconds_from_env(os.environ, 'UPLOAD_RETENTION_HOURS', 1, 'FILE_RETENTION_DAYS')
+OUTPUT_RETENTION_SECONDS = seconds_from_env(os.environ, 'OUTPUT_RETENTION_HOURS', 24, 'FILE_RETENTION_DAYS')
+CLEANUP_INTERVAL_SECONDS = seconds_from_env(os.environ, 'CLEANUP_INTERVAL_HOURS', 1, 'CLEANUP_INTERVAL_DAYS')
+BACKUP_RETENTION_SECONDS = seconds_from_env(os.environ, 'BACKUP_RETENTION_HOURS', 168, 'BACKUP_RETENTION_DAYS')
+
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 APP_VERSION = read_version(os.path.join(BASE_DIR, "VERSION"))
@@ -86,39 +92,40 @@ def setup_logging() -> None:
 
 
 def cleanup_old_files() -> None:
-    """每隔指定天数清理一次过期上传、输出和备份文件。"""
+    """Throttled process/request cleanup; state and logs are never scanned."""
     now = time.time()
-    cleanup_interval = max(CLEANUP_INTERVAL_DAYS, 1) * 86400
-    retention_seconds = max(FILE_RETENTION_DAYS, 1) * 86400
-
     try:
-        if os.path.exists(CLEANUP_MARKER):
-            last_cleanup = os.path.getmtime(CLEANUP_MARKER)
-            if now - last_cleanup < cleanup_interval:
+        # Fast path avoids directory scans and locks on ordinary requests.
+        if os.path.exists(CLEANUP_MARKER) and now - os.path.getmtime(CLEANUP_MARKER) < CLEANUP_INTERVAL_SECONDS:
+            return
+        with file_lock(os.path.join(DIR_STATE, 'cleanup.lock')):
+            if os.path.exists(CLEANUP_MARKER) and now - os.path.getmtime(CLEANUP_MARKER) < CLEANUP_INTERVAL_SECONDS:
                 return
-
-        deleted_count = 0
-        for directory in [DIR_UPLOADS, DIR_OUTPUTS, DIR_BACKUPS]:
-            for filename in os.listdir(directory):
-                file_path = os.path.join(directory, filename)
-                if not os.path.isfile(file_path):
-                    continue
-
-                if now - os.path.getmtime(file_path) >= retention_seconds:
-                    os.remove(file_path)
-                    deleted_count += 1
-
-        with open(CLEANUP_MARKER, "w", encoding="utf-8") as f:
-            f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
-        os.chmod(CLEANUP_MARKER, 0o600)
-
-        if deleted_count > 0:
-            logging.info(f"自动清理过期文件: {deleted_count} 个文件")
-    except Exception:
-        logging.warning("自动清理文件失败，请检查目录权限。")
+            deleted_count = 0
+            for directory, retention in ((DIR_UPLOADS, UPLOAD_RETENTION_SECONDS),
+                                         (DIR_OUTPUTS, OUTPUT_RETENTION_SECONDS),
+                                         (DIR_BACKUPS, BACKUP_RETENTION_SECONDS)):
+                for entry in os.scandir(directory):
+                    if not entry.is_file(follow_symlinks=False):
+                        continue
+                    try:
+                        if now - entry.stat(follow_symlinks=False).st_mtime >= retention:
+                            os.remove(entry.path)
+                            if directory == DIR_OUTPUTS:
+                                temporary_links.revoke_file(entry.name)
+                            deleted_count += 1
+                    except FileNotFoundError:
+                        continue  # Concurrent explicit deletion is harmless.
+            temporary_links.prune(now)
+            atomic_write(CLEANUP_MARKER, str(now).encode())
+            if deleted_count:
+                logging.info('自动清理过期文件: %d 个文件', deleted_count)
+    except (OSError, StateError):
+        logging.warning('自动清理文件失败，请检查目录权限或共享状态。')
 
 
 ensure_directories()
+temporary_links = TemporaryLinks(DIR_STATE)
 auth_store = AuthStore(DIR_STATE)
 login_limiter = LoginLimiter(
     DIR_STATE,
@@ -141,6 +148,7 @@ cleanup_old_files()
 # Flask 应用初始化
 # ==========================================
 app = Flask(__name__)
+app.jinja_env.policies["json.dumps_kwargs"] = {"sort_keys": False}
 if TRUST_PROXY_HEADERS:
     # Enable only behind exactly one trusted proxy that overwrites these headers.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
@@ -160,6 +168,7 @@ else:
 
 @app.before_request
 def invalidate_old_sessions():
+    cleanup_old_files()
     if session.get('logged_in'):
         state = auth_store.read()
         if (session.get('auth_version') != state['auth_version'] or
@@ -209,6 +218,8 @@ def safe_delete_file(directory: str, filename: str) -> bool:
     if os.path.exists(target_path) and os.path.isfile(target_path):
         try:
             os.remove(target_path)
+            if directory == DIR_OUTPUTS:
+                temporary_links.revoke_file(safe_filename)
             return True
         except Exception:
             logging.error("删除临时文件失败，请检查目录权限。")
@@ -416,6 +427,45 @@ def change_password():
     return redirect_to_index(context)
 
 
+def parse_form_nodes():
+    """Shared input path for Preview and Generate; never trust a cached preview."""
+    text = request.form.get('batch_nodes', '').strip()
+    try:
+        rows = json.loads(request.form.get('aux_nodes', '[]'))
+        overrides = json.loads(request.form.get('node_overrides', '{}'))
+        if not isinstance(rows, list) or not isinstance(overrides, dict):
+            raise ValueError
+        for override in overrides.values():
+            if not isinstance(override, dict) or any(k not in ('country', 'name') or not isinstance(v, str)
+                                                    for k, v in override.items()):
+                raise ValueError
+        for row in rows:
+            if not isinstance(row, dict) or any(not isinstance(row.get(k), str) for k in ('country', 'name', 'link')):
+                raise ValueError
+            country, name, link = (row[k].strip() for k in ('country', 'name', 'link'))
+            if not any((country, name, link)):
+                continue
+            if not link or not name or any(c in country + name + link for c in ('\n', '\r')) or '|' in country + name:
+                raise ValueError
+            text += '\n' + (country + '|' if country else '') + name + '|' + link
+    except (ValueError, TypeError):
+        raise ValueError('辅助节点或手工修改格式无效，请检查名称、国家及链接。') from None
+    country, name, link = (request.form.get('single_' + k, '').strip() for k in ('country', 'name', 'link'))
+    if country and name and link:
+        text += f'\n{country}|{name}|{link}'
+    return parser.parse_batch_nodes(text, overrides)
+
+
+@app.route('/parse-nodes', methods=['POST'])
+@login_required
+def parse_nodes():
+    try:
+        result = parse_form_nodes()
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+    return jsonify(nodes=result['preview'], errors=result['errors'])
+
+
 @app.route("/process", methods=["POST"])
 @login_required
 def process_config():
@@ -433,17 +483,16 @@ def process_config():
         context["error_messages"].append("不支持的文件格式，仅支持 .yaml 或 .yml 文件。")
         return redirect_to_index(context)
 
-    batch_text = request.form.get("batch_nodes", "").strip()
-    single_country = request.form.get("single_country", "").strip()
-    single_name = request.form.get("single_name", "").strip()
-    single_link = request.form.get("single_link", "").strip()
-
-    if single_country and single_name and single_link:
-        single_line = f"{single_country}|{single_name}|{single_link}"
-        batch_text = f"{batch_text}\n{single_line}" if batch_text else single_line
-
-    if not batch_text.strip():
-        context["error_messages"].append("没有提供任何有效的新节点信息。")
+    try:
+        parsed_result = parse_form_nodes()
+    except ValueError as error:
+        context['error_messages'].append(str(error))
+        return redirect_to_index(context)
+    if parsed_result['errors']:
+        context['error_messages'].extend(parsed_result['errors'])
+        return redirect_to_index(context)
+    if not parsed_result['nodes']:
+        context['error_messages'].append('没有提供任何有效的新节点信息。')
         return redirect_to_index(context)
 
     if use_default_yaml:
@@ -466,12 +515,6 @@ def process_config():
 
         context["upload_filename"] = upload_filename
 
-    parsed_result = parser.parse_batch_nodes(batch_text)
-
-    if parsed_result["errors"]:
-        context["error_messages"].extend(parsed_result["errors"])
-        return redirect_to_index(context)
-
     raw_special_groups = request.form.getlist("special_groups")
     special_groups = [group for group in raw_special_groups if group in DEFAULT_SPECIAL_GROUPS]
 
@@ -492,9 +535,13 @@ def process_config():
 
     context["success_message"] = "配置已成功更新，您可以下载或清理临时文件。"
     context["output_filename"] = output_filename
-    context["download_url"] = build_download_url(output_filename)
-    context["file_download_url"] = build_file_download_url(output_filename)
+    short_id, metadata = temporary_links.create(output_filename, OUTPUT_RETENTION_SECONDS)
+    path = url_for('temporary_subscribe', short_id=short_id)
+    context['download_url'] = (DOWNLOAD_BASE_URL + path if DOWNLOAD_BASE_URL else
+        url_for('temporary_subscribe', short_id=short_id, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme))
+    context['file_download_url'] = context['download_url'] + '?download=1'
     context["result"] = {
+        "expires_at": datetime.fromtimestamp(metadata["expires_at"], timezone.utc).isoformat(timespec="minutes"),
         "old_node_count": yaml_result["old_node_count"],
         "new_node_count": yaml_result["new_node_count"],
         "group_count": yaml_result["group_count"],
@@ -509,6 +556,18 @@ def process_config():
     )
 
     return redirect_to_index(context, anchor="generate-result")
+
+
+@app.route('/t/<short_id>', methods=['GET'])
+def temporary_subscribe(short_id):
+    entry = temporary_links.resolve(short_id)
+    if entry is None:
+        return 'Temporary YAML not found or expired.', 404, {'Cache-Control': 'no-store'}
+    response = send_yaml_output(entry['filename'], as_attachment=request.args.get('download') == '1')
+    if not isinstance(response, tuple):
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 @app.route("/download/<path:filename>", methods=["GET"])

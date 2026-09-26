@@ -48,7 +48,7 @@
         policies: policies.filter(p => p.checked).map(p => p.value), overrides: root.nodeOverrides};
     }
     function save() {
-      clearTimeout(timer);
+      clearTimeout(timer); timer = null;
       try { store(localStorage, snapshot()); status.textContent = 'Draft saved'; return true; }
       catch (_) { status.textContent = 'Draft could not be saved — browser storage unavailable or full.'; return false; }
     }
@@ -82,7 +82,7 @@
       if (event.target.closest('#add-node-row, .remove-node-row')) setTimeout(save, 0);
       if (!event.target.closest('.clear-draft')) return;
       if (!confirm('Clear the saved draft and all node inputs?')) return;
-      clearTimeout(timer);
+      clearTimeout(timer); timer = null;
       try { clear(localStorage); } catch (_) { /* Form reset still works. */ }
       form.reset(); policies.forEach(p => { p.checked = false; });
       rows.replaceChildren(template.cloneNode(true)); root.nodeOverrides = {};

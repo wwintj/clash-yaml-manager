@@ -1,0 +1,1994 @@
+[
+  {
+    "code": "AW",
+    "english": "Aruba",
+    "chinese": "阿鲁巴",
+    "aliases": [
+      "ABW"
+    ]
+  },
+  {
+    "code": "AF",
+    "english": "Afghanistan",
+    "chinese": "阿富汗",
+    "aliases": [
+      "AFG"
+    ]
+  },
+  {
+    "code": "AO",
+    "english": "Angola",
+    "chinese": "安哥拉",
+    "aliases": [
+      "AGO"
+    ]
+  },
+  {
+    "code": "AI",
+    "english": "Anguilla",
+    "chinese": "安圭拉",
+    "aliases": [
+      "AIA"
+    ]
+  },
+  {
+    "code": "AX",
+    "english": "Åland Islands",
+    "chinese": "奥兰群岛",
+    "aliases": [
+      "ALA"
+    ]
+  },
+  {
+    "code": "AL",
+    "english": "Albania",
+    "chinese": "阿尔巴尼亚",
+    "aliases": [
+      "ALB"
+    ]
+  },
+  {
+    "code": "AD",
+    "english": "Andorra",
+    "chinese": "安道尔",
+    "aliases": [
+      "AND"
+    ]
+  },
+  {
+    "code": "AE",
+    "english": "United Arab Emirates",
+    "chinese": "阿拉伯联合酋长国",
+    "aliases": [
+      "ARE"
+    ]
+  },
+  {
+    "code": "AR",
+    "english": "Argentina",
+    "chinese": "阿根廷",
+    "aliases": [
+      "ARG"
+    ]
+  },
+  {
+    "code": "AM",
+    "english": "Armenia",
+    "chinese": "亚美尼亚",
+    "aliases": [
+      "ARM"
+    ]
+  },
+  {
+    "code": "AS",
+    "english": "American Samoa",
+    "chinese": "美属萨摩亚",
+    "aliases": [
+      "ASM"
+    ]
+  },
+  {
+    "code": "AQ",
+    "english": "Antarctica",
+    "chinese": "南极洲",
+    "aliases": [
+      "ATA"
+    ]
+  },
+  {
+    "code": "TF",
+    "english": "French Southern Territories",
+    "chinese": "法属南部领地",
+    "aliases": [
+      "ATF"
+    ]
+  },
+  {
+    "code": "AG",
+    "english": "Antigua & Barbuda",
+    "chinese": "安提瓜和巴布达",
+    "aliases": [
+      "ATG"
+    ]
+  },
+  {
+    "code": "AU",
+    "english": "Australia",
+    "chinese": "澳大利亚",
+    "aliases": [
+      "AUS"
+    ]
+  },
+  {
+    "code": "AT",
+    "english": "Austria",
+    "chinese": "奥地利",
+    "aliases": [
+      "AUT"
+    ]
+  },
+  {
+    "code": "AZ",
+    "english": "Azerbaijan",
+    "chinese": "阿塞拜疆",
+    "aliases": [
+      "AZE"
+    ]
+  },
+  {
+    "code": "BI",
+    "english": "Burundi",
+    "chinese": "布隆迪",
+    "aliases": [
+      "BDI"
+    ]
+  },
+  {
+    "code": "BE",
+    "english": "Belgium",
+    "chinese": "比利时",
+    "aliases": [
+      "BEL"
+    ]
+  },
+  {
+    "code": "BJ",
+    "english": "Benin",
+    "chinese": "贝宁",
+    "aliases": [
+      "BEN"
+    ]
+  },
+  {
+    "code": "BQ",
+    "english": "Caribbean Netherlands",
+    "chinese": "荷属加勒比区",
+    "aliases": [
+      "BES"
+    ]
+  },
+  {
+    "code": "BF",
+    "english": "Burkina Faso",
+    "chinese": "布基纳法索",
+    "aliases": [
+      "BFA"
+    ]
+  },
+  {
+    "code": "BD",
+    "english": "Bangladesh",
+    "chinese": "孟加拉国",
+    "aliases": [
+      "BGD"
+    ]
+  },
+  {
+    "code": "BG",
+    "english": "Bulgaria",
+    "chinese": "保加利亚",
+    "aliases": [
+      "BGR"
+    ]
+  },
+  {
+    "code": "BH",
+    "english": "Bahrain",
+    "chinese": "巴林",
+    "aliases": [
+      "BHR"
+    ]
+  },
+  {
+    "code": "BS",
+    "english": "Bahamas",
+    "chinese": "巴哈马",
+    "aliases": [
+      "BHS"
+    ]
+  },
+  {
+    "code": "BA",
+    "english": "Bosnia & Herzegovina",
+    "chinese": "波斯尼亚和黑塞哥维那",
+    "aliases": [
+      "BIH"
+    ]
+  },
+  {
+    "code": "BL",
+    "english": "St. Barthélemy",
+    "chinese": "圣巴泰勒米",
+    "aliases": [
+      "BLM"
+    ]
+  },
+  {
+    "code": "BY",
+    "english": "Belarus",
+    "chinese": "白俄罗斯",
+    "aliases": [
+      "BLR"
+    ]
+  },
+  {
+    "code": "BZ",
+    "english": "Belize",
+    "chinese": "伯利兹",
+    "aliases": [
+      "BLZ"
+    ]
+  },
+  {
+    "code": "BM",
+    "english": "Bermuda",
+    "chinese": "百慕大",
+    "aliases": [
+      "BMU"
+    ]
+  },
+  {
+    "code": "BO",
+    "english": "Bolivia",
+    "chinese": "玻利维亚",
+    "aliases": [
+      "BOL"
+    ]
+  },
+  {
+    "code": "BR",
+    "english": "Brazil",
+    "chinese": "巴西",
+    "aliases": [
+      "BRA"
+    ]
+  },
+  {
+    "code": "BB",
+    "english": "Barbados",
+    "chinese": "巴巴多斯",
+    "aliases": [
+      "BRB"
+    ]
+  },
+  {
+    "code": "BN",
+    "english": "Brunei",
+    "chinese": "文莱",
+    "aliases": [
+      "BRN"
+    ]
+  },
+  {
+    "code": "BT",
+    "english": "Bhutan",
+    "chinese": "不丹",
+    "aliases": [
+      "BTN"
+    ]
+  },
+  {
+    "code": "BV",
+    "english": "Bouvet Island",
+    "chinese": "布韦岛",
+    "aliases": [
+      "BVT"
+    ]
+  },
+  {
+    "code": "BW",
+    "english": "Botswana",
+    "chinese": "博茨瓦纳",
+    "aliases": [
+      "BWA"
+    ]
+  },
+  {
+    "code": "CF",
+    "english": "Central African Republic",
+    "chinese": "中非共和国",
+    "aliases": [
+      "CAF"
+    ]
+  },
+  {
+    "code": "CA",
+    "english": "Canada",
+    "chinese": "加拿大",
+    "aliases": [
+      "CAN"
+    ]
+  },
+  {
+    "code": "CC",
+    "english": "Cocos (Keeling) Islands",
+    "chinese": "科科斯（基林）群岛",
+    "aliases": [
+      "CCK"
+    ]
+  },
+  {
+    "code": "CH",
+    "english": "Switzerland",
+    "chinese": "瑞士",
+    "aliases": [
+      "CHE"
+    ]
+  },
+  {
+    "code": "CL",
+    "english": "Chile",
+    "chinese": "智利",
+    "aliases": [
+      "CHL"
+    ]
+  },
+  {
+    "code": "CN",
+    "english": "China",
+    "chinese": "中国",
+    "aliases": [
+      "CHN"
+    ]
+  },
+  {
+    "code": "CI",
+    "english": "Côte d’Ivoire",
+    "chinese": "科特迪瓦",
+    "aliases": [
+      "CIV"
+    ]
+  },
+  {
+    "code": "CM",
+    "english": "Cameroon",
+    "chinese": "喀麦隆",
+    "aliases": [
+      "CMR"
+    ]
+  },
+  {
+    "code": "CD",
+    "english": "Congo - Kinshasa",
+    "chinese": "刚果（金）",
+    "aliases": [
+      "COD"
+    ]
+  },
+  {
+    "code": "CG",
+    "english": "Congo - Brazzaville",
+    "chinese": "刚果（布）",
+    "aliases": [
+      "COG"
+    ]
+  },
+  {
+    "code": "CK",
+    "english": "Cook Islands",
+    "chinese": "库克群岛",
+    "aliases": [
+      "COK"
+    ]
+  },
+  {
+    "code": "CO",
+    "english": "Colombia",
+    "chinese": "哥伦比亚",
+    "aliases": [
+      "COL"
+    ]
+  },
+  {
+    "code": "KM",
+    "english": "Comoros",
+    "chinese": "科摩罗",
+    "aliases": [
+      "COM"
+    ]
+  },
+  {
+    "code": "CV",
+    "english": "Cape Verde",
+    "chinese": "佛得角",
+    "aliases": [
+      "CPV"
+    ]
+  },
+  {
+    "code": "CR",
+    "english": "Costa Rica",
+    "chinese": "哥斯达黎加",
+    "aliases": [
+      "CRI"
+    ]
+  },
+  {
+    "code": "CU",
+    "english": "Cuba",
+    "chinese": "古巴",
+    "aliases": [
+      "CUB"
+    ]
+  },
+  {
+    "code": "CW",
+    "english": "Curaçao",
+    "chinese": "库拉索",
+    "aliases": [
+      "CUW"
+    ]
+  },
+  {
+    "code": "CX",
+    "english": "Christmas Island",
+    "chinese": "圣诞岛",
+    "aliases": [
+      "CXR"
+    ]
+  },
+  {
+    "code": "KY",
+    "english": "Cayman Islands",
+    "chinese": "开曼群岛",
+    "aliases": [
+      "CYM"
+    ]
+  },
+  {
+    "code": "CY",
+    "english": "Cyprus",
+    "chinese": "塞浦路斯",
+    "aliases": [
+      "CYP"
+    ]
+  },
+  {
+    "code": "CZ",
+    "english": "Czechia",
+    "chinese": "捷克",
+    "aliases": [
+      "CZE"
+    ]
+  },
+  {
+    "code": "DE",
+    "english": "Germany",
+    "chinese": "德国",
+    "aliases": [
+      "DEU"
+    ]
+  },
+  {
+    "code": "DJ",
+    "english": "Djibouti",
+    "chinese": "吉布提",
+    "aliases": [
+      "DJI"
+    ]
+  },
+  {
+    "code": "DM",
+    "english": "Dominica",
+    "chinese": "多米尼克",
+    "aliases": [
+      "DMA"
+    ]
+  },
+  {
+    "code": "DK",
+    "english": "Denmark",
+    "chinese": "丹麦",
+    "aliases": [
+      "DNK"
+    ]
+  },
+  {
+    "code": "DO",
+    "english": "Dominican Republic",
+    "chinese": "多米尼加共和国",
+    "aliases": [
+      "DOM"
+    ]
+  },
+  {
+    "code": "DZ",
+    "english": "Algeria",
+    "chinese": "阿尔及利亚",
+    "aliases": [
+      "DZA"
+    ]
+  },
+  {
+    "code": "EC",
+    "english": "Ecuador",
+    "chinese": "厄瓜多尔",
+    "aliases": [
+      "ECU"
+    ]
+  },
+  {
+    "code": "EG",
+    "english": "Egypt",
+    "chinese": "埃及",
+    "aliases": [
+      "EGY"
+    ]
+  },
+  {
+    "code": "ER",
+    "english": "Eritrea",
+    "chinese": "厄立特里亚",
+    "aliases": [
+      "ERI"
+    ]
+  },
+  {
+    "code": "EH",
+    "english": "Western Sahara",
+    "chinese": "西撒哈拉",
+    "aliases": [
+      "ESH"
+    ]
+  },
+  {
+    "code": "ES",
+    "english": "Spain",
+    "chinese": "西班牙",
+    "aliases": [
+      "ESP"
+    ]
+  },
+  {
+    "code": "EE",
+    "english": "Estonia",
+    "chinese": "爱沙尼亚",
+    "aliases": [
+      "EST"
+    ]
+  },
+  {
+    "code": "ET",
+    "english": "Ethiopia",
+    "chinese": "埃塞俄比亚",
+    "aliases": [
+      "ETH"
+    ]
+  },
+  {
+    "code": "FI",
+    "english": "Finland",
+    "chinese": "芬兰",
+    "aliases": [
+      "FIN"
+    ]
+  },
+  {
+    "code": "FJ",
+    "english": "Fiji",
+    "chinese": "斐济",
+    "aliases": [
+      "FJI"
+    ]
+  },
+  {
+    "code": "FK",
+    "english": "Falkland Islands",
+    "chinese": "福克兰群岛",
+    "aliases": [
+      "FLK"
+    ]
+  },
+  {
+    "code": "FR",
+    "english": "France",
+    "chinese": "法国",
+    "aliases": [
+      "FRA"
+    ]
+  },
+  {
+    "code": "FO",
+    "english": "Faroe Islands",
+    "chinese": "法罗群岛",
+    "aliases": [
+      "FRO"
+    ]
+  },
+  {
+    "code": "FM",
+    "english": "Micronesia",
+    "chinese": "密克罗尼西亚",
+    "aliases": [
+      "FSM"
+    ]
+  },
+  {
+    "code": "GA",
+    "english": "Gabon",
+    "chinese": "加蓬",
+    "aliases": [
+      "GAB"
+    ]
+  },
+  {
+    "code": "GB",
+    "english": "United Kingdom",
+    "chinese": "英国",
+    "aliases": [
+      "GBR"
+    ]
+  },
+  {
+    "code": "GE",
+    "english": "Georgia",
+    "chinese": "格鲁吉亚",
+    "aliases": [
+      "GEO"
+    ]
+  },
+  {
+    "code": "GG",
+    "english": "Guernsey",
+    "chinese": "根西岛",
+    "aliases": [
+      "GGY"
+    ]
+  },
+  {
+    "code": "GH",
+    "english": "Ghana",
+    "chinese": "加纳",
+    "aliases": [
+      "GHA"
+    ]
+  },
+  {
+    "code": "GI",
+    "english": "Gibraltar",
+    "chinese": "直布罗陀",
+    "aliases": [
+      "GIB"
+    ]
+  },
+  {
+    "code": "GN",
+    "english": "Guinea",
+    "chinese": "几内亚",
+    "aliases": [
+      "GIN"
+    ]
+  },
+  {
+    "code": "GP",
+    "english": "Guadeloupe",
+    "chinese": "瓜德罗普",
+    "aliases": [
+      "GLP"
+    ]
+  },
+  {
+    "code": "GM",
+    "english": "Gambia",
+    "chinese": "冈比亚",
+    "aliases": [
+      "GMB"
+    ]
+  },
+  {
+    "code": "GW",
+    "english": "Guinea-Bissau",
+    "chinese": "几内亚比绍",
+    "aliases": [
+      "GNB"
+    ]
+  },
+  {
+    "code": "GQ",
+    "english": "Equatorial Guinea",
+    "chinese": "赤道几内亚",
+    "aliases": [
+      "GNQ"
+    ]
+  },
+  {
+    "code": "GR",
+    "english": "Greece",
+    "chinese": "希腊",
+    "aliases": [
+      "GRC"
+    ]
+  },
+  {
+    "code": "GD",
+    "english": "Grenada",
+    "chinese": "格林纳达",
+    "aliases": [
+      "GRD"
+    ]
+  },
+  {
+    "code": "GL",
+    "english": "Greenland",
+    "chinese": "格陵兰",
+    "aliases": [
+      "GRL"
+    ]
+  },
+  {
+    "code": "GT",
+    "english": "Guatemala",
+    "chinese": "危地马拉",
+    "aliases": [
+      "GTM"
+    ]
+  },
+  {
+    "code": "GF",
+    "english": "French Guiana",
+    "chinese": "法属圭亚那",
+    "aliases": [
+      "GUF"
+    ]
+  },
+  {
+    "code": "GU",
+    "english": "Guam",
+    "chinese": "关岛",
+    "aliases": [
+      "GUM"
+    ]
+  },
+  {
+    "code": "GY",
+    "english": "Guyana",
+    "chinese": "圭亚那",
+    "aliases": [
+      "GUY"
+    ]
+  },
+  {
+    "code": "HK",
+    "english": "Hong Kong SAR China",
+    "chinese": "中国香港特别行政区",
+    "aliases": [
+      "HKG"
+    ]
+  },
+  {
+    "code": "HM",
+    "english": "Heard & McDonald Islands",
+    "chinese": "赫德岛和麦克唐纳群岛",
+    "aliases": [
+      "HMD"
+    ]
+  },
+  {
+    "code": "HN",
+    "english": "Honduras",
+    "chinese": "洪都拉斯",
+    "aliases": [
+      "HND"
+    ]
+  },
+  {
+    "code": "HR",
+    "english": "Croatia",
+    "chinese": "克罗地亚",
+    "aliases": [
+      "HRV"
+    ]
+  },
+  {
+    "code": "HT",
+    "english": "Haiti",
+    "chinese": "海地",
+    "aliases": [
+      "HTI"
+    ]
+  },
+  {
+    "code": "HU",
+    "english": "Hungary",
+    "chinese": "匈牙利",
+    "aliases": [
+      "HUN"
+    ]
+  },
+  {
+    "code": "ID",
+    "english": "Indonesia",
+    "chinese": "印度尼西亚",
+    "aliases": [
+      "IDN"
+    ]
+  },
+  {
+    "code": "IM",
+    "english": "Isle of Man",
+    "chinese": "马恩岛",
+    "aliases": [
+      "IMN"
+    ]
+  },
+  {
+    "code": "IN",
+    "english": "India",
+    "chinese": "印度",
+    "aliases": [
+      "IND"
+    ]
+  },
+  {
+    "code": "IO",
+    "english": "British Indian Ocean Territory",
+    "chinese": "英属印度洋领地",
+    "aliases": [
+      "IOT"
+    ]
+  },
+  {
+    "code": "IE",
+    "english": "Ireland",
+    "chinese": "爱尔兰",
+    "aliases": [
+      "IRL"
+    ]
+  },
+  {
+    "code": "IR",
+    "english": "Iran",
+    "chinese": "伊朗",
+    "aliases": [
+      "IRN"
+    ]
+  },
+  {
+    "code": "IQ",
+    "english": "Iraq",
+    "chinese": "伊拉克",
+    "aliases": [
+      "IRQ"
+    ]
+  },
+  {
+    "code": "IS",
+    "english": "Iceland",
+    "chinese": "冰岛",
+    "aliases": [
+      "ISL"
+    ]
+  },
+  {
+    "code": "IL",
+    "english": "Israel",
+    "chinese": "以色列",
+    "aliases": [
+      "ISR"
+    ]
+  },
+  {
+    "code": "IT",
+    "english": "Italy",
+    "chinese": "意大利",
+    "aliases": [
+      "ITA"
+    ]
+  },
+  {
+    "code": "JM",
+    "english": "Jamaica",
+    "chinese": "牙买加",
+    "aliases": [
+      "JAM"
+    ]
+  },
+  {
+    "code": "JE",
+    "english": "Jersey",
+    "chinese": "泽西岛",
+    "aliases": [
+      "JEY"
+    ]
+  },
+  {
+    "code": "JO",
+    "english": "Jordan",
+    "chinese": "约旦",
+    "aliases": [
+      "JOR"
+    ]
+  },
+  {
+    "code": "JP",
+    "english": "Japan",
+    "chinese": "日本",
+    "aliases": [
+      "JPN"
+    ]
+  },
+  {
+    "code": "KZ",
+    "english": "Kazakhstan",
+    "chinese": "哈萨克斯坦",
+    "aliases": [
+      "KAZ"
+    ]
+  },
+  {
+    "code": "KE",
+    "english": "Kenya",
+    "chinese": "肯尼亚",
+    "aliases": [
+      "KEN"
+    ]
+  },
+  {
+    "code": "KG",
+    "english": "Kyrgyzstan",
+    "chinese": "吉尔吉斯斯坦",
+    "aliases": [
+      "KGZ"
+    ]
+  },
+  {
+    "code": "KH",
+    "english": "Cambodia",
+    "chinese": "柬埔寨",
+    "aliases": [
+      "KHM"
+    ]
+  },
+  {
+    "code": "KI",
+    "english": "Kiribati",
+    "chinese": "基里巴斯",
+    "aliases": [
+      "KIR"
+    ]
+  },
+  {
+    "code": "KN",
+    "english": "St. Kitts & Nevis",
+    "chinese": "圣基茨和尼维斯",
+    "aliases": [
+      "KNA"
+    ]
+  },
+  {
+    "code": "KR",
+    "english": "South Korea",
+    "chinese": "韩国",
+    "aliases": [
+      "KOR"
+    ]
+  },
+  {
+    "code": "KW",
+    "english": "Kuwait",
+    "chinese": "科威特",
+    "aliases": [
+      "KWT"
+    ]
+  },
+  {
+    "code": "LA",
+    "english": "Laos",
+    "chinese": "老挝",
+    "aliases": [
+      "LAO"
+    ]
+  },
+  {
+    "code": "LB",
+    "english": "Lebanon",
+    "chinese": "黎巴嫩",
+    "aliases": [
+      "LBN"
+    ]
+  },
+  {
+    "code": "LR",
+    "english": "Liberia",
+    "chinese": "利比里亚",
+    "aliases": [
+      "LBR"
+    ]
+  },
+  {
+    "code": "LY",
+    "english": "Libya",
+    "chinese": "利比亚",
+    "aliases": [
+      "LBY"
+    ]
+  },
+  {
+    "code": "LC",
+    "english": "St. Lucia",
+    "chinese": "圣卢西亚",
+    "aliases": [
+      "LCA"
+    ]
+  },
+  {
+    "code": "LI",
+    "english": "Liechtenstein",
+    "chinese": "列支敦士登",
+    "aliases": [
+      "LIE"
+    ]
+  },
+  {
+    "code": "LK",
+    "english": "Sri Lanka",
+    "chinese": "斯里兰卡",
+    "aliases": [
+      "LKA"
+    ]
+  },
+  {
+    "code": "LS",
+    "english": "Lesotho",
+    "chinese": "莱索托",
+    "aliases": [
+      "LSO"
+    ]
+  },
+  {
+    "code": "LT",
+    "english": "Lithuania",
+    "chinese": "立陶宛",
+    "aliases": [
+      "LTU"
+    ]
+  },
+  {
+    "code": "LU",
+    "english": "Luxembourg",
+    "chinese": "卢森堡",
+    "aliases": [
+      "LUX"
+    ]
+  },
+  {
+    "code": "LV",
+    "english": "Latvia",
+    "chinese": "拉脱维亚",
+    "aliases": [
+      "LVA"
+    ]
+  },
+  {
+    "code": "MO",
+    "english": "Macao SAR China",
+    "chinese": "中国澳门特别行政区",
+    "aliases": [
+      "MAC"
+    ]
+  },
+  {
+    "code": "MF",
+    "english": "St. Martin",
+    "chinese": "法属圣马丁",
+    "aliases": [
+      "MAF"
+    ]
+  },
+  {
+    "code": "MA",
+    "english": "Morocco",
+    "chinese": "摩洛哥",
+    "aliases": [
+      "MAR"
+    ]
+  },
+  {
+    "code": "MC",
+    "english": "Monaco",
+    "chinese": "摩纳哥",
+    "aliases": [
+      "MCO"
+    ]
+  },
+  {
+    "code": "MD",
+    "english": "Moldova",
+    "chinese": "摩尔多瓦",
+    "aliases": [
+      "MDA"
+    ]
+  },
+  {
+    "code": "MG",
+    "english": "Madagascar",
+    "chinese": "马达加斯加",
+    "aliases": [
+      "MDG"
+    ]
+  },
+  {
+    "code": "MV",
+    "english": "Maldives",
+    "chinese": "马尔代夫",
+    "aliases": [
+      "MDV"
+    ]
+  },
+  {
+    "code": "MX",
+    "english": "Mexico",
+    "chinese": "墨西哥",
+    "aliases": [
+      "MEX"
+    ]
+  },
+  {
+    "code": "MH",
+    "english": "Marshall Islands",
+    "chinese": "马绍尔群岛",
+    "aliases": [
+      "MHL"
+    ]
+  },
+  {
+    "code": "MK",
+    "english": "North Macedonia",
+    "chinese": "北马其顿",
+    "aliases": [
+      "MKD"
+    ]
+  },
+  {
+    "code": "ML",
+    "english": "Mali",
+    "chinese": "马里",
+    "aliases": [
+      "MLI"
+    ]
+  },
+  {
+    "code": "MT",
+    "english": "Malta",
+    "chinese": "马耳他",
+    "aliases": [
+      "MLT"
+    ]
+  },
+  {
+    "code": "MM",
+    "english": "Myanmar (Burma)",
+    "chinese": "缅甸",
+    "aliases": [
+      "MMR"
+    ]
+  },
+  {
+    "code": "ME",
+    "english": "Montenegro",
+    "chinese": "黑山",
+    "aliases": [
+      "MNE"
+    ]
+  },
+  {
+    "code": "MN",
+    "english": "Mongolia",
+    "chinese": "蒙古",
+    "aliases": [
+      "MNG"
+    ]
+  },
+  {
+    "code": "MP",
+    "english": "Northern Mariana Islands",
+    "chinese": "北马里亚纳群岛",
+    "aliases": [
+      "MNP"
+    ]
+  },
+  {
+    "code": "MZ",
+    "english": "Mozambique",
+    "chinese": "莫桑比克",
+    "aliases": [
+      "MOZ"
+    ]
+  },
+  {
+    "code": "MR",
+    "english": "Mauritania",
+    "chinese": "毛里塔尼亚",
+    "aliases": [
+      "MRT"
+    ]
+  },
+  {
+    "code": "MS",
+    "english": "Montserrat",
+    "chinese": "蒙特塞拉特",
+    "aliases": [
+      "MSR"
+    ]
+  },
+  {
+    "code": "MQ",
+    "english": "Martinique",
+    "chinese": "马提尼克",
+    "aliases": [
+      "MTQ"
+    ]
+  },
+  {
+    "code": "MU",
+    "english": "Mauritius",
+    "chinese": "毛里求斯",
+    "aliases": [
+      "MUS"
+    ]
+  },
+  {
+    "code": "MW",
+    "english": "Malawi",
+    "chinese": "马拉维",
+    "aliases": [
+      "MWI"
+    ]
+  },
+  {
+    "code": "MY",
+    "english": "Malaysia",
+    "chinese": "马来西亚",
+    "aliases": [
+      "MYS"
+    ]
+  },
+  {
+    "code": "YT",
+    "english": "Mayotte",
+    "chinese": "马约特",
+    "aliases": [
+      "MYT"
+    ]
+  },
+  {
+    "code": "NA",
+    "english": "Namibia",
+    "chinese": "纳米比亚",
+    "aliases": [
+      "NAM"
+    ]
+  },
+  {
+    "code": "NC",
+    "english": "New Caledonia",
+    "chinese": "新喀里多尼亚",
+    "aliases": [
+      "NCL"
+    ]
+  },
+  {
+    "code": "NE",
+    "english": "Niger",
+    "chinese": "尼日尔",
+    "aliases": [
+      "NER"
+    ]
+  },
+  {
+    "code": "NF",
+    "english": "Norfolk Island",
+    "chinese": "诺福克岛",
+    "aliases": [
+      "NFK"
+    ]
+  },
+  {
+    "code": "NG",
+    "english": "Nigeria",
+    "chinese": "尼日利亚",
+    "aliases": [
+      "NGA"
+    ]
+  },
+  {
+    "code": "NI",
+    "english": "Nicaragua",
+    "chinese": "尼加拉瓜",
+    "aliases": [
+      "NIC"
+    ]
+  },
+  {
+    "code": "NU",
+    "english": "Niue",
+    "chinese": "纽埃",
+    "aliases": [
+      "NIU"
+    ]
+  },
+  {
+    "code": "NL",
+    "english": "Netherlands",
+    "chinese": "荷兰",
+    "aliases": [
+      "NLD"
+    ]
+  },
+  {
+    "code": "NO",
+    "english": "Norway",
+    "chinese": "挪威",
+    "aliases": [
+      "NOR"
+    ]
+  },
+  {
+    "code": "NP",
+    "english": "Nepal",
+    "chinese": "尼泊尔",
+    "aliases": [
+      "NPL"
+    ]
+  },
+  {
+    "code": "NR",
+    "english": "Nauru",
+    "chinese": "瑙鲁",
+    "aliases": [
+      "NRU"
+    ]
+  },
+  {
+    "code": "NZ",
+    "english": "New Zealand",
+    "chinese": "新西兰",
+    "aliases": [
+      "NZL"
+    ]
+  },
+  {
+    "code": "OM",
+    "english": "Oman",
+    "chinese": "阿曼",
+    "aliases": [
+      "OMN"
+    ]
+  },
+  {
+    "code": "PK",
+    "english": "Pakistan",
+    "chinese": "巴基斯坦",
+    "aliases": [
+      "PAK"
+    ]
+  },
+  {
+    "code": "PA",
+    "english": "Panama",
+    "chinese": "巴拿马",
+    "aliases": [
+      "PAN"
+    ]
+  },
+  {
+    "code": "PN",
+    "english": "Pitcairn Islands",
+    "chinese": "皮特凯恩群岛",
+    "aliases": [
+      "PCN"
+    ]
+  },
+  {
+    "code": "PE",
+    "english": "Peru",
+    "chinese": "秘鲁",
+    "aliases": [
+      "PER"
+    ]
+  },
+  {
+    "code": "PH",
+    "english": "Philippines",
+    "chinese": "菲律宾",
+    "aliases": [
+      "PHL"
+    ]
+  },
+  {
+    "code": "PW",
+    "english": "Palau",
+    "chinese": "帕劳",
+    "aliases": [
+      "PLW"
+    ]
+  },
+  {
+    "code": "PG",
+    "english": "Papua New Guinea",
+    "chinese": "巴布亚新几内亚",
+    "aliases": [
+      "PNG"
+    ]
+  },
+  {
+    "code": "PL",
+    "english": "Poland",
+    "chinese": "波兰",
+    "aliases": [
+      "POL"
+    ]
+  },
+  {
+    "code": "PR",
+    "english": "Puerto Rico",
+    "chinese": "波多黎各",
+    "aliases": [
+      "PRI"
+    ]
+  },
+  {
+    "code": "KP",
+    "english": "North Korea",
+    "chinese": "朝鲜",
+    "aliases": [
+      "PRK"
+    ]
+  },
+  {
+    "code": "PT",
+    "english": "Portugal",
+    "chinese": "葡萄牙",
+    "aliases": [
+      "PRT"
+    ]
+  },
+  {
+    "code": "PY",
+    "english": "Paraguay",
+    "chinese": "巴拉圭",
+    "aliases": [
+      "PRY"
+    ]
+  },
+  {
+    "code": "PS",
+    "english": "Palestinian Territories",
+    "chinese": "巴勒斯坦领土",
+    "aliases": [
+      "PSE"
+    ]
+  },
+  {
+    "code": "PF",
+    "english": "French Polynesia",
+    "chinese": "法属波利尼西亚",
+    "aliases": [
+      "PYF"
+    ]
+  },
+  {
+    "code": "QA",
+    "english": "Qatar",
+    "chinese": "卡塔尔",
+    "aliases": [
+      "QAT"
+    ]
+  },
+  {
+    "code": "RE",
+    "english": "Réunion",
+    "chinese": "留尼汪",
+    "aliases": [
+      "REU"
+    ]
+  },
+  {
+    "code": "RO",
+    "english": "Romania",
+    "chinese": "罗马尼亚",
+    "aliases": [
+      "ROU"
+    ]
+  },
+  {
+    "code": "RU",
+    "english": "Russia",
+    "chinese": "俄罗斯",
+    "aliases": [
+      "RUS"
+    ]
+  },
+  {
+    "code": "RW",
+    "english": "Rwanda",
+    "chinese": "卢旺达",
+    "aliases": [
+      "RWA"
+    ]
+  },
+  {
+    "code": "SA",
+    "english": "Saudi Arabia",
+    "chinese": "沙特阿拉伯",
+    "aliases": [
+      "SAU"
+    ]
+  },
+  {
+    "code": "SD",
+    "english": "Sudan",
+    "chinese": "苏丹",
+    "aliases": [
+      "SDN"
+    ]
+  },
+  {
+    "code": "SN",
+    "english": "Senegal",
+    "chinese": "塞内加尔",
+    "aliases": [
+      "SEN"
+    ]
+  },
+  {
+    "code": "SG",
+    "english": "Singapore",
+    "chinese": "新加坡",
+    "aliases": [
+      "SGP"
+    ]
+  },
+  {
+    "code": "GS",
+    "english": "South Georgia & South Sandwich Islands",
+    "chinese": "南乔治亚和南桑威奇群岛",
+    "aliases": [
+      "SGS"
+    ]
+  },
+  {
+    "code": "SH",
+    "english": "St. Helena",
+    "chinese": "圣赫勒拿",
+    "aliases": [
+      "SHN"
+    ]
+  },
+  {
+    "code": "SJ",
+    "english": "Svalbard & Jan Mayen",
+    "chinese": "斯瓦尔巴和扬马延",
+    "aliases": [
+      "SJM"
+    ]
+  },
+  {
+    "code": "SB",
+    "english": "Solomon Islands",
+    "chinese": "所罗门群岛",
+    "aliases": [
+      "SLB"
+    ]
+  },
+  {
+    "code": "SL",
+    "english": "Sierra Leone",
+    "chinese": "塞拉利昂",
+    "aliases": [
+      "SLE"
+    ]
+  },
+  {
+    "code": "SV",
+    "english": "El Salvador",
+    "chinese": "萨尔瓦多",
+    "aliases": [
+      "SLV"
+    ]
+  },
+  {
+    "code": "SM",
+    "english": "San Marino",
+    "chinese": "圣马力诺",
+    "aliases": [
+      "SMR"
+    ]
+  },
+  {
+    "code": "SO",
+    "english": "Somalia",
+    "chinese": "索马里",
+    "aliases": [
+      "SOM"
+    ]
+  },
+  {
+    "code": "PM",
+    "english": "St. Pierre & Miquelon",
+    "chinese": "圣皮埃尔和密克隆群岛",
+    "aliases": [
+      "SPM"
+    ]
+  },
+  {
+    "code": "RS",
+    "english": "Serbia",
+    "chinese": "塞尔维亚",
+    "aliases": [
+      "SRB"
+    ]
+  },
+  {
+    "code": "SS",
+    "english": "South Sudan",
+    "chinese": "南苏丹",
+    "aliases": [
+      "SSD"
+    ]
+  },
+  {
+    "code": "ST",
+    "english": "São Tomé & Príncipe",
+    "chinese": "圣多美和普林西比",
+    "aliases": [
+      "STP"
+    ]
+  },
+  {
+    "code": "SR",
+    "english": "Suriname",
+    "chinese": "苏里南",
+    "aliases": [
+      "SUR"
+    ]
+  },
+  {
+    "code": "SK",
+    "english": "Slovakia",
+    "chinese": "斯洛伐克",
+    "aliases": [
+      "SVK"
+    ]
+  },
+  {
+    "code": "SI",
+    "english": "Slovenia",
+    "chinese": "斯洛文尼亚",
+    "aliases": [
+      "SVN"
+    ]
+  },
+  {
+    "code": "SE",
+    "english": "Sweden",
+    "chinese": "瑞典",
+    "aliases": [
+      "SWE"
+    ]
+  },
+  {
+    "code": "SZ",
+    "english": "Eswatini",
+    "chinese": "斯威士兰",
+    "aliases": [
+      "SWZ"
+    ]
+  },
+  {
+    "code": "SX",
+    "english": "Sint Maarten",
+    "chinese": "荷属圣马丁",
+    "aliases": [
+      "SXM"
+    ]
+  },
+  {
+    "code": "SC",
+    "english": "Seychelles",
+    "chinese": "塞舌尔",
+    "aliases": [
+      "SYC"
+    ]
+  },
+  {
+    "code": "SY",
+    "english": "Syria",
+    "chinese": "叙利亚",
+    "aliases": [
+      "SYR"
+    ]
+  },
+  {
+    "code": "TC",
+    "english": "Turks & Caicos Islands",
+    "chinese": "特克斯和凯科斯群岛",
+    "aliases": [
+      "TCA"
+    ]
+  },
+  {
+    "code": "TD",
+    "english": "Chad",
+    "chinese": "乍得",
+    "aliases": [
+      "TCD"
+    ]
+  },
+  {
+    "code": "TG",
+    "english": "Togo",
+    "chinese": "多哥",
+    "aliases": [
+      "TGO"
+    ]
+  },
+  {
+    "code": "TH",
+    "english": "Thailand",
+    "chinese": "泰国",
+    "aliases": [
+      "THA"
+    ]
+  },
+  {
+    "code": "TJ",
+    "english": "Tajikistan",
+    "chinese": "塔吉克斯坦",
+    "aliases": [
+      "TJK"
+    ]
+  },
+  {
+    "code": "TK",
+    "english": "Tokelau",
+    "chinese": "托克劳",
+    "aliases": [
+      "TKL"
+    ]
+  },
+  {
+    "code": "TM",
+    "english": "Turkmenistan",
+    "chinese": "土库曼斯坦",
+    "aliases": [
+      "TKM"
+    ]
+  },
+  {
+    "code": "TL",
+    "english": "Timor-Leste",
+    "chinese": "东帝汶",
+    "aliases": [
+      "TLS"
+    ]
+  },
+  {
+    "code": "TO",
+    "english": "Tonga",
+    "chinese": "汤加",
+    "aliases": [
+      "TON"
+    ]
+  },
+  {
+    "code": "TT",
+    "english": "Trinidad & Tobago",
+    "chinese": "特立尼达和多巴哥",
+    "aliases": [
+      "TTO"
+    ]
+  },
+  {
+    "code": "TN",
+    "english": "Tunisia",
+    "chinese": "突尼斯",
+    "aliases": [
+      "TUN"
+    ]
+  },
+  {
+    "code": "TR",
+    "english": "Türkiye",
+    "chinese": "土耳其",
+    "aliases": [
+      "TUR"
+    ]
+  },
+  {
+    "code": "TV",
+    "english": "Tuvalu",
+    "chinese": "图瓦卢",
+    "aliases": [
+      "TUV"
+    ]
+  },
+  {
+    "code": "TW",
+    "english": "Taiwan",
+    "chinese": "台湾",
+    "aliases": [
+      "TWN"
+    ]
+  },
+  {
+    "code": "TZ",
+    "english": "Tanzania",
+    "chinese": "坦桑尼亚",
+    "aliases": [
+      "TZA"
+    ]
+  },
+  {
+    "code": "UG",
+    "english": "Uganda",
+    "chinese": "乌干达",
+    "aliases": [
+      "UGA"
+    ]
+  },
+  {
+    "code": "UA",
+    "english": "Ukraine",
+    "chinese": "乌克兰",
+    "aliases": [
+      "UKR"
+    ]
+  },
+  {
+    "code": "UM",
+    "english": "U.S. Outlying Islands",
+    "chinese": "美国本土外小岛屿",
+    "aliases": [
+      "UMI"
+    ]
+  },
+  {
+    "code": "UY",
+    "english": "Uruguay",
+    "chinese": "乌拉圭",
+    "aliases": [
+      "URY"
+    ]
+  },
+  {
+    "code": "US",
+    "english": "United States",
+    "chinese": "美国",
+    "aliases": [
+      "USA"
+    ]
+  },
+  {
+    "code": "UZ",
+    "english": "Uzbekistan",
+    "chinese": "乌兹别克斯坦",
+    "aliases": [
+      "UZB"
+    ]
+  },
+  {
+    "code": "VA",
+    "english": "Vatican City",
+    "chinese": "梵蒂冈",
+    "aliases": [
+      "VAT"
+    ]
+  },
+  {
+    "code": "VC",
+    "english": "St. Vincent & Grenadines",
+    "chinese": "圣文森特和格林纳丁斯",
+    "aliases": [
+      "VCT"
+    ]
+  },
+  {
+    "code": "VE",
+    "english": "Venezuela",
+    "chinese": "委内瑞拉",
+    "aliases": [
+      "VEN"
+    ]
+  },
+  {
+    "code": "VG",
+    "english": "British Virgin Islands",
+    "chinese": "英属维尔京群岛",
+    "aliases": [
+      "VGB"
+    ]
+  },
+  {
+    "code": "VI",
+    "english": "U.S. Virgin Islands",
+    "chinese": "美属维尔京群岛",
+    "aliases": [
+      "VIR"
+    ]
+  },
+  {
+    "code": "VN",
+    "english": "Vietnam",
+    "chinese": "越南",
+    "aliases": [
+      "VNM"
+    ]
+  },
+  {
+    "code": "VU",
+    "english": "Vanuatu",
+    "chinese": "瓦努阿图",
+    "aliases": [
+      "VUT"
+    ]
+  },
+  {
+    "code": "WF",
+    "english": "Wallis & Futuna",
+    "chinese": "瓦利斯和富图纳",
+    "aliases": [
+      "WLF"
+    ]
+  },
+  {
+    "code": "WS",
+    "english": "Samoa",
+    "chinese": "萨摩亚",
+    "aliases": [
+      "WSM"
+    ]
+  },
+  {
+    "code": "YE",
+    "english": "Yemen",
+    "chinese": "也门",
+    "aliases": [
+      "YEM"
+    ]
+  },
+  {
+    "code": "ZA",
+    "english": "South Africa",
+    "chinese": "南非",
+    "aliases": [
+      "ZAF"
+    ]
+  },
+  {
+    "code": "ZM",
+    "english": "Zambia",
+    "chinese": "赞比亚",
+    "aliases": [
+      "ZMB"
+    ]
+  },
+  {
+    "code": "ZW",
+    "english": "Zimbabwe",
+    "chinese": "津巴布韦",
+    "aliases": [
+      "ZWE"
+    ]
+  }
+]

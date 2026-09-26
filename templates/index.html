@@ -461,6 +461,9 @@
         padding: 24px 12px 48px;
       }
     }
+    .preview-node { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto auto; gap:12px; padding:14px 0; border-bottom:1px solid #343434; }
+    .preview-node > * { min-width:0; overflow-wrap:anywhere; }
+    @media(max-width:767px) { .preview-node { grid-template-columns:minmax(0,1fr); } }
   </style>
 </head>
 <body>
@@ -584,14 +587,14 @@
             <div class="mb-4">
               <label class="form-label">02 / Batch Nodes</label>
               <textarea id="batch_nodes" class="form-control terminal-input" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
-              <div class="form-text mt-2">每行格式：國家代碼|節點名稱|節點連結。支援 vmess:// 和 vless://。</div>
+              <div class="form-text mt-2">每行支援 COUNTRY|NAME|URI、NAME|URI 或 URI；VMess / VLESS。Unknown 是 Warning，仍可生成。</div>
             </div>
 
             <div class="mb-4">
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
                   <label class="form-label mb-1">03 / Auxiliary Multi Nodes</label>
-                  <div class="form-text">點擊增加一行，可以新增多個節點；提交前會自動合併到批量節點。</div>
+                  <div class="form-text">新增多個節點，Country 可留空自動識別；Parse 與 Generate 都會包含這些節點。</div>
                 </div>
                 <button type="button" id="add-node-row" class="btn btn-outline-terminal btn-terminal">+ Add Row</button>
               </div>
@@ -601,10 +604,11 @@
                   <div class="row g-3 align-items-end">
                     <div class="col-md-3">
                       <label class="form-label">Country</label>
-                      <select class="form-select terminal-select aux-country">
-                        <option value="">-- 選擇 --</option>
+                      <input class="form-control terminal-input country-search mb-1" type="search" placeholder="Search ISO / English / 中文" aria-label="Search country">
+                      <select class="form-select terminal-select aux-country" aria-label="Country">
+                        <option value="">Auto detect</option>
                         {% for code, info in country_mapping.items() %}
-                          <option value="{{ code }}">{{ info.emoji }} {{ code }} - {{ info.label }}</option>
+                          <option value="{{ code }}">{{ info.emoji }} {{ code }} · {{ info.english }} / {{ info.chinese }}</option>
                         {% endfor %}
                       </select>
                     </div>
@@ -626,6 +630,35 @@
               <div id="aux-node-alert" class="terminal-alert error p-3 mt-3 d-none"></div>
             </div>
 
+            <input type="hidden" name="aux_nodes" id="aux-nodes-data">
+            <input type="hidden" name="node_overrides" id="node-overrides-data">
+            <div class="mb-4">
+              <button type="button" id="parse-nodes" class="btn btn-outline-terminal btn-terminal">Parse Nodes</button>
+              <span id="parse-summary" class="form-text ms-2" role="status">Changes not parsed yet</span>
+              <div id="parse-preview" class="mt-3"></div>
+            </div>
+                  <section class="terminal-panel mb-4">
+        <div class="panel-inner">
+          <div class="panel-title-row">
+            <h2 class="panel-title">04 / Policy Options</h2>
+            <span class="panel-subtitle">Optional Groups</span>
+          </div>
+
+          <p class="helper-text mb-3">勾選後，所有新節點會加入對應特殊策略組。預設不勾選。</p>
+
+          <div class="row g-3">
+            {% for group in default_special_groups %}
+              <div class="col-md-6">
+                <label class="terminal-check">
+                  <input class="form-check-input" type="checkbox" name="special_groups" value="{{ group }}" form="process-form" id="special_group_{{ loop.index }}">
+                  <span>{{ group }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+            <label class="form-label">05 / Generate YAML</label>
             <div class="d-grid">
               <button type="submit" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
             </div>
@@ -643,18 +676,20 @@
           {% if result %}
             {% if success_message %}
               <div class="terminal-alert success p-4 mb-4">
-                <div class="panel-subtitle mb-1">PROCESS COMPLETE</div>
+                <div class="panel-subtitle mb-1">Generation Complete</div>
                 <p class="mb-0">{{ success_message }}</p>
               </div>
             {% endif %}
 
+            <p>Expires: <time datetime="{{ result.expires_at }}">{{ result.expires_at }} (UTC)</time></p>
+            <button type="button" class="clear-draft btn btn-outline-terminal btn-terminal mb-3">Clear Draft</button>
             <div class="status-grid mb-4">
               <div class="status-cell">
                 <div class="status-label">Old Nodes Removed</div>
                 <div class="status-value">{{ result.old_node_count }}</div>
               </div>
               <div class="status-cell">
-                <div class="status-label">New Nodes Added</div>
+                <div class="status-label">Nodes</div>
                 <div class="status-value green">{{ result.new_node_count }}</div>
               </div>
               <div class="status-cell">
@@ -669,17 +704,17 @@
 
             {% if output_filename %}
               <div class="terminal-alert p-3 mb-4">
-                <div class="panel-subtitle mb-2">CLASH SUBSCRIPTION LINK</div>
+                <div class="panel-subtitle mb-2">Temporary Link</div>
                 <div class="row g-3 align-items-center">
                   <div class="col-lg-4">
                     <div class="status-label mb-1">File Name</div>
                     <div class="mono">{{ output_filename }}</div>
                   </div>
                   <div class="col-lg-8">
-                    <label class="form-label mb-1" for="download-url">Clash URL</label>
+                    <label class="form-label mb-1" for="download-url">Temporary Link</label>
                     <div class="d-flex flex-column flex-sm-row gap-2">
                       <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
-                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal">Copy</button>
+                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal">Copy Temporary Link</button>
                     </div>
                   </div>
                 </div>
@@ -731,27 +766,7 @@
         </div>
       </section>
 
-      <section class="terminal-panel mb-4">
-        <div class="panel-inner">
-          <div class="panel-title-row">
-            <h2 class="panel-title">Policy Options</h2>
-            <span class="panel-subtitle">Optional Groups</span>
-          </div>
 
-          <p class="helper-text mb-3">勾選後，所有新節點會加入對應特殊策略組。預設不勾選。</p>
-
-          <div class="row g-3">
-            {% for group in default_special_groups %}
-              <div class="col-md-6">
-                <label class="terminal-check">
-                  <input class="form-check-input" type="checkbox" name="special_groups" value="{{ group }}" form="process-form" id="special_group_{{ loop.index }}">
-                  <span>{{ group }}</span>
-                </label>
-              </div>
-            {% endfor %}
-          </div>
-        </div>
-      </section>
 
       <section class="terminal-panel">
         <div class="panel-inner">
@@ -839,217 +854,8 @@
   <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}</div>
 
   <script src="{{ url_for('static', filename='draft.js') }}"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const rowsContainer = document.getElementById("aux-node-rows");
-      const addButton = document.getElementById("add-node-row");
-      const form = document.getElementById("process-form");
-      const deleteTempForm = document.getElementById("delete-temp-form");
-      const batchTextarea = document.getElementById("batch_nodes");
-      const alertBox = document.getElementById("aux-node-alert");
-      const downloadUrlInput = document.getElementById("download-url");
-      const copyDownloadUrlButton = document.getElementById("copy-download-url");
-      const operationProgress = document.getElementById("operation-progress");
-      const operationProgressKicker = document.getElementById("operation-progress-kicker");
-      const operationProgressTitle = document.getElementById("operation-progress-title");
-      const operationProgressBar = document.getElementById("operation-progress-bar");
-      const operationProgressPercent = document.getElementById("operation-progress-percent");
-      const operationProgressText = document.getElementById("operation-progress-text");
-
-      function getFirstRow() {
-        return rowsContainer ? rowsContainer.querySelector(".node-row") : null;
-      }
-
-      function resetRow(row) {
-        const country = row.querySelector(".aux-country");
-        const name = row.querySelector(".aux-name");
-        const link = row.querySelector(".aux-link");
-        if (country) country.value = "";
-        if (name) name.value = "";
-        if (link) link.value = "";
-      }
-
-      function updateRemoveButtons() {
-        if (!rowsContainer) return;
-        const rows = rowsContainer.querySelectorAll(".node-row");
-        rows.forEach(function (row) {
-          const btn = row.querySelector(".remove-node-row");
-          if (btn) btn.disabled = rows.length <= 1;
-        });
-      }
-
-      function hideAuxAlert() {
-        if (!alertBox) return;
-        alertBox.classList.add("d-none");
-        alertBox.textContent = "";
-      }
-
-      function showAuxAlert(message) {
-        if (!alertBox) return;
-        alertBox.textContent = message;
-        alertBox.classList.remove("d-none");
-      }
-
-      function showOperationProgress(options) {
-        if (!operationProgress || !operationProgressBar || !operationProgressPercent) return;
-
-        let percent = 8;
-        const messages = options.messages;
-        let messageIndex = 0;
-
-        if (operationProgressKicker) operationProgressKicker.textContent = options.kicker;
-        if (operationProgressTitle) operationProgressTitle.textContent = options.title;
-        if (operationProgressText) operationProgressText.textContent = messages[0];
-
-        operationProgress.classList.add("active");
-        operationProgress.setAttribute("aria-hidden", "false");
-        operationProgressBar.style.width = percent + "%";
-        operationProgressPercent.textContent = percent + "%";
-
-        window.setInterval(function () {
-          percent = Math.min(percent + 7, 96);
-          operationProgressBar.style.width = percent + "%";
-          operationProgressPercent.textContent = percent + "%";
-
-          if (operationProgressText) {
-            operationProgressText.textContent = messages[messageIndex % messages.length];
-            messageIndex += 1;
-          }
-        }, 650);
-      }
-
-      function showGenerationProgress() {
-        showOperationProgress({
-          kicker: "GENERATING YAML",
-          title: "Please Wait",
-          messages: [
-            "Parsing node links...",
-            "Cleaning old proxies...",
-            "Repairing policy group references...",
-            "Writing new YAML..."
-          ]
-        });
-      }
-
-      function showDeleteProgress() {
-        showOperationProgress({
-          kicker: "DELETING TEMP FILES",
-          title: "Cleaning Up",
-          messages: [
-            "Checking selected temp files...",
-            "Deleting upload and output files...",
-            "Keeping backup files untouched...",
-            "Returning to the home page..."
-          ]
-        });
-      }
-
-      if (addButton && rowsContainer) {
-        addButton.addEventListener("click", function () {
-          const firstRow = getFirstRow();
-          if (!firstRow) return;
-          const newRow = firstRow.cloneNode(true);
-          resetRow(newRow);
-          rowsContainer.appendChild(newRow);
-          updateRemoveButtons();
-          hideAuxAlert();
-        });
-      }
-
-      if (rowsContainer) {
-        rowsContainer.addEventListener("click", function (event) {
-          if (!event.target.classList.contains("remove-node-row")) return;
-          const rows = rowsContainer.querySelectorAll(".node-row");
-          if (rows.length <= 1) {
-            resetRow(rows[0]);
-            updateRemoveButtons();
-            return;
-          }
-          event.target.closest(".node-row").remove();
-          updateRemoveButtons();
-          hideAuxAlert();
-        });
-      }
-
-      if (form && batchTextarea && rowsContainer) {
-        form.addEventListener("submit", function (event) {
-          hideAuxAlert();
-
-          const generatedLines = [];
-          const rows = rowsContainer.querySelectorAll(".node-row");
-
-          for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const country = row.querySelector(".aux-country").value.trim();
-            const name = row.querySelector(".aux-name").value.trim();
-            const link = row.querySelector(".aux-link").value.trim();
-
-            const filledCount = [country, name, link].filter(Boolean).length;
-
-            if (filledCount === 0) {
-              continue;
-            }
-
-            if (filledCount !== 3) {
-              event.preventDefault();
-              showAuxAlert("輔助節點第 " + (i + 1) + " 行沒有填寫完整。請填寫國家/地區、節點名稱、節點連結，或整行留空。");
-              return;
-            }
-
-            generatedLines.push(country + "|" + name + "|" + link);
-          }
-
-          if (generatedLines.length > 0) {
-            const existingText = batchTextarea.value.trim();
-            batchTextarea.value = existingText
-              ? existingText + "\n" + generatedLines.join("\n")
-              : generatedLines.join("\n");
-          }
-
-          showGenerationProgress();
-        });
-      }
-
-      if (deleteTempForm) {
-        deleteTempForm.addEventListener("submit", function () {
-          showDeleteProgress();
-        });
-      }
-
-      updateRemoveButtons();
-
-      if (copyDownloadUrlButton && downloadUrlInput) {
-        copyDownloadUrlButton.addEventListener("click", async function () {
-          const originalText = copyDownloadUrlButton.textContent;
-
-          try {
-            if (navigator.clipboard && window.isSecureContext) {
-              await navigator.clipboard.writeText(downloadUrlInput.value);
-            } else {
-              downloadUrlInput.focus();
-              downloadUrlInput.select();
-              document.execCommand("copy");
-              downloadUrlInput.setSelectionRange(0, 0);
-            }
-
-            copyDownloadUrlButton.textContent = "Copied";
-          } catch (error) {
-            copyDownloadUrlButton.textContent = "Failed";
-          }
-
-          window.setTimeout(function () {
-            copyDownloadUrlButton.textContent = originalText;
-          }, 1600);
-        });
-      }
-
-      const shouldScrollToResult = {{ "true" if result else "false" }};
-      const resultPanel = document.getElementById("generate-result");
-      if (shouldScrollToResult && resultPanel) {
-        resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
-  </script>
+  <script id="country-data" type="application/json">{{ country_mapping | tojson }}</script>
+  <script src="{{ url_for('static', filename='nodes.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

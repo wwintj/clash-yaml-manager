@@ -161,7 +161,7 @@ def test_forwarded_host_ignored_in_generated_links(web, logged_in):
         'X-Forwarded-Host': 'attacker.example', 'X-Forwarded-Proto': 'https'})
     with logged_in.session_transaction() as s:
         url = s['page_context']['download_url']
-    assert url.startswith('http://localhost/s/')
+    assert url.startswith('http://localhost/t/')
 
 
 def test_trusted_proxy_https_links(web, logged_in):
@@ -173,7 +173,7 @@ def test_trusted_proxy_https_links(web, logged_in):
         'X-Forwarded-Host': 'public.example', 'X-Forwarded-Proto': 'https',
         'Referer': 'https://public.example/'})
     with logged_in.session_transaction() as s:
-        assert s['page_context']['download_url'].startswith('https://public.example/s/')
+        assert s['page_context']['download_url'].startswith('https://public.example/t/')
 
 
 def test_sensitive_errors_and_logs(web, logged_in):

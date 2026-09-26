@@ -203,6 +203,9 @@ exec "$TEST_PYTHON" "$@"
     assert 'APP_PASSWORD' not in configuration
     from core.security import AuthStore
     assert AuthStore(installed / 'state').authenticate(password)
+    for setting in ('UPLOAD_RETENTION_HOURS=1', 'OUTPUT_RETENTION_HOURS=24',
+                    'CLEANUP_INTERVAL_HOURS=1', 'BACKUP_RETENTION_DAYS=7'):
+        assert setting in (installed / '.env').read_text()
     assert (installed / 'VERSION').read_bytes() == (source / 'VERSION').read_bytes()
     assert (installed / '.env').stat().st_mode & 0o777 == 0o600
     assert (installed / 'outputs').stat().st_mode & 0o777 == 0o700

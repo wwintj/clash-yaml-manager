@@ -11,3 +11,9 @@ storage.setItem(drafts.KEY, '{broken'); assert.equal(drafts.restore(storage), nu
 drafts.store(storage, draft); drafts.clear(storage); assert.equal(drafts.restore(storage), null);
 assert.throws(() => drafts.store({setItem(){throw Error('quota');}}, draft));
 console.log('Draft storage: restore, expiry, corruption, clear and quota checks passed');
+
+const {matchesCountry} = require('../static/nodes.js');
+assert(matchesCountry('TW',{english:'Taiwan',chinese:'台湾',aliases:[]},'tai'));
+assert(matchesCountry('TH',{english:'Thailand',chinese:'泰国',aliases:[],search_aliases:['tai']},'tai'));
+assert(matchesCountry('US',{english:'United States',chinese:'美国',aliases:[]},'美'));
+assert(matchesCountry('JP',{english:'Japan',chinese:'日本',aliases:[]},'JP'));
