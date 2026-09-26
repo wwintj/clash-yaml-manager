@@ -150,7 +150,8 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = COOKIE_SECURE
 app.config["PREFERRED_URL_SCHEME"] = DOWNLOAD_URL_SCHEME or "http"
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
 if not SECRET_KEY:
     sys.exit("请设置固定 SECRET_KEY，所有 worker 必须使用同一密钥。")
@@ -423,6 +424,10 @@ def process_config():
 
     file = request.files.get("yaml_file")
     use_default_yaml = file is None or file.filename == ""
+
+    if request.form.get("yaml_source") == "custom" and use_default_yaml:
+        context["error_messages"].append("Custom YAML needs to be selected again.")
+        return redirect_to_index(context)
 
     if not use_default_yaml and not allowed_file(file.filename):
         context["error_messages"].append("不支持的文件格式，仅支持 .yaml 或 .yml 文件。")

@@ -195,7 +195,7 @@ def test_cookie_security_defaults(web, client):
     response = post(client, '/login', {'password': 'test 密码'})
     cookie = response.headers['Set-Cookie']
     assert 'HttpOnly' in cookie and 'SameSite=Lax' in cookie and 'Expires=' in cookie
-    assert web.app.config['PERMANENT_SESSION_LIFETIME'].total_seconds() == 43200
+    assert web.app.config['PERMANENT_SESSION_LIFETIME'].total_seconds() == 2592000
 
 
 def test_password_change_invalidates_all_sessions_and_download_bypass(web):

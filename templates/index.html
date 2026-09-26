@@ -570,10 +570,13 @@
             <span class="panel-subtitle">Upload / Nodes</span>
           </div>
 
+          <div class="d-flex gap-3 align-items-center mb-3"><span id="draft-status" class="form-text" role="status">Draft autosave / 30 days / this browser</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal">Clear Draft</button></div>
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-4">
-              <label class="form-label">01 / Upload YAML</label>
+              <label class="form-label">01 / YAML Source</label>
+              <select id="yaml-source" name="yaml_source" class="form-select terminal-select mb-2" aria-label="YAML source"><option value="default">Default YAML</option><option value="custom">Custom YAML</option></select>
+              <div id="source-hint" class="form-text mb-2" role="status"></div>
               <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml">
               <div class="form-text mt-2">可上傳朋友的 Clash/Mihomo YAML；不選檔案時會使用伺服器內建的預設 YAML。</div>
             </div>
@@ -835,6 +838,7 @@
 
   <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}</div>
 
+  <script src="{{ url_for('static', filename='draft.js') }}"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const rowsContainer = document.getElementById("aux-node-rows");
