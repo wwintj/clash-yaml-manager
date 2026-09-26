@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added
+- Save browser-local generation drafts for 30 days, including auxiliary rows, policies, source choice and manual corrections; restore after refresh/login and provide confirmed Clear Draft.
+- Parse mixed COUNTRY|NAME|URI, NAME|URI and URI input with editable preview and latest-input parsing on Generate.
+- Share a complete 249-region ISO catalog across detection and searchable selectors; allow Unknown warnings in a dynamic other-nodes group.
+- Issue 16-character random temporary links with atomic shared metadata, independent expiry and permanent ID tombstones.
+
+### Changed
+- Extend sessions to 30 days with sliding renewal while preserving CSRF and global password-change invalidation.
+- Default uploads to one hour, outputs to 24 hours and cleanup to hourly; keep backups separate and legacy day-based settings compatible.
+- Display generation expiry and responsive node previews while retaining legacy subscription routes.
+
+### Fixed
+- Preserve input through failed submissions and require reselecting Custom YAML after refresh; never save uploaded file contents in drafts.
+- Submit auxiliary nodes separately so repeated generation does not append duplicate rows to Batch Nodes.
+
 ## v1.0.2 - 2026-09-26
 
 ### Deployment

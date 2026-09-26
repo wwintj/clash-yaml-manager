@@ -10,6 +10,8 @@
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。
 
+本文包含 main 已實作、尚未發布的 v1.1 第一階段功能。Latest Stable 仍為 v1.0.2，驗收與限制見 [開發報告](docs/V1_1_DEVELOPMENT.md)。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
@@ -129,7 +131,9 @@ sudo bash install.sh
 Web 頁面支援批量輸入節點，每行一個：
 
 ```text
-國家代碼|節點名稱|節點連結
+COUNTRY|NAME|URI
+NAME|URI
+URI
 ```
 
 範例：
@@ -141,21 +145,19 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-支援的國家 / 地區代碼：
+main 支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。仍只支援 VMess / VLESS。
 
-| 代碼 | 策略組 |
-|---|---|
-| US | 美國節點 |
-| HK | 香港節點 |
-| TW | 台灣節點 |
-| JP | 日本節點 |
-| KR | 韓國節點 |
-| SG | 獅城節點 |
-| KP | 朝鮮節點 |
-| MY | 馬來西亞節點 |
-| DE | 德國節點 |
-| GB | 英國節點 |
-| CA | 加拿大節點 |
+點 **Parse Nodes** 查看 Name、Country、Protocol、Ready / Warning / Error 和來源。修改輸入後顯示 Changes not parsed yet。Preview 可修改 Country / Name，修改立即保存；Apply edit 或 Parse Nodes 更新預覽。手工國家優先，重排未修改的輸入不會丟掉手工修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
+
+支援完整 249 個 ISO 國家/地區，使用同一份[離線資料](docs/COUNTRY_DATA.md)。Auxiliary 和 Preview 的搜尋欄支援 ISO、English、中文和別名，常用國家置頂；例如 tai 找 Taiwan / Thailand，美 找美國，JP 找日本。判斷只依據旗幟、保守的名稱/代碼和城市別名，沒有 DNS 或 GeoIP。衝突或不明名稱為 **🌐 Unknown**，Warning 仍可 Generate，加入 **🌐 其他节点**。只為本次存在的國家建立策略組，保留來源 YAML 既有組。
+
+## 草稿（main 開發版）
+
+Batch、全部 Auxiliary rows、Policy Options、YAML source 和 Preview 手工修正自動存到同一瀏覽器、同一網站 origin 的 localStorage，保留最後保存後 30 天。提交前同步保存；刷新、退出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。成功生成不清空；**Clear Draft** 需確認。
+
+不儲存上傳 YAML 的內容；恢復 Custom YAML 時必須重新選檔，不會靜默使用預設 YAML。CSRF 保護仍在，token 過期刷新，session 過期登入後恢復。
+
+草稿含分享連結，保存在瀏覽器本機且未加密；共用裝置用完請 Clear Draft。停用儲存、容量不足或瀏覽器清除資料會影響恢復，保存失敗會顯示提示。更換網域或連接埠不會跨 origin 恢復草稿。
 
 ---
 
@@ -168,8 +170,8 @@ HK|GIA|vmess://xxxx
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。
-- 產生 V2 帶簽名 YAML 訂閱直鏈，格式為 `/s/v2.日期.序號.隨機標識.簽名`，可複製到 Clash/Mihomo 客戶端使用。
-- 產生 YAML 和刪除臨時檔案時都會顯示進度提示。
+- main 新 Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示 Expires（UTC）、Download YAML / Copy Temporary Link / Clear Draft。舊 `/s/` 仍相容。
+- 產生 YAML 時顯示處理提示。
 - 內建瀏覽器 favicon，訪問面板時瀏覽器標籤頁會顯示圖示。
 - 盡量保留原設定裡的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自訂欄位。
 - 上傳、輸出、備份、日誌分目錄保存。
@@ -228,15 +230,17 @@ COOKIE_SECURE=true
 DOWNLOAD_URL_SCHEME=https
 DOWNLOAD_BASE_URL=https://你的網域
 TRUST_PROXY_HEADERS=true
-FILE_RETENTION_DAYS=7
-CLEANUP_INTERVAL_DAYS=7
+UPLOAD_RETENTION_HOURS=1
+OUTPUT_RETENTION_HOURS=24
+CLEANUP_INTERVAL_HOURS=1
+BACKUP_RETENTION_DAYS=7
 ```
 
 `DOWNLOAD_BASE_URL` 優先於其他 URL 設定。新安裝的 `DOWNLOAD_URL_SCHEME` 預設留空，按請求協議產生連結：直接 IP:PORT 訪問為 HTTP。只透過單層可信 Nginx HTTPS 代理訪問時，才設定 `TRUST_PROXY_HEADERS=true`，由 Nginx 覆寫 `X-Forwarded-For`、`X-Forwarded-Proto`、`X-Forwarded-Host` 和 `X-Forwarded-Port`，並限制外部直接連到 Gunicorn。直接訪問時維持 `false`，不信任用戶傳入的轉發標頭。
 
 升級保留原 `.env`：如果舊安裝是直接 HTTP，卻已有 `DOWNLOAD_URL_SCHEME=https`，請手動改為空值或 `http` 並重啟服務。固定 `SECRET_KEY` 必須在所有 worker 間一致，且不能隨意更換，否則既有簽名訂閱和 session 會失效。
 
-五個 POST 表單已使用 Flask-WTF CSRF 保護；表單過期請重新整理。登出只接受 POST。session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態，登入 session 的有效期為 12 小時（活動時刷新）；HTTPS 部署需設定 `COOKIE_SECURE=true`。
+POST 表單與解析 API 使用 Flask-WTF CSRF 保護；表單過期請重新整理以恢復草稿。登出只接受 POST。session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；main 登入 session 為 30 天滑動有效，每次活動延長有效期。HTTPS 部署需設定 `COOKIE_SECURE=true`。
 
 新安裝只將 Werkzeug PBKDF2-SHA256（1,000,000 次）密碼雜湊存入 `state/auth.json`，不將明文或 Base64 密碼寫入 `.env`。所有 worker 每次認證都讀取共享檔案，修改密碼後立即生效，無需重啟；其他瀏覽器的舊 session 在下一次請求時失效。runtime 不修改 `.env`。只更新程式而略過升級腳本時，可以從舊環境憑據初始化 state，但仍需管理員完成 `.env` 清理。
 
@@ -246,7 +250,11 @@ systemd 使用專用 `clashyaml:clashyaml`，無登入 shell。程式、預設 Y
 
 新輸出檔名為 `tim_YYYYMMDD_N_<128-bit nonce>.yaml`，V2 短鏈使用 128-bit HMAC。刪除後再生成會得到新隨機 identity，原地址不會因序號重設而讀到新輸出。歷史 8/12 hex 簽名只相容舊檔名，新檔不接受弱 token；完整 64 hex 下載 token 仍可使用。訂閱地址屬於持有者憑據，請勿公開；改管理密碼不撤銷訂閱地址，刪除對應輸出可以撤銷。詳細設計與驗收限制見 [Phase 2](docs/PHASE2.md)。
 
-`uploads/`、`outputs/`、`backups/` 會按上面的設定自動清理：預設最多每 7 天檢查一次，並刪除 7 天前的檔案。`state/` 不參與檔案保留期清理；登入嘗試由 limiter 自行淘汰。
+main 預設上傳保留 **1 小時**、輸出 **24 小時**、備份 **7 天**。啟動/請求可觸發 cleanup，跨 worker 鎖與 `state/.last_cleanup` 保證預設每小時最多掃描一次；沒有背景 daemon，無請求時實體檔案留到下次觸發。`/t/` 獨立檢查到期時間，檔案尚未刪除也回傳 404。上傳刪除不影響已生成輸出。Logs 獨立，state/auth.json 等狀態不進入檔案清理。
+
+HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS`，cleanup 回退 `CLEANUP_INTERVAL_DAYS`。升級保留舊 `.env` 的值；要改成新預設，加入上方三個 HOURS 設定並重啟。無效或非正值回退安全預設，不因歷史配置格式而啟動失敗。備份獨立使用 `BACKUP_RETENTION_DAYS`（或優先 `BACKUP_RETENTION_HOURS`），預設 7 天。
+
+`state/temporary_links.json` 原子保存 ID → filename / created_at / expires_at。到期或刪除清掉映射內容但永久保留 ID tombstone，禁止歷史 ID 重新綁定。請保留這份 state，不要刪除或回滾；ID 使用 secrets 的 96-bit 隨機數。新下載按鈕同樣使用 `/t/`，有效期一致。歷史 `/s/v2...`、legacy `/s/...`、`/sub/`、完整簽名下載仍在檔案存在時按原規則有效，其實體刪除受輸出清理控制。完整 URL 尊重 DOWNLOAD_BASE_URL / request host，保留 HTTP 非標準連接埠。
 
 ## 升級保護與回滾
 
@@ -269,14 +277,14 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m pytest -q
 .venv/bin/python -m compileall -q app.py core tests
-for script in install.sh update.sh remote-update.sh uninstall.sh scripts/deploy-common.sh; do
+for script in install.sh update.sh remote-install.sh remote-update.sh uninstall.sh scripts/deploy-common.sh; do
   bash -n "$script"
 done
 ```
 
-如有 shellcheck，另執行 `shellcheck install.sh update.sh remote-update.sh uninstall.sh scripts/deploy-common.sh`。測試使用臨時資料和測試密碼，包含真實預設 YAML 的全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用替代 systemctl/curl/pip，不能取代 Ubuntu 上的 systemd 驗收。
+Node 可用時 pytest 也會執行草稿與搜尋 JS 測試（可單獨 `node tests/test_draft.js`）。如有 shellcheck，另執行 `shellcheck install.sh update.sh remote-install.sh remote-update.sh uninstall.sh scripts/deploy-common.sh`。測試使用臨時資料，包含真實 YAML 全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用 systemctl/curl/pip 替身，不能取代 Ubuntu systemd 驗收。
 
-處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。Merge、Preview 和新協議會分階段加入。
+處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。main 已有節點 Parse Preview；Merge、完整 YAML 差異預覽和新協議尚未實作。
 
 ---
 
