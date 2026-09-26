@@ -5,7 +5,7 @@
 可上傳現有 YAML，也可直接使用內建預設 YAML。輸入 `vmess://` / `vless://` 節點後，系統會自動替換 `proxies`、清理舊節點引用、補齊策略組，並產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
-**Latest Stable: [v1.0.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.0.1)**
+**Latest Stable: [v1.0.2](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.0.2)**
 <!-- RELEASE:END -->
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。
