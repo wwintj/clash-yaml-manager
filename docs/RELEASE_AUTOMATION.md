@@ -71,6 +71,13 @@ Release is accepted **only when** tag, title, stable flags and body exactly matc
 is called. Mismatch fails. Workflow retries therefore verify an immutable release rather than
 creating duplicates. Per-tag Actions concurrency also prevents redundant concurrent jobs.
 
+The first v1.0.1 run exposed an Actions checkout behavior: after fetching an annotated tag,
+checkout fetched the event commit SHA into the runner's same-named local tag ref. All 247
+tests passed, but the local-ref annotation check failed. The follow-up patch checks the remote
+tag object ID/type and its peeled commit against HEAD instead; if needed it fetches that exact
+object without rewriting any tag refs. A genuinely lightweight remote tag still fails. The
+v1.0.1 tag/Release remain unchanged; the fix ships as a new patch release.
+
 Official references: [GitHub release API](https://docs.github.com/en/rest/releases/releases)
 and [gh release create](https://cli.github.com/manual/gh_release_create).
 

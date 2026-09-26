@@ -167,3 +167,32 @@ def test_release_commit_tag_and_push_order(clean_repository, monkeypatch):
     assert git('cat-file', '-t', 'v1.0.1') == 'tag'
     assert set(git('diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines()) == set(files)
     assert git('status', '--porcelain') == ''
+
+
+@pytest.mark.parametrize('remote_annotated', [True, False])
+def test_actions_flattened_local_tag_checks_remote_annotation(clean_repository, monkeypatch, remote_annotated):
+    root, git = clean_repository
+    (root / 'README.md').write_text(r.update_readme((ROOT / 'README.md').read_text(), '1.0.0'))
+    (root / 'CHANGELOG.md').write_text('# Changelog\n\n## v1.0.0 - 2026-09-26\n\n### Deployment\n- Verified.\n')
+    git('add', '.')
+    git('commit', '-m', 'release metadata')
+    git('tag', '-a', 'v1.0.0', '-m', 'Release v1.0.0')
+    tag_object, head = git('rev-parse', 'v1.0.0'), git('rev-parse', 'HEAD')
+    # Reproduce checkout's local-only ref flattening in this temporary repository.
+    git('update-ref', 'refs/tags/v1.0.0', head)
+    original_run = r.run
+    def run(args, root=root, capture=True):
+        if args[:2] == ['git', 'ls-remote']:
+            if remote_annotated:
+                return f'{tag_object}\trefs/tags/v1.0.0\n{head}\trefs/tags/v1.0.0^{{}}'
+            return f'{head}\trefs/tags/v1.0.0'
+        return original_run(args, root, capture)
+    monkeypatch.setattr(r, 'run', run)
+    monkeypatch.setattr(r, 'releases', lambda: [dict(tag_name='v1.0.0', name='v1.0.0', draft=False,
+                         prerelease=False, body='### Deployment\n- Verified.', html_url='verified-url')])
+    if remote_annotated:
+        assert r.publish_tag('v1.0.0', root) == 'verified-url'
+    else:
+        with pytest.raises(r.ReleaseError, match='annotated tag'):
+            r.publish_tag('v1.0.0', root)
+    assert git('cat-file', '-t', 'v1.0.0') == 'commit'  # no local ref rewrite

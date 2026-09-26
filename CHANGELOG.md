@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Deployment
+- Validate the authoritative remote annotated tag object when GitHub Actions checkout flattens its local tag reference to a commit; still reject genuinely lightweight remote tags.
+- Preserve existing tags and Releases during verification, with regression coverage for the observed runner checkout behavior.
+
 ## v1.0.1 - 2026-09-26
 
 ### Added

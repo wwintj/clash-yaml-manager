@@ -222,8 +222,6 @@ def verify_release(item, tag, notes):
 def publish_tag(tag, root=ROOT):
     if normalize_tag(tag) != tag or read_version(root / 'VERSION') != tag[1:]:
         raise ReleaseError('VERSION must exactly match the release tag.')
-    if run(['git', 'cat-file', '-t', tag], root) != 'tag':
-        raise ReleaseError('Release tag must be annotated.')
     commit = run(['git', 'rev-parse', tag + '^{}'], root)
     if commit != run(['git', 'rev-parse', 'HEAD'], root):
         raise ReleaseError('HEAD must equal the release tag commit.')
@@ -233,6 +231,16 @@ def publish_tag(tag, root=ROOT):
     refs = dict(line.split()[::-1] for line in run(['git', 'ls-remote', 'origin', 'refs/tags/' + tag + '*'], root).splitlines())
     if refs.get(f'refs/tags/{tag}^{{}}') != commit:
         raise ReleaseError('Remote annotated tag does not match this commit.')
+    # actions/checkout can flatten the runner's local tag ref to the event SHA.
+    # Validate the authoritative remote tag object, without replacing any refs.
+    tag_object = refs[f'refs/tags/{tag}']
+    try:
+        object_type = run(['git', 'cat-file', '-t', tag_object], root)
+    except ReleaseError:
+        run(['git', 'fetch', '--no-tags', 'origin', tag_object], root)
+        object_type = run(['git', 'cat-file', '-t', tag_object], root)
+    if object_type != 'tag' or run(['git', 'rev-parse', tag_object + '^{}'], root) != commit:
+        raise ReleaseError('Remote release tag must be an annotated object pointing to HEAD.')
     existing = next((r for r in releases() if r.get('tag_name') == tag), None)
     if existing:
         # Tag workflow may race the local publisher. Verify only; never edit.
