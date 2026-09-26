@@ -28,6 +28,7 @@ apt-get install -y python3 python3-venv python3-pip curl iproute2 ca-certificate
 
 CURRENT_DIR="$(pwd)"
 source "${CURRENT_DIR}/scripts/deploy-common.sh"
+SOURCE_VERSION="$(python3 -c 'from core.version import read_version; print(read_version("VERSION"))')"
 
 if [[ ! -f "${CURRENT_DIR}/app.py" || ! -f "${CURRENT_DIR}/requirements.txt" ]]; then
   echo "错误：请在 clash-yaml-manager 项目根目录下运行 install.sh。"
@@ -99,7 +100,7 @@ done
 INSTALL_PASSWORD=""
 export -n INSTALL_PASSWORD
 while [[ -z "${INSTALL_PASSWORD}" ]]; do
-  read -r -s -p "请输入 Web 管理密码（必填，可包含空格和特殊字符，不显示）: " INSTALL_PASSWORD
+  IFS= read -r -s -p "请输入 Web 管理密码（必填，可包含空格和特殊字符，不显示）: " INSTALL_PASSWORD
   echo
   if [[ -z "${INSTALL_PASSWORD}" ]]; then
     echo "错误：密码不能为空。"
@@ -155,7 +156,7 @@ systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
 
 healthy=false
-for attempt in {1..15}; do
+for _attempt in {1..15}; do
   if systemctl is-active --quiet "${SERVICE_NAME}" && curl -fsS --max-time 2 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
     healthy=true
     break
@@ -174,7 +175,7 @@ if command -v curl >/dev/null 2>&1; then
 fi
 
 echo "=========================================================="
-echo "clash-yaml-manager 安装成功！"
+echo "clash-yaml-manager v${SOURCE_VERSION} 安装成功！"
 echo "=========================================================="
 echo "访问地址: http://${SERVER_IP}:${APP_PORT}"
 echo ""

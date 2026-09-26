@@ -48,6 +48,8 @@ try:
     source = pathlib.Path(sys.argv[1])
     sys.path.insert(0, str(source))
     from core.envfile import values as env_values
+    from core.version import read_version
+    read_version(source / "VERSION")
     for path in [source / 'app.py', *sorted((source / 'core').glob('*.py'))]:
         compile(path.read_bytes(), str(path), 'exec')
     env_path = pathlib.Path(sys.argv[2])
@@ -94,7 +96,7 @@ echo "备份目录: ${BACKUP_DIR}"
 echo "正在备份当前安装目录..."
 mkdir -p "${BACKUP_DIR}"
 
-for item in app.py requirements.txt install.sh uninstall.sh update.sh remote-update.sh core templates static scripts venv .service-account; do
+for item in VERSION app.py requirements.txt install.sh uninstall.sh update.sh remote-install.sh remote-update.sh core templates static scripts venv .service-account; do
   if [[ -e "${INSTALL_DIR}/${item}" ]]; then
     cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DIR}/"
   fi
@@ -184,7 +186,7 @@ systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
 
 healthy=false
-for attempt in {1..15}; do
+for _attempt in {1..15}; do
   if systemctl is-active --quiet "${SERVICE_NAME}" && curl -fsS --max-time 2 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
     healthy=true
     break

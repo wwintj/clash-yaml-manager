@@ -4,27 +4,26 @@
 
 可上傳現有 YAML，也可直接使用內建預設 YAML。輸入 `vmess://` / `vless://` 節點後，系統會自動替換 `proxies`、清理舊節點引用、補齊策略組，並產生新的 Clash/Mihomo 設定檔。
 
-**聯絡信箱：** wwintj@gmail.com
+<!-- RELEASE:START -->
+**Latest Stable: 尚未正式發布（初始 VERSION 基線為 1.0.0）**
+<!-- RELEASE:END -->
 
-**GitHub About 建議：**
-
-- Description: `輕量級 Clash/Mihomo YAML 節點管理面板，支援預設規則、一鍵安裝、一鍵升級、vmess/vless 節點注入。`
-- Topics: `clash`, `mihomo`, `yaml`, `flask`, `proxy`, `vmess`, `vless`, `vps`
-
----
+main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。
 
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
 
+<!-- INSTALL:START -->
 ```bash
-sudo bash -c 'apt-get update -y && apt-get install -y git ca-certificates && rm -rf /tmp/clash-yaml-manager && git clone https://github.com/wwintj/clash-yaml-manager.git /tmp/clash-yaml-manager && cd /tmp/clash-yaml-manager && bash install.sh'
+curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-install.sh | sudo bash
 ```
+<!-- INSTALL:END -->
 
 安裝時會提示輸入：
 
 - Web 連接埠，預設 `8899`
-- Web 管理密碼
+- Web 管理密碼：只要求非空；單字元、中文、符號及前後空格均按原值保存為雜湊。
 
 安裝完成後訪問：
 
@@ -44,9 +43,11 @@ http://1.2.3.4:8899
 
 適用於已經安裝過的 VPS。升級會保留非認證 `.env` 設定、預設 YAML、上傳檔案、輸出檔案、備份、日誌和 `state/`；舊密碼會安全遷入雜湊認證狀態。
 
+<!-- UPDATE:START -->
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh | sudo bash
 ```
+<!-- UPDATE:END -->
 
 保留內容：
 
@@ -70,6 +71,21 @@ sudo bash /opt/clash-yaml-manager/uninstall.sh
 
 ---
 
+## 當前版本與指定版本
+
+```bash
+cat /opt/clash-yaml-manager/VERSION
+```
+
+安裝/升級可指定已發布的 stable tag（以下 X.Y.Z 替換為目標版本）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-install.sh | sudo bash -s -- --version vX.Y.Z
+curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh | sudo bash -s -- --version vX.Y.Z
+```
+
+相同版本提示 `Already up to date.`；降級預設拒絕，必須另加 `--allow-downgrade`。舊安裝沒有 VERSION 時走保留資料的遷移流程。安裝需要互動終端輸入端口與隱藏密碼；bootstrap 使用 python3、curl，不要求 jq 或 git。詳見 [發布與部署](docs/RELEASE.md)。
+
 ## 常用命令
 
 ```bash
@@ -91,13 +107,7 @@ ufw reload
 
 ## Releases
 
-目前版本發布說明請看 [CHANGELOG.md](CHANGELOG.md)。
-
-建議首個 GitHub Release：
-
-- Tag: `v1.0.0`
-- Title: `v1.0.0 - Default YAML and Update Flow`
-- Notes: 複製 [CHANGELOG.md](CHANGELOG.md) 中 `v1.0.0` 小節
+正式版本由根目錄 `VERSION` 管理；發布流程自動更新上方 metadata 與 [CHANGELOG](CHANGELOG.md)。維護者執行 `python3 scripts/release.py patch --dry-run`，通過後執行 `python3 scripts/release.py patch` 即完成版本、commit、annotated tag、push 和 GitHub Release。細節見 [自動發布](docs/RELEASE_AUTOMATION.md)。
 
 ---
 
@@ -208,7 +218,7 @@ state/
 
 ## 安全建議
 
-- 建議使用複雜密碼。
+- 密碼只要求非空，不強制長度或複雜度；請自行選擇合適密碼。
 - 不建議長期把管理面板直接暴露在公網。
 - 推薦透過 Nginx HTTPS、Tailscale、WireGuard 或 SSH 隧道訪問。
 - 如果啟用 HTTPS，可以在 `/opt/clash-yaml-manager/.env` 中設定：

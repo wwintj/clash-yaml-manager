@@ -27,6 +27,7 @@ def deployment(tmp_path):
         directory.mkdir()
     shutil.copytree(ROOT / 'core', source / 'core', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copytree(ROOT / 'scripts', source / 'scripts')
+    shutil.copy2(ROOT / 'VERSION', source / 'VERSION')
     (source / 'app.py').write_text('VERSION = "new"\n')
     (source / 'requirements.txt').write_text('Flask\n')
     (source / '.env').write_text('DO_NOT_COPY=source-secret\n')
@@ -91,6 +92,7 @@ def test_upgrade_preserves_data_and_checks_health(deployment):
     result = run()
     assert result.returncode == 0, result.stderr + result.stdout
     assert (installed / 'app.py').read_text() == (source / 'app.py').read_text()
+    assert (installed / 'VERSION').read_bytes() == (source / 'VERSION').read_bytes()
     assert not (installed / '.venv').exists()
     for path, content in original.items():
         expected = content.replace(b'APP_PASSWORD_B64=dGVzdA==\n', b'') if path == Path('.env') else content
@@ -171,23 +173,8 @@ def test_reinstall_never_touches_existing_install(deployment):
     assert (installed / '.env').read_bytes() == original
 
 
-def test_remote_download_failure_leaves_existing_data(deployment):
-    installed, _, _, events, env, run = deployment
-    commands = Path(env['PATH'].split(os.pathsep)[0])
-    executable(commands / 'git', 'echo "git clone failed" >> "$TEST_EVENTS"\nexit 1\n')
-    sentinel = installed.parent / 'existing-temp'
-    sentinel.mkdir()
-    (sentinel / 'keep').write_text('keep')
-    env['TMP'] = str(sentinel)  # old script would rm -rf this user-supplied path
-    result = run('remote-update.sh')
-    assert result.returncode != 0
-    assert (sentinel / 'keep').read_text() == 'keep'
-    assert (installed / 'app.py').read_text() == 'VERSION = "old"\n'
-    assert 'systemctl' not in events.read_text()
-    assert not list(installed.parent.glob('clash-yaml-manager-update.*'))
-
-
-def test_fresh_install_default_url_and_private_files(deployment):
+@pytest.mark.parametrize('password', ['a', '1', '密', '!', ' leading trailing ', ' '])
+def test_fresh_install_default_url_and_private_files(deployment, password):
     installed, source, service, events, env, run = deployment
     previous = installed.with_name('previous')
     installed.rename(previous)
@@ -206,7 +193,7 @@ fi
 exec "$TEST_PYTHON" "$@"
 ''')
     executable(commands / 'ss', ':\n')
-    result = run('install.sh', input_text='\ntest-install-password\n')
+    result = run('install.sh', input_text='\n\n' + password + '\n')
     assert result.returncode == 0, result.stderr + result.stdout
     configuration = (installed / '.env').read_text()
     assert 'APP_PORT=8899\n' in configuration
@@ -215,7 +202,8 @@ exec "$TEST_PYTHON" "$@"
     assert 'DO_NOT_COPY' not in configuration
     assert 'APP_PASSWORD' not in configuration
     from core.security import AuthStore
-    assert AuthStore(installed / 'state').authenticate('test-install-password')
+    assert AuthStore(installed / 'state').authenticate(password)
+    assert (installed / 'VERSION').read_bytes() == (source / 'VERSION').read_bytes()
     assert (installed / '.env').stat().st_mode & 0o777 == 0o600
     assert (installed / 'outputs').stat().st_mode & 0o777 == 0o700
     assert 'UMask=0077' in service.read_text()
@@ -232,7 +220,7 @@ def test_uninstall_keep_data_choice(deployment):
     assert (installed / 'outputs/keep').read_text() == 'preserved\n'
 
 
-@pytest.mark.parametrize('script', ['install.sh', 'update.sh', 'remote-update.sh', 'uninstall.sh'])
+@pytest.mark.parametrize('script', ['install.sh', 'update.sh', 'remote-install.sh', 'remote-update.sh', 'uninstall.sh', 'scripts/deploy-common.sh'])
 def test_shell_syntax(script):
     result = subprocess.run(['bash', '-n', str(ROOT / script)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

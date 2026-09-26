@@ -268,3 +268,19 @@ def test_trusted_proxy_limiter_uses_effective_ip(web, client):
 def test_login_fails_closed_if_limiter_unreadable(web, client):
     web.login_limiter.path.write_text('{broken')
     assert post(client, '/login', {'password': 'test 密码'}).status_code == 503
+
+
+@pytest.mark.parametrize('password', ['a', '1', '密', '!', ' leading trailing ', ' ', '🔐'])
+def test_nonempty_passwords_preserve_exact_value(web, logged_in, password):
+    post(logged_in, '/change-password', {'current_password': 'test 密码',
+                                        'new_password': password, 'confirm_password': password})
+    assert web.auth_store.authenticate(password)
+    if password != password.strip():
+        assert not web.auth_store.authenticate(password.strip())
+    assert not web.auth_store.authenticate('')
+
+
+def test_web_version_comes_from_version_file(web, client):
+    from conftest import ROOT
+    assert web.APP_VERSION == (ROOT / 'VERSION').read_text().strip()
+    assert ('Clash YAML Manager v' + web.APP_VERSION) in client.get('/').get_data(as_text=True)

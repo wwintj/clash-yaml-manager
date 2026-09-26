@@ -17,6 +17,7 @@ from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
 from core.state import StateError
 from core.rate_limit import LoginLimiter
+from core.version import read_version
 from core.subscriptions import SubscriptionSigner, safe_filename
 
 # ==========================================
@@ -34,6 +35,7 @@ FILE_RETENTION_DAYS = int(os.environ.get("FILE_RETENTION_DAYS", os.environ.get("
 CLEANUP_INTERVAL_DAYS = int(os.environ.get("CLEANUP_INTERVAL_DAYS", os.environ.get("BACKUP_CLEANUP_INTERVAL_DAYS", 7)))
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+APP_VERSION = read_version(os.path.join(BASE_DIR, "VERSION"))
 DIR_UPLOADS = os.path.join(BASE_DIR, "uploads")
 DIR_OUTPUTS = os.path.join(BASE_DIR, "outputs")
 DIR_BACKUPS = os.path.join(BASE_DIR, "backups")
@@ -229,6 +231,7 @@ def get_base_context() -> Dict[str, Any]:
     """模板基础上下文。"""
     return {
         "logged_in": session.get("logged_in", False),
+        "app_version": APP_VERSION,
         "error_messages": [],
         "success_message": "",
         "result": None,

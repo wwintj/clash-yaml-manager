@@ -1,23 +1,29 @@
 # Changelog
 
-## Unreleased - Phase 2 security and runtime hardening
+## Unreleased
 
-- Store Werkzeug password hashes in atomic, flock-protected shared auth state. Migrate legacy hash/Base64/plain credentials without runtime `.env` writes; password changes propagate across workers and revoke existing sessions on their next request.
-- Add process-shared IP login limits, expiry/pruning, HTTP 429 and Retry-After; retain opt-in trusted proxy handling.
-- Run systemd under a dedicated, verified `clashyaml` account with root-owned application code, private service-owned runtime directories, UMask/NoNewPrivileges/PrivateTmp. Preserve auth state during upgrades and handle account/data lifecycle on uninstall.
-- Add 128-bit random output identities and V2 subscription HMACs. Retain legacy links only for old filenames and fixed-format full download tokens; deleted URLs cannot follow future generated output through sequence reuse.
-- Add migration failure, multi-worker, session, deployment and subscription regression tests. Document migration/rollback and remaining real-Ubuntu validation in `docs/PHASE2.md`.
+### Added
+- Establish a 178-test Phase 1/2 regression baseline and extend it with release, lifecycle and non-empty password coverage.
+- Add a single VERSION source, a small Web version footer, and a release orchestrator that validates, updates metadata, creates annotated tags, pushes and verifies GitHub Releases.
+- Add tag-triggered GitHub Actions release validation using the built-in GITHUB_TOKEN.
 
-## Phase 1 checkpoint - Regression baseline and scoped P0 fixes
+### Fixed
+- Reject malformed YAML structures, duplicate groups and dangling rule targets; preserve surviving comments and singly encoded VLESS paths, validate ports and atomically publish concurrent YAML outputs.
+- Keep administrator password input unchanged, including leading/trailing spaces; reject only truly empty new passwords and mismatched confirmation.
+- Remove the public contact email from current documentation and prevent its return in README.
 
-- Added isolated pytest coverage for parsers, YAML round trips, Flask flows, signed/short downloads, concurrent output and deployment script failure paths.
-- Reject invalid ports, empty node names, malformed YAML structures and duplicate policy groups instead of silently discarding configuration. Preserve singly encoded VLESS WS paths and repair MATCH flag references.
-- Block replacement when rules still target a removed node. Keep surviving group-list comments; publish complete private output files atomically without overwriting concurrent results.
-- Remove raw parser/YAML exception content and user-supplied filenames from diagnostics. Create uploads/backups/outputs with private permissions from the start.
-- Add Flask-WTF CSRF protection, POST-only logout, session reset on login/logout/password change and a 12-hour login session lifetime.
-- Make ProxyFix opt-in with `TRUST_PROXY_HEADERS`; default new download URLs to the request scheme, preserving `DOWNLOAD_BASE_URL` and explicit scheme overrides. Reject malformed download tokens without a server error.
-- Refuse destructive reinstall/in-place update, exclude `.env` and local environments from code copying, use unique remote staging directories, extend upgrade preflight/backups and report health-check failures with rollback guidance.
-- Keep the default YAML and historical templates unchanged. At this checkpoint, password hashes, multi-worker credential consistency, login rate limits and dedicated system user migration were deferred to Phase 2 above.
+### Security
+- Protect forms with CSRF, use POST-only logout, bound session lifetime, and make proxy-header trust opt-in.
+- Replace reversible password storage with shared Werkzeug hashes, atomic credential migration, immediate multi-worker password consistency and global session invalidation after password changes.
+- Add cross-worker IP login limits with HTTP 429, Retry-After, expiry and pruning.
+- Run the service as a dedicated clashyaml account with root-owned read-only application code and private runtime directories.
+- Use unique 128-bit output identities and V2 subscription HMACs; retain legacy-file links without allowing weak tokens to authorize new files.
+
+### Deployment
+- Preserve deployed configuration, default YAML and runtime/auth state during upgrades; add preflight, backups, health checks and rollback guidance.
+- Install and update exact published stable tags through standalone remote entrypoints, with version pinning, no-op updates and explicit downgrade opt-in; never fall back to main.
+- Validate downloaded archive paths and VERSION before running scripts; retain the installed version's one-command uninstaller and safe account/data handling.
+- Automate bounded README metadata and dated CHANGELOG updates; keep stable releases immutable and verify publication after pushing.
 
 ## v1.0.0 - Default YAML and Update Flow
 
@@ -51,7 +57,3 @@ Initial public release focused on one-command VPS deployment and Clash/Mihomo YA
 
 - Python syntax check passed for `app.py`, `core/parser.py`, and `core/yaml_utils.py`.
 - Default YAML was checked to ensure stale `redmi` / `vmess` references were removed.
-
-### Contact
-
-- wwintj@gmail.com

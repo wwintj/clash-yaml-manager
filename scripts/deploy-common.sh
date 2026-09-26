@@ -5,10 +5,10 @@ SERVICE_GROUP="clashyaml"
 ACCOUNT_MARKER="${INSTALL_DIR}/.service-account"
 
 service_account_matches() {
-  local account account_name account_pass account_uid account_gid account_comment account_home account_shell
+  local account account_name _account_pass account_uid account_gid account_comment account_home account_shell
   [[ -f "${ACCOUNT_MARKER}" && ! -L "${ACCOUNT_MARKER}" ]] || return 1
   account="$(getent passwd "${SERVICE_USER}")" || return 1
-  IFS=: read -r account_name account_pass account_uid account_gid account_comment account_home account_shell <<< "${account}"
+  IFS=: read -r account_name _account_pass account_uid account_gid account_comment account_home account_shell <<< "${account}"
   [[ "${account_name}" == "${SERVICE_USER}" && "${account_uid}" =~ ^[0-9]+$ && "${account_uid}" -ne 0 &&
      "${account_comment}" == "Clash YAML Manager service" && "${account_home}" == /nonexistent &&
      "${account_shell}" == /usr/sbin/nologin &&
