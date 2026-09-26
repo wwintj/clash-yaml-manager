@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.1 - 2026-09-26
+
 ### Added
 - Establish a 178-test Phase 1/2 regression baseline and extend it with release, lifecycle and non-empty password coverage.
 - Add a single VERSION source, a small Web version footer, and a release orchestrator that validates, updates metadata, creates annotated tags, pushes and verifies GitHub Releases.
