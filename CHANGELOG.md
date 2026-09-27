@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.1.1 - 2026-09-28
+
 ### Deployment
 - Make the 30-second deployment readiness timeout explicit so release validation passes across ShellCheck versions without changing runtime behavior.
 
