@@ -16,6 +16,7 @@
 - Display generation expiry and responsive node previews while retaining legacy subscription routes.
 
 ### Fixed
+- Keep Parse Preview columns stable with wrapped warnings, normal-height action buttons and desktop/tablet/mobile layouts.
 - Prevent country-search and auxiliary-input Enter keys from implicitly generating YAML; only the identified Generate submitter may proceed.
 - Recover rejected CSRF forms through a fresh GET and a one-time notice, preserving browser drafts and the finite token lifetime; return a recoverable JSON error for node parsing.
 - Preserve input through failed submissions and require reselecting Custom YAML after refresh; never save uploaded file contents in drafts.

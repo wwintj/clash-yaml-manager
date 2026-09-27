@@ -461,9 +461,33 @@
         padding: 24px 12px 48px;
       }
     }
-    .preview-node { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto auto; gap:12px; padding:14px 0; border-bottom:1px solid #343434; }
-    .preview-node > * { min-width:0; overflow-wrap:anywhere; }
-    @media(max-width:767px) { .preview-node { grid-template-columns:minmax(0,1fr); } }
+    .preview-node {
+      display: grid;
+      grid-template-areas: "name country info action";
+      grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.35fr) minmax(220px, 0.9fr) max-content;
+      align-items: start;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid #343434;
+    }
+    .preview-node > * { min-width: 0; }
+    .preview-name { grid-area: name; }
+    .preview-country { grid-area: country; }
+    .preview-info { grid-area: info; overflow-wrap: anywhere; }
+    .preview-action { grid-area: action; align-self: start; justify-self: start; white-space: nowrap; }
+    @media (min-width: 768px) and (max-width: 1199px) {
+      .preview-node {
+        grid-template-areas: "name country" "info action";
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      }
+    }
+    @media (max-width: 767px) {
+      .preview-node {
+        grid-template-areas: "name" "country" "info" "action";
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .preview-action { width: 100%; }
+    }
   </style>
 </head>
 <body>

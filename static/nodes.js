@@ -82,16 +82,16 @@
       preview.replaceChildren();
       records.forEach(record => {
         const card = element('div', '', 'preview-node');
-        const nameBox = element('label', 'Name');
+        const nameBox = element('label', 'Name', 'preview-name');
         const name = element('input', '', 'form-control terminal-input'); name.value = record.name;
         nameBox.append(name);
-        const countryBox = element('div', 'Country');
+        const countryBox = element('div', 'Country', 'preview-country');
         const search = element('input', '', 'country-search form-control terminal-input mb-1');
         search.type = 'search'; search.placeholder = 'Search ISO / English / 中文'; search.setAttribute('aria-label','Search preview country');
         const select = element('select', '', 'form-select terminal-select'); select.setAttribute('aria-label','Preview country');
         fillCountries(select, '', record.country); countryBox.append(search, select);
-        const info = element('div'); info.append(element('div', 'Protocol: ' + record.protocol), element('div', 'Status: ' + record.status), element('div', 'Source: ' + record.source), element('small', record.message));
-        const action = element('button', 'Apply edit', 'btn btn-outline-terminal btn-terminal'); action.type = 'button';
+        const info = element('div', '', 'preview-info'); info.append(element('div', 'Protocol: ' + record.protocol), element('div', 'Status: ' + record.status), element('div', 'Source: ' + record.source), element('small', record.message));
+        const action = element('button', 'Apply edit', 'preview-action btn btn-outline-terminal btn-terminal'); action.type = 'button';
         function edit(field, value) {
           root.nodeOverrides[record.key] = {...root.nodeOverrides[record.key], [field]:value};
           root.saveDraft(); dirty();

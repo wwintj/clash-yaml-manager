@@ -1,0 +1,53 @@
+"""Opt-in browser integration: isolated Flask copy, no real account/runtime writes.
+
+Requires Node with Playwright/Chromium installed (NODE_PATH may supply the module).
+BOOTSTRAP_CSS_PATH may point to a cached copy of the page's Bootstrap 5.3.3 CSS.
+Run with the project's Python environment: python tests/run_preview_browser.py.
+"""
+import importlib.util
+import logging
+import os
+from pathlib import Path
+import secrets
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+
+from werkzeug.serving import make_server
+
+
+def main():
+    root = Path(__file__).resolve().parents[1]
+    with tempfile.TemporaryDirectory(prefix='clash-preview-browser-') as temporary:
+        work = Path(temporary)
+        for name in ('app.py', 'VERSION'):
+            shutil.copy2(root / name, work / name)
+        for name in ('core', 'templates', 'static', 'defaults'):
+            shutil.copytree(root / name, work / name, ignore=shutil.ignore_patterns('__pycache__'))
+        password = secrets.token_urlsafe(24)
+        os.environ.update(APP_PASSWORD=password, SECRET_KEY=secrets.token_hex(32))
+        for key in ('APP_PASSWORD_B64', 'APP_PASSWORD_HASH', 'DOWNLOAD_BASE_URL',
+                    'TRUST_PROXY_HEADERS', 'COOKIE_SECURE'):
+            os.environ.pop(key, None)
+        sys.path.insert(0, str(work))
+        spec = importlib.util.spec_from_file_location('preview_test_app', work / 'app.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        logging.getLogger().setLevel(logging.WARNING)
+        server = make_server('127.0.0.1', 0, module.app, threaded=True)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            subprocess.run(['node', str(root / 'tests/test_preview_layout.cjs')], check=True,
+                           env=dict(os.environ, PREVIEW_TEST_URL=f'http://127.0.0.1:{server.server_port}',
+                                    PREVIEW_TEST_PASSWORD=password), timeout=180)
+        finally:
+            server.shutdown()
+            worker.join(timeout=5)
+            server.server_close()
+
+
+if __name__ == '__main__':
+    main()
