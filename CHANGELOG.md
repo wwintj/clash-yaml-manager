@@ -19,6 +19,10 @@
 - Preserve input through failed submissions and require reselecting Custom YAML after refresh; never save uploaded file contents in drafts.
 - Submit auxiliary nodes separately so repeated generation does not append duplicate rows to Batch Nodes.
 
+### Deployment
+- Disable Gunicorn's unused control socket for the nologin service account; require Gunicorn ≥25.1.0 and its Python ≥3.10 runtime.
+- Share install/update readiness checks with a 30-second budget, one-second retry interval and public `/healthz`; require HTTP 200 and systemd active before reporting completion. On failure, return nonzero, show service diagnostics and retain upgrade backups with manual rollback guidance.
+
 ## v1.0.2 - 2026-09-26
 
 ### Deployment

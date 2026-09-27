@@ -169,6 +169,8 @@ else:
 
 @app.before_request
 def invalidate_old_sessions():
+    if request.endpoint == 'healthz':
+        return None
     cleanup_old_files()
     if session.get('logged_in'):
         state = auth_store.read()
@@ -178,6 +180,12 @@ def invalidate_old_sessions():
 
 
 CSRFProtect(app)
+
+
+@app.route('/healthz', methods=['GET'])
+def healthz():
+    """Readiness only: Flask loaded and can serve requests, without auth or I/O."""
+    return 'OK\n', 200, {'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store'}
 
 
 # ==========================================

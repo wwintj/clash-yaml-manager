@@ -29,7 +29,7 @@ def deployment(tmp_path):
     shutil.copytree(ROOT / 'scripts', source / 'scripts')
     shutil.copy2(ROOT / 'VERSION', source / 'VERSION')
     (source / 'app.py').write_text('VERSION = "new"\n')
-    (source / 'requirements.txt').write_text('Flask\n')
+    shutil.copy2(ROOT / 'requirements.txt', source / 'requirements.txt')
     (source / '.env').write_text('DO_NOT_COPY=source-secret\n')
     (source / 'defaults').mkdir()
     (source / 'defaults/default.yaml').write_text('new: template\n')
@@ -48,8 +48,23 @@ def deployment(tmp_path):
                TMPDIR=str(tmp_path), TEST_PIP_FAIL='0', TEST_HEALTH_FAIL='0',
                TEST_ACCOUNT=str(tmp_path / 'account.db'), TEST_PYTHON=sys.executable)
     (commands / 'python3').symlink_to(sys.executable)
-    executable(commands / 'systemctl', 'echo "systemctl $*" >> "$TEST_EVENTS"\n')
-    executable(commands / 'curl', 'echo "curl" >> "$TEST_EVENTS"\nexit "$TEST_HEALTH_FAIL"\n')
+    executable(commands / 'systemctl', '''echo "systemctl $*" >> "$TEST_EVENTS"
+if [[ "$1" == is-active ]]; then exit "${TEST_INACTIVE:-0}"; fi
+''')
+    executable(commands / 'journalctl', 'echo "journalctl $*" >> "$TEST_EVENTS"\n')
+    executable(commands / 'curl', '''echo "curl $*" >> "$TEST_EVENTS"
+count_file="${TEST_EVENTS}.attempts"
+count=0
+[[ ! -f "$count_file" ]] || read -r count < "$count_file"
+count=$((count + 1))
+echo "$count" > "$count_file"
+if (( count <= ${TEST_FAIL_FIRST:-0} )); then
+  echo 'curl: (7) Failed to connect' >&2
+  exit 7
+fi
+echo "${TEST_HTTP_STATUS:-200}"
+exit "$TEST_HEALTH_FAIL"
+''')
     executable(commands / 'sleep', ':\n')
     executable(commands / 'apt-get', 'echo apt-get >> "$TEST_EVENTS"\n')
     executable(installed / 'venv/bin/pip', 'echo "pip $*" >> "$TEST_EVENTS"\nexit "$TEST_PIP_FAIL"\n')
@@ -109,6 +124,8 @@ def test_upgrade_preserves_data_and_checks_health(deployment):
     assert 'NoNewPrivileges=true' in service.read_text() and 'PrivateTmp=true' in service.read_text()
     assert f'WorkingDirectory={installed}' in service.read_text()
     assert f'ExecStart={installed}/venv/bin/gunicorn' in service.read_text()
+    assert '--no-control-socket' in service.read_text()
+    assert 'Environment=HOME=' not in service.read_text()
     assert '${APP_PORT}' in service.read_text()
     log = events.read_text()
     assert log.index('pip install') < log.index('systemctl stop')
@@ -157,12 +174,19 @@ def test_failed_dependencies_do_not_stop_or_replace_app(deployment):
 
 
 def test_health_failure_reports_rollback(deployment):
-    _, _, _, events, env, run = deployment
+    installed, _, _, events, env, run = deployment
     env['TEST_HEALTH_FAIL'] = '1'
     result = run()
     assert result.returncode != 0
     assert '回滚' in result.stderr and '升级完成。' not in result.stdout
     assert 'systemctl restart' in events.read_text()
+    assert 'Health check FAILED' in result.stderr
+    assert 'systemctl status clash-yaml-manager --no-pager -l' in events.read_text()
+    assert 'journalctl -u clash-yaml-manager -n 50 --no-pager' in events.read_text()
+    backup = next(installed.parent.glob('upgrade-backup-*'))
+    assert str(backup) in result.stderr
+    assert (backup / '.env').exists() and (backup / 'venv/bin/pip').exists()
+    assert (backup / 'app.py').read_text() == 'VERSION = "old"\n'
 
 
 def test_reinstall_never_touches_existing_install(deployment):
@@ -173,10 +197,12 @@ def test_reinstall_never_touches_existing_install(deployment):
     assert (installed / '.env').read_bytes() == original
 
 
-@pytest.mark.parametrize('password,channel', [('a','local'), ('1','local'), ('密','local'), ('!','local'),
-                                             (' leading trailing ','local'), (' ','local'),
-                                             ('test-main','main'), ('test-stable','stable')])
-def test_fresh_install_default_url_and_private_files(deployment, password, channel):
+@pytest.mark.parametrize('password,channel,health_failure', [('a','local',False), ('1','local',False),
+                                             ('密','local',False), ('!','local',False),
+                                             (' leading trailing ','local',False), (' ','local',False),
+                                             ('test-main','main',False), ('test-stable','stable',False),
+                                             ('failure-main','main',True), ('failure-stable','stable',True)])
+def test_fresh_install_default_url_and_private_files(deployment, password, channel, health_failure):
     installed, source, service, events, env, run = deployment
     previous = installed.with_name('previous')
     installed.rename(previous)
@@ -202,8 +228,19 @@ exec "$TEST_PYTHON" "$@"
         metadata = source.parent / 'incoming.json'
         metadata.write_text(json.dumps(make_install_info(channel, version, 'a'*40, 'v'+version if channel == 'stable' else None)))
         env['CLASH_DEPLOY_METADATA'] = str(metadata)
+    env['TEST_FAIL_FIRST'] = '2'
+    env['TEST_HEALTH_FAIL'] = '1' if health_failure else '0'
     result = run('install.sh', input_text='\n\n' + password + '\n')
+    if health_failure:
+        assert result.returncode != 0
+        assert 'Health check FAILED' in result.stderr
+        assert '安装成功' not in result.stdout
+        assert 'systemctl status clash-yaml-manager --no-pager -l' in events.read_text()
+        assert 'journalctl -u clash-yaml-manager -n 50 --no-pager' in events.read_text()
+        return
     assert result.returncode == 0, result.stderr + result.stdout
+    assert result.stdout.index('attempt 3/30: PASS') < result.stdout.index('安装成功')
+    assert 'curl: (7)' not in result.stderr
     configuration = (installed / '.env').read_text()
     assert 'APP_PORT=8899\n' in configuration
     assert 'DOWNLOAD_URL_SCHEME=\n' in configuration
@@ -224,6 +261,9 @@ exec "$TEST_PYTHON" "$@"
     assert (installed / 'outputs').stat().st_mode & 0o777 == 0o700
     assert 'UMask=0077' in service.read_text()
     assert 'User=clashyaml' in service.read_text() and 'Group=clashyaml' in service.read_text()
+    assert '--no-control-socket' in service.read_text() and 'User=root' not in service.read_text()
+    assert 'NoNewPrivileges=true' in service.read_text() and 'PrivateTmp=true' in service.read_text()
+    assert 'Environment=HOME=' not in service.read_text()
     assert not (installed / '.venv').exists()
 
 
@@ -323,3 +363,80 @@ def test_low_port_grants_only_bind_capability(deployment):
     assert 'User=clashyaml' in service.read_text()
     assert 'AmbientCapabilities=CAP_NET_BIND_SERVICE' in service.read_text()
     assert 'CapabilityBoundingSet=CAP_NET_BIND_SERVICE' in service.read_text()
+
+
+def test_gunicorn_flag_and_dependency_floor_are_compatible(deployment):
+    from packaging.requirements import Requirement
+    requirement = next(Requirement(line) for line in (ROOT / 'requirements.txt').read_text().splitlines()
+                       if line.lower().startswith('gunicorn'))
+    assert str(requirement.specifier) == '>=25.1.0'
+    assert not any(version in requirement.specifier for version in ('21.2.0', '22.0.0', '23.0.0', '25.0.0'))
+    installed, source, service, events, _, run = deployment
+    (installed / 'requirements.txt').write_text('gunicorn>=21.2.0\n')
+    result = run()
+    assert result.returncode == 0, result.stderr
+    assert '--no-control-socket' in service.read_text()
+    assert (installed / 'requirements.txt').read_bytes() == (ROOT / 'requirements.txt').read_bytes()
+    log = events.read_text()
+    assert log.index(f'pip install -r {source}/requirements.txt') < log.index('systemctl restart')
+
+
+@pytest.mark.parametrize('fail_first', [0, 1, 2, 5])
+@pytest.mark.parametrize('channel', ['stable', 'main'])
+def test_update_waits_for_readiness_in_both_channels(deployment, fail_first, channel):
+    import json
+    from core.install_info import make_install_info, read_install_info
+    installed, source, _, _, env, run = deployment
+    version = (source / 'VERSION').read_text().strip()
+    incoming = source.parent / 'incoming.json'
+    incoming.write_text(json.dumps(make_install_info(channel, version, 'b'*40,
+                                                    'v'+version if channel == 'stable' else None)))
+    env.update(CLASH_DEPLOY_METADATA=str(incoming), TEST_FAIL_FIRST=str(fail_first))
+    result = run()
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.count('not ready') == fail_first
+    assert result.stdout.index(f'attempt {fail_first + 1}/30: PASS') < result.stdout.index('升级完成。')
+    assert 'curl: (7)' not in result.stderr
+    assert read_install_info(installed)['channel'] == channel
+
+
+@pytest.mark.parametrize('failure_env', [dict(TEST_HEALTH_FAIL='7'), dict(TEST_INACTIVE='3'),
+                                       dict(TEST_HTTP_STATUS='500'), dict(TEST_HTTP_STATUS='302')])
+def test_readiness_failures_never_report_update_success(deployment, failure_env):
+    _, _, _, events, env, run = deployment
+    env.update(failure_env)
+    result = run()
+    assert result.returncode != 0
+    assert 'Health check FAILED' in result.stderr and '回滚' in result.stderr
+    assert ': PASS' not in result.stdout and '升级完成' not in result.stdout
+    assert result.stdout.count('not ready') == 30
+    assert 'http://127.0.0.1:8899/healthz' in events.read_text()
+
+
+def test_readiness_deadline_counts_slow_http_attempts(deployment):
+    """A slow response must not restart the budget or become a late success."""
+    installed, _, _, _, env, _ = deployment
+    commands = Path(env['PATH'].split(os.pathsep)[0])
+    executable(commands / 'curl', '/bin/sleep 2\necho 200\n')
+    result = subprocess.run(['bash', '-c', 'source "$1"; wait_for_application 1',
+                             'health-test', str(ROOT / 'scripts/deploy-common.sh')],
+                            env=dict(env, INSTALL_DIR=str(installed), SERVICE_NAME='clash-yaml-manager',
+                                     APP_PORT='8899'), capture_output=True, text=True, timeout=5)
+    assert result.returncode != 0
+    assert 'Health check FAILED' in result.stderr
+    assert ': PASS' not in result.stdout
+    assert result.stdout.count('not ready') == 1
+
+
+def test_readiness_curl_timeout_is_bounded_by_remaining_budget(deployment):
+    installed, _, _, events, env, _ = deployment
+    env['TEST_HEALTH_FAIL'] = '28'
+    result = subprocess.run(['bash', '-c', 'source "$1"; wait_for_application 1',
+                             'health-test', str(ROOT / 'scripts/deploy-common.sh')],
+                            env=dict(env, INSTALL_DIR=str(installed), SERVICE_NAME='clash-yaml-manager',
+                                     APP_PORT='8899'), capture_output=True, text=True, timeout=5)
+    assert result.returncode != 0
+    assert '--max-time 1' in events.read_text()
+    assert '--connect-timeout 1' in events.read_text()
+    assert '--noproxy *' in events.read_text()
+    assert 'Health check FAILED' in result.stderr

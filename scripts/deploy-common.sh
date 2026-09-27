@@ -84,7 +84,7 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 ${bind_capability}
 WorkingDirectory=${INSTALL_DIR}
 EnvironmentFile=${INSTALL_DIR}/.env
-ExecStart=${INSTALL_DIR}/venv/bin/gunicorn -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
+ExecStart=${INSTALL_DIR}/venv/bin/gunicorn --no-control-socket -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
 Restart=always
 RestartSec=3
 
@@ -92,4 +92,38 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
   chmod 644 "${SERVICE_FILE}"
+}
+
+wait_for_application() {
+  # SECONDS is Bash's elapsed clock: slow HTTP attempts consume the same budget.
+  # The attempt cap also bounds retries when commands return immediately.
+  local max_wait="${1:-30}" attempt remaining request_timeout http_status
+  local deadline=$((SECONDS + max_wait))
+  echo "Waiting for application health check (up to ${max_wait}s)..."
+  for ((attempt=1; attempt<=max_wait; attempt++)); do
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) || break
+    request_timeout=2
+    (( remaining >= request_timeout )) || request_timeout="${remaining}"
+    # Do not follow redirects or use an operator's outbound HTTP proxy.
+    # Silence expected connection refusals while workers are still loading.
+    if http_status="$(curl --silent --fail --noproxy '*' --output /dev/null \
+        --write-out '%{http_code}' --connect-timeout "${request_timeout}" \
+        --max-time "${request_timeout}" "http://127.0.0.1:${APP_PORT}/healthz" 2>/dev/null)" &&
+        [[ "${http_status}" == 200 ]] &&
+        systemctl is-active --quiet "${SERVICE_NAME}" && (( SECONDS < deadline )); then
+      echo "Health check attempt ${attempt}/${max_wait}: PASS"
+      echo "Service is healthy."
+      return 0
+    fi
+    echo "Health check attempt ${attempt}/${max_wait}: not ready"
+    (( SECONDS < deadline && attempt < max_wait )) || break
+    sleep 1
+  done
+  echo "Health check FAILED" >&2
+  echo "systemctl status ${SERVICE_NAME} --no-pager -l" >&2
+  systemctl status "${SERVICE_NAME}" --no-pager -l >&2 || true
+  echo "journalctl -u ${SERVICE_NAME} -n 50 --no-pager" >&2
+  journalctl -u "${SERVICE_NAME}" -n 50 --no-pager >&2 || true
+  return 1
 }

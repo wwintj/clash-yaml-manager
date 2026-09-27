@@ -186,16 +186,7 @@ systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
 
-healthy=false
-for _attempt in {1..15}; do
-  if systemctl is-active --quiet "${SERVICE_NAME}" && curl -fsS --max-time 2 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
-    healthy=true
-    break
-  fi
-  sleep 1
-done
-if [[ "${healthy}" != true ]]; then
-  echo "错误：升级后健康检查失败，请检查 systemctl status 和 journalctl。" >&2
+if ! wait_for_application; then
   upgrade_failed
   exit 1
 fi

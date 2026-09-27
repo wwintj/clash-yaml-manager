@@ -262,6 +262,8 @@ HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS
 
 升級前會檢查原始碼語法、既有 `.env`、端口、固定 SECRET_KEY 及必要工具；備份程式、templates、static、部署腳本與共用 helper、requirements、venv、`.env`、預設 YAML、帳戶標記和原 systemd service。備份放在腳本輸出的 `/root/clash-yaml-manager-update-backup-*` 私有目錄。接著更新依賴並 `pip check`，再確認專用帳戶、停止服務、備份既有 state，先提交認證雜湊再原子刪除舊憑據，然後複製程式、修復所有權與權限、daemon-reload、重啟並檢查本機 HTTP 回應。備份 venv 需要额外磁碟空間。依賴仍在現有 venv 更新，失敗可能部分改動依賴；尚未實作完整 staging 或自動回滾。
 
+main 的安裝與升級會等待應用就緒：在約 30 秒期限內每秒重試公開的 `/healthz`，只有 HTTP 200 且 systemd active 才報告完成。失敗會顯示服務狀態與最近日誌，升級備份保留供手動回滾。此修復尚未包含在 v1.0.2；目前 main 的部署環境需 Python ≥3.10（Gunicorn ≥25.1.0）。
+
 失敗時不要重新執行安裝。依照輸出的備份目錄手動回滾：
 
 1. 停止 `clash-yaml-manager`。

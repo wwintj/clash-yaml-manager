@@ -10,10 +10,11 @@ import pytest
 from scripts import remote_lifecycle as life
 
 
-def archive(path, version='1.0.1', extra=None):
+def archive(path, version='1.0.1', extra=None, overrides=None):
     entries = {'VERSION': version + '\n', 'app.py': '', 'requirements.txt': '',
                'install.sh': '#!/bin/bash\n', 'update.sh': '#!/bin/bash\n', 'uninstall.sh': '#!/bin/bash\n',
                'scripts/deploy-common.sh': '#!/bin/bash\n', 'core/security.py': '', 'core/version.py': ''}
+    entries.update(overrides or {})
     with tarfile.open(path, 'w:gz') as output:
         for name, data in entries.items():
             data = data.encode()
@@ -176,3 +177,56 @@ print('200', end='')
                                 text=True, capture_output=True)
         assert result.returncode == 0, result.stderr
         assert 'Resolved stable: v9.8.7' in result.stdout
+
+
+@pytest.mark.parametrize('channel', ['stable', 'main'])
+def test_remote_update_bootstrap_propagates_health_failure(tmp_path, channel):
+    """Run generated curl|bash entrypoint, real Python dispatch and a failing child.
+
+    Only the root guard/install path and external downloads are replaced. No
+    developer system paths or accounts are used, and no remote network is needed.
+    """
+    import os
+    import sys
+    from conftest import ROOT
+    installed = tmp_path / 'installed'
+    installed.mkdir()
+    (installed / 'app.py').write_text('old')
+    (installed / 'VERSION').write_text('1.0.0\n')
+    package = tmp_path / 'source.tar.gz'
+    archive(package, overrides={'update.sh': '#!/bin/bash\necho "Health check FAILED" >&2\nexit 1\n'})
+    commands = tmp_path / 'bin'
+    commands.mkdir()
+    (commands / 'python3').symlink_to(sys.executable)
+    curl = commands / 'curl'
+    curl.write_text('''#!/usr/bin/env python3
+import json, os, shutil, sys
+from pathlib import Path
+destination = Path(sys.argv[sys.argv.index('--output') + 1])
+url = sys.argv[-1]
+if '/releases/' in url:
+    destination.write_text(json.dumps(dict(tag_name='v1.0.1', draft=False, prerelease=False)))
+elif '/commits/' in url:
+    destination.write_text(json.dumps(dict(sha='a'*40)))
+elif '/git/ref/heads/main' in url:
+    destination.write_text(json.dumps(dict(ref='refs/heads/main', object=dict(type='commit', sha='a'*40))))
+else:
+    shutil.copyfile(os.environ['TEST_ARCHIVE'], destination)
+print('200', end='')
+''')
+    curl.chmod(0o700)
+    script = (ROOT / 'remote-update.sh').read_text()
+    assert "INSTALL_DIR = Path('/opt/clash-yaml-manager')" in script
+    assert 'os.geteuid() != 0' in script
+    script = script.replace("INSTALL_DIR = Path('/opt/clash-yaml-manager')", f'INSTALL_DIR = Path({str(installed)!r})')
+    script = script.replace('os.geteuid() != 0', 'False')
+    result = subprocess.run(['bash', '-s', '--', '--channel', channel], input=script,
+                            cwd=tmp_path, env=dict(os.environ, TEST_ARCHIVE=str(package),
+                                PATH=str(commands) + os.pathsep + os.environ['PATH']),
+                            text=True, capture_output=True, timeout=10)
+    assert result.returncode != 0
+    assert 'Health check FAILED' in result.stderr
+    assert 'Update complete' not in result.stdout and '升级完成' not in result.stdout
+    assert 'Installed build: 1.0.1' not in result.stdout
+    assert (installed / 'VERSION').read_text() == '1.0.0\n'
+    assert not (installed / 'INSTALLATION.json').exists()
