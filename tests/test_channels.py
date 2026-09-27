@@ -188,13 +188,24 @@ def test_bad_metadata_cannot_bypass_downgrade(channel_harness):
 
 @pytest.mark.parametrize('channel',['stable','main'])
 def test_web_build_footer(web, client, channel):
-    info=make_install_info(channel,'1.0.2',A,'v1.0.2' if channel=='stable' else None)
+    version=(Path(web.BASE_DIR)/'VERSION').read_text().strip()
+    info=make_install_info(channel,version,A,'v'+version if channel=='stable' else None)
     write_install_info(web.BASE_DIR,info)
     html=client.get('/').get_data(as_text=True)
     if channel=='main':
-        assert 'v1.0.2-dev+aaaaaaa' in html and 'DEV · Development Build' in html
+        assert f'v{version}-dev+aaaaaaa' in html and 'DEV · Development Build' in html
     else:
-        assert 'Clash YAML Manager v1.0.2' in html and 'DEV · Development Build' not in html
+        assert f'Clash YAML Manager v{version}' in html and 'DEV · Development Build' not in html
+
+
+def test_web_build_footer_rejects_metadata_for_another_version(web, client):
+    version=(Path(web.BASE_DIR)/'VERSION').read_text().strip()
+    other='999.0.0' if version!='999.0.0' else '998.0.0'
+    write_install_info(web.BASE_DIR,make_install_info('main',other,A))
+    html=client.get('/').get_data(as_text=True)
+    assert f'Clash YAML Manager v{version}' in html
+    assert 'Build metadata unavailable' in html
+    assert '-dev+aaaaaaa' not in html and 'DEV · Development Build' not in html
 
 
 def test_real_update_hooks_preserve_state_across_main_updates(deployment):
