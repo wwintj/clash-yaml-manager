@@ -17,3 +17,38 @@ assert(matchesCountry('TW',{english:'Taiwan',chinese:'台湾',aliases:[]},'tai')
 assert(matchesCountry('TH',{english:'Thailand',chinese:'泰国',aliases:[],search_aliases:['tai']},'tai'));
 assert(matchesCountry('US',{english:'United States',chinese:'美国',aliases:[]},'美'));
 assert(matchesCountry('JP',{english:'Japan',chinese:'日本',aliases:[]},'JP'));
+
+const {preventImplicitGeneration, isExplicitGenerate} = require('../static/nodes.js');
+function keyEvent(tagName, type, key = 'Enter') {
+  return {key, target: {tagName, type, value:'JP'}, defaultPrevented:false,
+    preventDefault() {this.defaultPrevented = true;}};
+}
+// Country search inside process-form: cancellation suppresses the browser's
+// default implicit submission even if it would nominate the Generate button.
+for (const control of ['aux-country-search', 'preview-country-search', 'aux-name', 'aux-link', 'preview-name']) {
+  const event = keyEvent('INPUT', control.includes('search') ? 'search' : 'text');
+  preventImplicitGeneration(event);
+  let generated = 0;
+  if (!event.defaultPrevented) generated++; // browser's otherwise-implicit action
+  assert.equal(generated, 0, control);
+  assert.equal(event.target.value, 'JP', 'search text must remain');
+}
+for (const key of ['ArrowDown', 'ArrowUp', 'Tab', 'j']) {
+  const event = keyEvent('INPUT', 'search', key);
+  preventImplicitGeneration(event); assert.equal(event.defaultPrevented, false);
+}
+for (const [tag, type] of [['TEXTAREA','textarea'], ['BUTTON','submit'], ['INPUT','submit']]) {
+  const event = keyEvent(tag, type);
+  preventImplicitGeneration(event); assert.equal(event.defaultPrevented, false);
+}
+const generate = {id:'generate-yaml'};
+for (const submitter of [null, undefined, {id:'parse-nodes'}, {id:'add-node-row'}, {id:'generate-yaml'}]) {
+  const event = {submitter, preventDefault() {this.defaultPrevented = true;}};
+  assert.equal(isExplicitGenerate(event, generate), false);
+  assert.equal(event.defaultPrevented, true);
+}
+for (let i = 0; i < 3; i++) {
+  const event = {submitter:generate, preventDefault() {throw Error('explicit Generate blocked');}};
+  assert.equal(isExplicitGenerate(event, generate), true); // repeated clicks/requestSubmit work
+}
+console.log('Generate-only guard: country search, preview, auxiliary, textarea, keyboard and submitters passed');

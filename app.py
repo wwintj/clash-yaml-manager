@@ -377,6 +377,7 @@ def send_yaml_output(filename: str, as_attachment: bool):
 def index():
     context = get_base_context()
     context.update(session.pop("page_context", {}))
+    context['csrf_notice'] = session.pop('csrf_notice', '')
     return render_template("index.html", **context)
 
 
@@ -645,9 +646,16 @@ def request_entity_too_large(error):
 
 @app.errorhandler(CSRFError)
 def csrf_failed(error):
-    context = get_base_context()
-    context['error_messages'].append('表单已过期或安全令牌无效，请刷新页面后重试。')
-    return render_template('index.html', **context), 400
+    # Rotate the token on the next GET; never replay or persist the rejected body.
+    # Keep Flask-WTF's finite expiry and the existing authentication session.
+    session.pop(app.config['WTF_CSRF_FIELD_NAME'], None)
+    session['csrf_notice'] = (
+        '安全令牌已刷新，请重试；如有草稿，将自动恢复。' if session.get('logged_in') else
+        '请重新登录；如有草稿，将在登录后自动恢复。'
+    )
+    if request.endpoint == 'parse_nodes':
+        return jsonify(code='csrf_failed', error='Session or security token expired; refresh or log in again. Any saved draft will be restored.'), 400
+    return redirect(url_for('index'), code=303)
 
 
 if __name__ == "__main__":

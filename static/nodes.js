@@ -4,11 +4,29 @@
     const aliases = info.search_aliases || info.aliases;
     return [code, info.english, info.chinese, ...aliases].join(' ').toLowerCase().includes(query.trim().toLowerCase());
   }
-  if (typeof module !== 'undefined') module.exports = {matchesCountry};
+  function preventImplicitGeneration(event) {
+    // Delegation covers restored/cloned auxiliary rows and dynamic preview inputs.
+    // Textareas keep newlines; buttons keep keyboard activation. Other forms are
+    // outside this listener, so Enter still works for login/password changes.
+    if (event.key === 'Enter' && event.target.tagName === 'INPUT' &&
+        !['submit', 'button', 'reset'].includes(event.target.type)) {
+      event.preventDefault();
+    }
+  }
+  function isExplicitGenerate(event, button) {
+    // Fail closed for missing/unknown submitters, without a persistent click flag.
+    // requestSubmit(button) uses this same standard SubmitEvent identity.
+    if (button && event.submitter === button) return true;
+    event.preventDefault();
+    return false;
+  }
+  if (typeof module !== 'undefined') module.exports = {matchesCountry, preventImplicitGeneration, isExplicitGenerate};
   if (typeof document === 'undefined') return;
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('process-form');
     if (!form) return;
+    const generateButton = document.getElementById('generate-yaml');
+    form.addEventListener('keydown', preventImplicitGeneration);
     const countries = JSON.parse(document.getElementById('country-data').textContent);
     const rows = document.getElementById('aux-node-rows');
     const template = rows.firstElementChild.cloneNode(true);
@@ -101,6 +119,7 @@
       finally {parseButton.disabled = false;}
     });
     form.addEventListener('submit', event => {
+      if (!isExplicitGenerate(event, generateButton)) return;
       if (!root.saveDraft()) { event.preventDefault(); return; }
       serialize();
       const source = document.getElementById('yaml-source');

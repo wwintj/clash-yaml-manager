@@ -468,6 +468,9 @@
 </head>
 <body>
   <main class="app-shell">
+    {% if csrf_notice %}
+      <p class="form-text mb-3" role="status">{{ csrf_notice }}</p>
+    {% endif %}
     {% if not logged_in %}
       <div class="login-wrap">
         <div class="terminal-panel login-panel">
@@ -660,7 +663,7 @@
       </section>
             <label class="form-label">05 / Generate YAML</label>
             <div class="d-grid">
-              <button type="submit" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
+              <button type="submit" id="generate-yaml" name="action" value="generate" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
             </div>
           </form>
         </div>

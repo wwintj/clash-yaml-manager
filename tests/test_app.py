@@ -89,7 +89,9 @@ def test_cleanup_retention(web):
 @pytest.mark.p0
 @pytest.mark.parametrize('path', ['/login', '/logout', '/change-password', '/process', '/delete-temp'])
 def test_csrf_required(logged_in, path):
-    assert logged_in.post(path).status_code == 400
+    response = logged_in.post(path)
+    assert response.status_code == 303
+    assert response.location == '/'
 
 
 @pytest.mark.p0
@@ -186,7 +188,7 @@ def test_sensitive_errors_and_logs(web, logged_in):
 
 def test_tampered_csrf_rejected(client):
     response = client.post('/login', data={'password': 'test 密码', 'csrf_token': 'invalid'})
-    assert response.status_code == 400
+    assert response.status_code == 303 and response.location == '/'
     with client.session_transaction() as s:
         assert not s.get('logged_in')
 
