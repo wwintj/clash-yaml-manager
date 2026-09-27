@@ -36,8 +36,9 @@ be resolved. Never expose credentials.
 - Password policy is non-empty only. Preserve every character, including surrounding
   spaces and Unicode. Do not introduce password complexity rules or strip passwords.
 - Do not reintroduce removed contact-email displays in README or public documentation.
-- Stable installs/updates resolve GitHub Releases and exact tags, never main content.
-  API or archive failures must stop safely without fallback.
+- Default/stable installs and updates resolve GitHub Releases and exact tag commits,
+  never main content. Only explicit `--channel main` may deploy a resolved main commit
+  for development testing. API or archive failures must stop without channel fallback.
 - Edit `scripts/remote_lifecycle.py`, then run `python3 scripts/build_bootstraps.py` to
   regenerate the two standalone entrypoints. Tests enforce synchronization.
 - Run pytest, Python syntax, bash -n, dependency and diff checks before publishing.

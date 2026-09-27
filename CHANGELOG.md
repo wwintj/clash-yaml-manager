@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Add explicit `--channel main` installation/update for test VPS deployments, pin downloads to resolved commit SHAs, and keep stable as the default without fallback.
+- Record atomic installation metadata and show development build identity; compare main SHAs and protect returns to same/older Stable releases.
 - Save browser-local generation drafts for 30 days, including auxiliary rows, policies, source choice and manual corrections; restore after refresh/login and provide confirmed Clear Draft.
 - Parse mixed COUNTRY|NAME|URI, NAME|URI and URI input with editable preview and latest-input parsing on Generate.
 - Share a complete 249-region ISO catalog across detection and searchable selectors; allow Unknown warnings in a dynamic other-nodes group.

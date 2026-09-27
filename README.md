@@ -8,7 +8,7 @@
 **Latest Stable: [v1.0.2](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.0.2)**
 <!-- RELEASE:END -->
 
-main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。
+main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。只有明確指定 `--channel main` 才使用開發通道，測試命令見下方 Development / Testing。
 
 本文包含 main 已實作、尚未發布的 v1.1 第一階段功能。Latest Stable 仍為 v1.0.2，驗收與限制見 [開發報告](docs/V1_1_DEVELOPMENT.md)。
 
@@ -269,6 +269,45 @@ HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS
 3. 核對備份 `.env` 和 `defaults/default.yaml`；回到舊版 root 服務時必須恢復含舊憑據的備份 `.env`。回到支援 state 的版本時，優先保留最新 state；恢復舊 state 會回復舊密碼版本，可能讓舊 session 再次有效。
 4. 將備份的 `clash-yaml-manager.service` 恢復到 `/etc/systemd/system/`；執行 `systemctl daemon-reload` 和 `systemctl restart clash-yaml-manager`。
 5. 檢查 `systemctl status`、日誌和原本訪問地址。保留 `uploads/outputs/backups/logs/state`，不用刪除它們。若舊 root 服務寫入過資料，往後再次升級要重新修復 runtime 所有權。升級備份可能包含舊明文/Base64 密碼，僅供 root 復原，確認穩定後按自己的保留政策處理。完整步驟見 [Phase 2 遷移](docs/PHASE2.md#e-migration)。
+
+## Development / Testing
+
+**main is a development channel and is not recommended for normal production use.**
+Stable 仍是預設；`--channel stable` 與不帶 channel 參數相同。開發通道必須明確選擇，不會因 main 有更新而自動切換。
+
+全新測試 VPS 安裝當前 main（需要互動終端輸入端口和管理密碼）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-install.sh | sudo bash -s -- --channel main
+```
+
+已有測試 VPS 升級到當前 main：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh | sudo bash -s -- --channel main
+```
+
+先解析 `refs/heads/main` 的完整 SHA，再下載該 SHA 的歸檔，絕不在解析後下載移動中的 main 分支。CLI 顯示 Channel、Resolved commit、Base version 和 Installed build。VERSION 保持原值；Web footer 顯示例如 `v1.0.2-dev+a9c2d10` 和低調的 DEV / Development Build。
+
+安裝元信息在 `/opt/clash-yaml-manager/INSTALLATION.json`：channel、base_version、完整 commit、tag、installed_at（UTC）和 source。使用原子寫入，root 擁有、644 可供服務讀取；只含公開 build 身份，不含憑據，不寫 `.env`。保留原有 auth、temporary-link state、預設 YAML、runtime 資料及服務權限模型。升級備份會包含此檔。
+
+通道切換規則：
+
+| 操作 | 行為 |
+|---|---|
+| stable → main | 明確 `--channel main` 即允許，不再詢問 yes |
+| main → main | 比較 commit SHA；相同為 Already up to date，不看 VERSION 是否相同 |
+| main → 較新 stable（例如 1.1.0） | 普通 remote-update 即可回到 stable |
+| main → 同 base version 或更舊 stable | 預設拒絕；只有 `--channel stable --allow-downgrade` 明確允許 |
+| stable → 較舊 stable | 仍需要 `--allow-downgrade` |
+
+`--version vX.Y.Z` 仍只指定 Stable Release，不可與 `--channel main` 合用。不支援任意分支名。尚未發布較新 Stable 時，返回舊 Stable 的明確命令為：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh | sudo bash -s -- --channel stable --allow-downgrade
+```
+
+降級許可不代表舊程式理解新 state，先保留協調一致的備份。不要刪除 INSTALLATION.json 來繞過檢查。沒有元信息的歷史安裝沿用 VERSION；直接從本機源码執行 install/update 則標為 `-local`，不冒用上一次 main commit。完整規則見 [部署文件](docs/RELEASE.md)。
 
 ## 開發驗證
 

@@ -1,5 +1,23 @@
 # Release automation
 
+## Stable and development channels
+
+Remote install/update defaults remain **stable**, equivalent to `--channel stable`.
+Only explicit `--channel main` resolves main HEAD and installs its exact commit archive
+for a test VPS. Both use the existing safe deployment scripts. `--version` is stable-only.
+This development path does not invoke the release orchestrator, create a tag/Release,
+or change VERSION. Build identity is recorded separately in root-owned, atomic
+`INSTALLATION.json`; Web shows a `-dev+<short SHA>` suffix and DEV marker for main.
+
+Main-to-main updates compare full SHA. Returning to a strictly newer Stable is allowed;
+returning to a same/older stable base requires `--allow-downgrade`. Stable version-pinning
+and downgrade rules remain. Details, metadata schema and recovery limitations are in
+[RELEASE.md](RELEASE.md#explicit-main-development-channel).
+
+The intended flow is: main development → `--channel main` test VPS → validation →
+explicit “稳定了，发布” → the unchanged release automation below → vX.Y.Z Stable →
+ordinary remote-update. A normal main push alone does not publish a release.
+
 ## Single command and agent workflow
 
 The official orchestrator is `scripts/release.py`, using Python stdlib, Git and an already
@@ -124,5 +142,7 @@ machine's real /opt or system accounts. See [RELEASE.md](RELEASE.md) for user de
 
 Edit `scripts/remote_lifecycle.py` and run `python3 scripts/build_bootstraps.py`; commit both
 generated `remote-install.sh` and `remote-update.sh`. `--check` detects drift. The duplicate
-embedded source makes curl|bash self-contained, without downloading executable main application
-code as a second-stage fallback. Only the resolved stable archive supplies the installation scripts.
+embedded source (including the stdlib build-metadata helper from `core/install_info.py`)
+makes curl|bash self-contained. By default only the resolved stable commit archive supplies
+the installation scripts. Explicit main selection uses its resolved commit archive; network
+failure never switches channels or falls back to moving main content.
