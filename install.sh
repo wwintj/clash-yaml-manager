@@ -158,7 +158,7 @@ systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
 
-if ! wait_for_application; then
+if ! wait_for_application 30; then
   echo "错误：安装后应用未就绪，安装失败，请检查上述服务状态和日志。" >&2
   exit 1
 fi

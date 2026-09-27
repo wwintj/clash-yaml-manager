@@ -186,7 +186,7 @@ systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
 
-if ! wait_for_application; then
+if ! wait_for_application 30; then
   upgrade_failed
   exit 1
 fi

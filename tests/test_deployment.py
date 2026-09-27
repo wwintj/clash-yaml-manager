@@ -14,6 +14,13 @@ import pytest
 from conftest import ROOT
 
 
+@pytest.mark.parametrize('script_name', ['install.sh', 'update.sh'])
+def test_production_readiness_timeout_is_explicit(script_name):
+    script = (ROOT / script_name).read_text()
+    assert 'if ! wait_for_application 30; then' in script
+    assert 'if ! wait_for_application; then' not in script
+
+
 def executable(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text('#!/usr/bin/env bash\nset -eu\n' + text)
