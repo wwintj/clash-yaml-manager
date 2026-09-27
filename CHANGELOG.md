@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.1.0 - 2026-09-28
+
 ### Added
 - Add explicit `--channel main` installation/update for test VPS deployments, pin downloads to resolved commit SHAs, and keep stable as the default without fallback.
 - Record atomic installation metadata and show development build identity; compare main SHAs and protect returns to same/older Stable releases.
