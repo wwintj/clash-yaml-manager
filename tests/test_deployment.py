@@ -173,8 +173,10 @@ def test_reinstall_never_touches_existing_install(deployment):
     assert (installed / '.env').read_bytes() == original
 
 
-@pytest.mark.parametrize('password', ['a', '1', '密', '!', ' leading trailing ', ' '])
-def test_fresh_install_default_url_and_private_files(deployment, password):
+@pytest.mark.parametrize('password,channel', [('a','local'), ('1','local'), ('密','local'), ('!','local'),
+                                             (' leading trailing ','local'), (' ','local'),
+                                             ('test-main','main'), ('test-stable','stable')])
+def test_fresh_install_default_url_and_private_files(deployment, password, channel):
     installed, source, service, events, env, run = deployment
     previous = installed.with_name('previous')
     installed.rename(previous)
@@ -193,6 +195,13 @@ fi
 exec "$TEST_PYTHON" "$@"
 ''')
     executable(commands / 'ss', ':\n')
+    if channel != 'local':
+        from core.install_info import make_install_info
+        import json
+        version = (source / 'VERSION').read_text().strip()
+        metadata = source.parent / 'incoming.json'
+        metadata.write_text(json.dumps(make_install_info(channel, version, 'a'*40, 'v'+version if channel == 'stable' else None)))
+        env['CLASH_DEPLOY_METADATA'] = str(metadata)
     result = run('install.sh', input_text='\n\n' + password + '\n')
     assert result.returncode == 0, result.stderr + result.stdout
     configuration = (installed / '.env').read_text()
@@ -201,6 +210,10 @@ exec "$TEST_PYTHON" "$@"
     assert 'TRUST_PROXY_HEADERS=false\n' in configuration
     assert 'DO_NOT_COPY' not in configuration
     assert 'APP_PASSWORD' not in configuration
+    assert 'CLASH_DEPLOY_METADATA' not in configuration
+    from core.install_info import read_install_info
+    assert read_install_info(installed)['channel'] == channel
+    assert (installed / 'INSTALLATION.json').stat().st_mode & 0o777 == 0o644
     from core.security import AuthStore
     assert AuthStore(installed / 'state').authenticate(password)
     for setting in ('UPLOAD_RETENTION_HOURS=1', 'OUTPUT_RETENTION_HOURS=24',
@@ -289,6 +302,7 @@ def test_uninstall_managed_user_and_auth_state(deployment, choice):
         backup = next(installed.parent.glob('uninstall-backup-*'))
         assert (backup / 'state/auth.json').read_bytes() == before
         assert (backup / '.env').exists() and (backup / 'outputs/keep').exists()
+        assert (backup / 'VERSION').exists() and (backup / 'INSTALLATION.json').exists()
 
 
 def test_uninstall_never_deletes_unmanaged_user(deployment):

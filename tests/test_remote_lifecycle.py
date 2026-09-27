@@ -34,6 +34,7 @@ def harness(tmp_path, monkeypatch):
     (installed / 'state').mkdir()
     (installed / 'state/keep').write_text('keep')
     calls, executed, temporary = [], [], []
+    versions = {}
     def fetch(url, path):
         calls.append(url)
         temporary.append(path.parent)
@@ -42,9 +43,15 @@ def harness(tmp_path, monkeypatch):
             if tag == 'latest':
                 tag = 'v1.0.1'
             path.write_text(json.dumps(dict(tag_name=tag, draft=False, prerelease=False)))
+        elif '/commits/' in url:
+            import hashlib
+            version = url.rsplit('/', 1)[1][1:]
+            commit = hashlib.sha1(version.encode()).hexdigest()
+            versions[commit] = version
+            path.write_text(json.dumps({'sha': commit}))
         else:
-            archive(path, url.rsplit('/', 1)[1][1:])
-    def execute(root, mode):
+            archive(path, versions[url.rsplit('/', 1)[1]])
+    def execute(root, mode, metadata):
         executed.append((root, mode))
         (installed / 'VERSION').write_bytes((root / 'VERSION').read_bytes())
     args = argparse.Namespace(version=None, allow_downgrade=False, resolve_only=False)
@@ -57,7 +64,10 @@ def test_latest_and_pinned_exact_tag_download(harness, mode, pin):
     args.version = pin
     tag = life.run_lifecycle(mode, args, installed, fetch, execute)
     assert tag == ('v1.2.0' if pin else 'v1.0.1')
-    assert calls[-1].endswith('/refs/tags/' + tag)
+    info = life.read_install_info(installed)
+    assert info['channel'] == 'stable' and info['tag'] == tag
+    assert calls[-1].endswith('/tar.gz/' + info['commit'])
+    assert '/commits/' + tag in calls[-2]
     assert all('/main' not in url for url in calls)
     assert executed[0][1] == mode
     assert (installed / 'VERSION').read_text() == tag[1:] + '\n'
@@ -124,7 +134,7 @@ def test_http_failures_and_timeout_are_explicit(tmp_path, monkeypatch, status, c
 def test_archive_failure_never_executes_and_cleans_up(harness, failure):
     installed, calls, executed, temporary, original, execute, args = harness
     def fetch(url, path):
-        if '/releases/' in url:
+        if '/releases/' in url or '/commits/' in url:
             return original(url, path)
         temporary.append(path.parent)
         if failure == 'network':

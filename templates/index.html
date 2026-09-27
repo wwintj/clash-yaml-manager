@@ -851,7 +851,7 @@
     </div>
   </div>
 
-  <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}</div>
+  <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}{% if build_channel == 'main' %} <span class="badge text-bg-secondary" title="Development Build">DEV · Development Build</span>{% elif build_channel == 'local' %} · LOCAL{% elif build_channel == 'unknown' %} · Build metadata unavailable{% endif %}</div>
 
   <script src="{{ url_for('static', filename='draft.js') }}"></script>
   <script id="country-data" type="application/json">{{ country_mapping | tojson }}</script>

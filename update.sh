@@ -96,7 +96,7 @@ echo "备份目录: ${BACKUP_DIR}"
 echo "正在备份当前安装目录..."
 mkdir -p "${BACKUP_DIR}"
 
-for item in VERSION app.py requirements.txt install.sh uninstall.sh update.sh remote-install.sh remote-update.sh core templates static scripts venv .service-account; do
+for item in VERSION INSTALLATION.json app.py requirements.txt install.sh uninstall.sh update.sh remote-install.sh remote-update.sh core templates static scripts venv .service-account; do
   if [[ -e "${INSTALL_DIR}/${item}" ]]; then
     cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DIR}/"
   fi
@@ -141,7 +141,7 @@ shopt -s dotglob nullglob
 for item in "${CURRENT_DIR}"/*; do
   name="$(basename "${item}")"
   case "${name}" in
-    .env|.git|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
+    .env|INSTALLATION.json|.git|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
       continue
       ;;
     defaults)
@@ -178,6 +178,7 @@ if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
 fi
 
 echo "正在刷新 systemd 服务文件..."
+"${INSTALL_DIR}/venv/bin/python" -c 'import sys; from core.install_info import finalize_install; finalize_install(sys.argv[1])' "${INSTALL_DIR}"
 repair_permissions
 write_service_unit
 

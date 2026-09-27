@@ -87,7 +87,7 @@ if [[ -d "${INSTALL_DIR}" ]]; then
         echo "  - 未找到 outputs 目录，跳过"
       fi
 
-      for item in state .env; do
+      for item in state .env VERSION INSTALLATION.json; do
         if [[ -e "${INSTALL_DIR}/${item}" ]]; then
           cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DEST}/"
           copied_any=1

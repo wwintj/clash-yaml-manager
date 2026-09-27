@@ -4,7 +4,7 @@ set -euo pipefail
 command -v python3 >/dev/null || { echo "python3 is required." >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl is required." >&2; exit 1; }
 python3 - update "$@" <<'BOOTSTRAP_PY'
-"""Stdlib bootstrap embedded into both curl|bash entrypoints. No main fallback."""
+"""Stdlib bootstrap embedded into both curl|bash entrypoints. Stable by default; main requires explicit selection."""
 import argparse
 import json
 import os
@@ -15,6 +15,132 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+
+if __name__ == '__main__' and __file__ != '<stdin>':
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+"""Public build identity, separate from credentials and the stable VERSION source.
+
+This stdlib-only module is also embedded into the standalone remote bootstraps.
+INSTALLATION.json is root-owned/readable by the service, outside private auth state.
+"""
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import tempfile
+
+INSTALL_INFO_FILE = 'INSTALLATION.json'
+_VERSION_PATTERN = r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
+_COMMIT_PATTERN = r'[0-9a-f]{40}'
+
+
+def validate_install_info(info, base_version=None):
+    try:
+        expected = {'channel', 'base_version', 'commit', 'tag', 'installed_at', 'source'}
+        if not isinstance(info, dict) or set(info) != expected:
+            raise ValueError
+        version, channel = info['base_version'], info['channel']
+        if not isinstance(version, str) or not re.fullmatch(_VERSION_PATTERN, version):
+            raise ValueError
+        if base_version is not None and version != base_version:
+            raise ValueError
+        if channel not in ('stable', 'main', 'local'):
+            raise ValueError
+        if channel == 'local':
+            if info['commit'] is not None or info['tag'] is not None or info['source'] != 'local-source':
+                raise ValueError
+        else:
+            if not isinstance(info['commit'], str) or not re.fullmatch(_COMMIT_PATTERN, info['commit']):
+                raise ValueError
+            if info['tag'] != ('v' + version if channel == 'stable' else None):
+                raise ValueError
+            if info['source'] != ('github-release' if channel == 'stable' else 'github-main'):
+                raise ValueError
+        timestamp = datetime.fromisoformat(info['installed_at'])
+        if timestamp.tzinfo is None:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise ValueError('Invalid installation metadata; inspect INSTALLATION.json before updating.') from None
+    return info
+
+
+def make_install_info(channel, base_version, commit=None, tag=None):
+    return validate_install_info(dict(channel=channel, base_version=base_version, commit=commit,
+        tag=tag, installed_at=datetime.now(timezone.utc).isoformat(timespec='seconds'),
+        source={'stable':'github-release', 'main':'github-main', 'local':'local-source'}[channel]))
+
+
+def read_install_info(directory, base_version=None):
+    path = Path(directory) / INSTALL_INFO_FILE
+    if not path.exists() and not path.is_symlink():
+        return None
+    if path.is_symlink():
+        raise ValueError('Invalid installation metadata path.')
+    try:
+        return validate_install_info(json.loads(path.read_text(encoding='utf-8')), base_version)
+    except (OSError, ValueError):
+        raise ValueError('Invalid installation metadata; inspect INSTALLATION.json before updating.') from None
+
+
+def write_install_info(directory, info):
+    """Publish complete, credential-free metadata atomically before service startup."""
+    validate_install_info(info)
+    directory = Path(directory)
+    path = directory / INSTALL_INFO_FILE
+    if path.is_symlink():
+        raise ValueError('Invalid installation metadata path.')
+    fd, temporary = tempfile.mkstemp(prefix='.installation-', dir=directory)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as target:
+            json.dump(info, target, sort_keys=True)
+            target.write('\n')
+            target.flush()
+            os.fchmod(target.fileno(), 0o644)  # Public build data; never auth material.
+            os.fsync(target.fileno())
+        os.replace(temporary, path)
+        parent = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(parent)
+        finally:
+            os.close(parent)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def display_build(base_version, info=None):
+    if info is None:
+        return base_version
+    validate_install_info(info, base_version)
+    if info['channel'] == 'main':
+        return base_version + '-dev+' + info['commit'][:7]
+    if info['channel'] == 'local':
+        return base_version + '-local'
+    return base_version
+
+
+def finalize_install(directory):
+    """Called by install/update before ownership repair and service restart.
+
+    The remote bootstrap passes a private metadata path, never credentials. Direct
+    local-source deployments get an honest local identity instead of retaining a
+    stale main commit. Old stable scripts are supported by bootstrap finalization.
+    """
+    directory = Path(directory)
+    version = (directory / 'VERSION').read_text().rstrip('\n')
+    incoming = os.environ.get('CLASH_DEPLOY_METADATA')
+    if incoming:
+        path = Path(incoming)
+        if path.is_symlink():
+            raise ValueError('Invalid deployment metadata path.')
+        info = validate_install_info(json.loads(path.read_text()), version)
+    else:
+        info = make_install_info('local', version)
+    write_install_info(directory, info)
+    print('Installed build: ' + display_build(version, info))
+
 
 REPOSITORY = 'wwintj/clash-yaml-manager'
 INSTALL_DIR = Path('/opt/clash-yaml-manager')
@@ -68,7 +194,7 @@ def resolve_release(directory, requested=None, fetch=download):
     return tag
 
 
-def extract_archive(archive, directory, tag):
+def extract_archive(archive, directory, tag=None):
     """Manually extract only regular files/dirs after validating the entire archive."""
     try:
         with tarfile.open(archive, 'r:gz') as source:
@@ -99,16 +225,19 @@ def extract_archive(archive, directory, tag):
                     'uninstall.sh', 'scripts/deploy-common.sh', 'core/security.py', 'core/version.py')
         if not all((root / name).is_file() for name in required):
             raise ValueError
-        if (root / 'VERSION').read_text().rstrip('\n') != tag[1:]:
+        base_version = (root / 'VERSION').read_text().rstrip('\n')
+        version_tuple(base_version)
+        if tag is not None and base_version != tag[1:]:
             raise ValueError
         for script in ('install.sh', 'update.sh', 'uninstall.sh', 'scripts/deploy-common.sh'):
             subprocess.run(['bash', '-n', str(root / script)], check=True, capture_output=True)
         return root
-    except (tarfile.TarError, OSError, ValueError, subprocess.CalledProcessError):
+    except (tarfile.TarError, OSError, ValueError, LifecycleError, subprocess.CalledProcessError):
         raise LifecycleError('Invalid release archive or VERSION/tag mismatch; nothing installed.') from None
 
 
-def execute_script(root, mode):
+def execute_script(root, mode, metadata):
+    env = dict(os.environ, CLASH_DEPLOY_METADATA=str(metadata))
     if mode == 'install':
         # curl|bash consumes stdin. Read port/password from the controlling TTY.
         try:
@@ -116,57 +245,126 @@ def execute_script(root, mode):
         except OSError:
             raise LifecycleError('Installation needs a terminal for port and hidden password input.') from None
         with terminal:
-            subprocess.run(['bash', 'install.sh'], cwd=root, stdin=terminal, check=True)
+            subprocess.run(['bash', 'install.sh'], cwd=root, stdin=terminal, check=True, env=env)
     else:
-        subprocess.run(['bash', 'update.sh'], cwd=root, check=True)
+        subprocess.run(['bash', 'update.sh'], cwd=root, check=True, env=env)
+
+
+def resolve_commit(directory, channel, tag=None, fetch=download):
+    response = directory / 'commit.json'
+    endpoint = 'git/ref/heads/main' if channel == 'main' else 'commits/' + tag
+    fetch(f'https://api.github.com/repos/{REPOSITORY}/{endpoint}', response)
+    try:
+        value = json.loads(response.read_text(encoding='utf-8'))
+        if channel == 'main':
+            if value['ref'] != 'refs/heads/main' or value['object']['type'] != 'commit':
+                raise ValueError
+            commit = value['object']['sha']
+        else:
+            commit = value['sha']
+        if not isinstance(commit, str) or not re.fullmatch(r'[0-9a-f]{40}', commit):
+            raise ValueError
+    except (KeyError, TypeError, ValueError, OSError):
+        raise LifecycleError('Malformed GitHub commit response. Stopped; no channel fallback.') from None
+    return commit
 
 
 def run_lifecycle(mode, args, install_dir=INSTALL_DIR, fetch=download, execute=execute_script):
+    channel = getattr(args, 'channel', 'stable')
+    if channel not in ('stable', 'main'):
+        raise LifecycleError('Invalid channel; choose stable or main.')
+    if channel == 'main' and args.version:
+        raise LifecycleError('--version cannot be combined with --channel main')
     if not args.resolve_only and os.geteuid() != 0:
         raise LifecycleError('Please run with sudo/root.')
     if mode == 'update' and not args.resolve_only and not (install_dir / 'app.py').is_file():
         raise LifecycleError('Existing installation not found; use remote-install.sh.')
+    print(f'Channel: {channel}', flush=True)
+    if channel == 'main':
+        print('Development channel selected. This build is not a Stable Release.', flush=True)
     with tempfile.TemporaryDirectory(prefix=f'clash-yaml-manager-{mode}-') as work:
         directory = Path(work)
-        tag = resolve_release(directory, args.version, fetch)
-        print(f'Resolved stable: {tag}', flush=True)
+        tag = resolve_release(directory, args.version, fetch) if channel == 'stable' else None
+        commit = resolve_commit(directory, channel, fetch=fetch) if channel == 'main' else None
+        if tag:
+            print(f'Resolved stable: {tag}', flush=True)
+        if commit:
+            print(f'Resolved commit: {commit}', flush=True)
         if args.resolve_only:
-            return tag
+            return tag or commit
+        current, installed_info = None, None
         if mode == 'update':
             installed = install_dir / 'VERSION'
             if installed.exists():
                 current = installed.read_text().rstrip('\n')
-                current_tuple, target_tuple = version_tuple(current), version_tuple(tag[1:])
-                print(f'Installed version: {current}', flush=True)
-                if current_tuple == target_tuple:
-                    print('Already up to date.', flush=True)
-                    return tag
-                if target_tuple < current_tuple and not args.allow_downgrade:
-                    raise LifecycleError('Downgrade refused; use --allow-downgrade explicitly.')
+                version_tuple(current)
+                try:
+                    installed_info = read_install_info(install_dir, current)
+                except ValueError as error:
+                    raise LifecycleError(str(error)) from None
+                installed_channel = installed_info['channel'] if installed_info else 'stable'
+                print('Installed build: ' + display_build(current, installed_info), flush=True)
+                if installed_channel != channel:
+                    print(f'Switching channel: {installed_channel} → {channel}', flush=True)
+                if channel == 'main':
+                    print('Installed commit: ' + str(installed_info['commit'] if installed_info else 'unknown'), flush=True)
+                    print('Remote main commit: ' + commit, flush=True)
+                    if installed_channel == 'main' and installed_info['commit'] == commit:
+                        print('Already up to date.', flush=True)
+                        return commit
+                else:
+                    current_tuple, target_tuple = version_tuple(current), version_tuple(tag[1:])
+                    if installed_channel in ('main', 'local') and target_tuple <= current_tuple and not args.allow_downgrade:
+                        raise LifecycleError('A development build is currently installed. Latest Stable is based on an older '
+                            'or equal release. Refusing automatic channel downgrade; use --channel stable --allow-downgrade.')
+                    if installed_channel == 'stable' and current_tuple == target_tuple:
+                        print('Already up to date.', flush=True)
+                        return tag
+                    if target_tuple < current_tuple and not args.allow_downgrade:
+                        raise LifecycleError('Downgrade refused; use --allow-downgrade explicitly.')
             else:
+                if (install_dir / 'INSTALLATION.json').exists():
+                    raise LifecycleError('Installation metadata exists without VERSION; inspect deployment backup.')
                 print('Installed version: legacy (no VERSION); preserving existing data during migration.', flush=True)
+        if commit is None:
+            commit = resolve_commit(directory, 'stable', tag, fetch)
+            print(f'Resolved commit: {commit}', flush=True)
         archive = directory / 'source.tar.gz'
-        fetch(f'https://codeload.github.com/{REPOSITORY}/tar.gz/refs/tags/{tag}', archive)
+        # Both channels download immutable commits; stable commits come only from Releases.
+        fetch(f'https://codeload.github.com/{REPOSITORY}/tar.gz/{commit}', archive)
         root = extract_archive(archive, directory / 'extracted', tag)
-        execute(root, mode)
-        if (install_dir / 'VERSION').read_text().rstrip('\n') != tag[1:]:
+        base_version = (root / 'VERSION').read_text().rstrip('\n')
+        print(f'Base version: {base_version}', flush=True)
+        info = make_install_info(channel, base_version, commit, tag)
+        # Keep deployment data outside the source archive and out of .env.
+        write_install_info(directory, info)
+        execute(root, mode, directory / 'INSTALLATION.json')
+        if (install_dir / 'VERSION').read_text().rstrip('\n') != base_version:
             raise LifecycleError('Installed VERSION verification failed; inspect deployment backup.')
-        print(f'{mode.capitalize()} complete: {tag}', flush=True)
-        return tag
+        # Old stable lifecycle scripts predate metadata hooks. Finalize those too.
+        write_install_info(install_dir, info)
+        if read_install_info(install_dir, base_version) != info:
+            raise LifecycleError('Installed build metadata verification failed.')
+        print('Installed build: ' + display_build(base_version, info), flush=True)
+        print(f'{mode.capitalize()} complete: {tag or commit}', flush=True)
+        return tag or commit
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='Install/update exact GitHub stable release tags.')
+    parser = argparse.ArgumentParser(description='Install/update Stable by default; explicitly select main for development testing.')
     parser.add_argument('mode', choices=('install', 'update'))
+    parser.add_argument('--channel', choices=('stable', 'main'), default='stable')
     parser.add_argument('--version', help='Pin a published stable release, vX.Y.Z or X.Y.Z')
     parser.add_argument('--allow-downgrade', action='store_true')
     parser.add_argument('--resolve-only', action='store_true', help='Read-only stable tag lookup; no root needed')
     args = parser.parse_args(argv)
+    if args.channel == 'main' and args.version:
+        parser.error('--version cannot be combined with --channel main')
     if args.mode == 'install' and args.allow_downgrade:
         parser.error('--allow-downgrade applies only to update')
     try:
         run_lifecycle(args.mode, args)
-    except (LifecycleError, OSError, subprocess.CalledProcessError) as error:
+    except (LifecycleError, ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'{error}\n')
 
 

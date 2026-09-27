@@ -58,7 +58,7 @@ if [[ "${CURRENT_DIR}" != "${INSTALL_DIR}" ]]; then
   for item in "${CURRENT_DIR}"/*; do
     name="$(basename "${item}")"
     case "${name}" in
-      .env|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
+      .env|INSTALLATION.json|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
         continue
         ;;
       *)
@@ -150,6 +150,7 @@ chmod 600 "${ENV_FILE}"
 
 echo "正在配置 systemd 服务..."
 ensure_service_user
+"${INSTALL_DIR}/venv/bin/python" -c 'import sys; from core.install_info import finalize_install; finalize_install(sys.argv[1])' "${INSTALL_DIR}"
 repair_permissions
 write_service_unit
 

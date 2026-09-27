@@ -21,6 +21,7 @@ from core.temporary_links import TemporaryLinks
 from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
 from core.version import read_version
+from core.install_info import read_install_info, display_build
 from core.subscriptions import SubscriptionSigner, safe_filename
 
 # ==========================================
@@ -241,9 +242,16 @@ def login_required(func):
 
 def get_base_context() -> Dict[str, Any]:
     """模板基础上下文。"""
+    try:
+        install_info = read_install_info(BASE_DIR, APP_VERSION)
+        version_label = display_build(APP_VERSION, install_info)
+        build_channel = install_info['channel'] if install_info else 'stable'
+    except ValueError:
+        version_label, build_channel = APP_VERSION, 'unknown'
     return {
+        "build_channel": build_channel,
         "logged_in": session.get("logged_in", False),
-        "app_version": APP_VERSION,
+        "app_version": version_label,
         "error_messages": [],
         "success_message": "",
         "result": None,

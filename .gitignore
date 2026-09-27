@@ -10,3 +10,6 @@ outputs/
 backups/
 logs/
 state/
+
+# Deployment-only build identity, never repository version metadata.
+/INSTALLATION.json
