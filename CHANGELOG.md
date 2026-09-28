@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+- Add authenticated Fixed Subscriptions management with persistent source configuration and custom base YAML, stable readable bearer URLs, edit, copy, disable/enable, confirmed link regeneration and deletion.
+- Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
+
+### Security
+- Commit fixed configuration and generated YAML together through private candidate files and an atomic registry pointer under a shared file lock; preserve the previous subscription on failed saves.
+- Use 128-bit random tokens, permanent token-hash tombstones, constant-time authorization, private state permissions, strict schema/path checks and fixed-URL access-log redaction.
+
 ## v1.1.1 - 2026-09-28
 
 ### Deployment

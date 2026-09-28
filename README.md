@@ -12,6 +12,16 @@ main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable
 
 正式版本以頁首 Latest Stable 為準；功能驗收過程與限制見 [開發報告](docs/V1_1_DEVELOPMENT.md)。
 
+## Fixed Subscriptions — available on main development channel
+
+登入後可從 **Fixed Subscriptions** 建立固定訂閱，保存節點、Policy Options 及 Default / Custom YAML。
+一般 Save Changes 更新內容但保持 URL；修改 URL Prefix、Regenerate Link 或 Delete 才會讓舊地址失效。
+Disable 暫停匿名讀取，Enable 恢復原地址。固定地址使用 `/s/<prefix>-fs_<secret>`，直到手動刪除，不受 24 小時臨時輸出清理影響。
+
+這是尚未發布的 main 功能，Latest Stable 仍為 **v1.1.1**。測試 VPS 使用下方 `--channel main` 命令。
+Custom Base YAML 與生成結果保存在私有 `state/`，編輯時不必重新上傳；瀏覽器的 Generate 草稿仍獨立。
+儲存、原子更新、安全模型及測試範圍見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
