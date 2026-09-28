@@ -489,6 +489,7 @@
       .preview-action { width: 100%; }
     }
   </style>
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <main class="app-shell">
@@ -575,6 +576,10 @@
         </div>
       </section>
 
+      <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Main navigation">
+        <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Generate YAML</a>
+        <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
+      </nav>
       {% if error_messages %}
         <div class="terminal-alert error p-4 mb-4">
           <div class="panel-subtitle mb-2">ERROR LOG</div>
@@ -593,6 +598,7 @@
         </div>
       {% endif %}
 
+      {% block workspace %}
       <section class="terminal-panel mb-4">
         <div class="panel-inner">
           <div class="panel-title-row">
@@ -602,89 +608,7 @@
 
           <div class="d-flex gap-3 align-items-center mb-3"><span id="draft-status" class="form-text" role="status">Draft autosave / 30 days / this browser</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal">Clear Draft</button></div>
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-4">
-              <label class="form-label">01 / YAML Source</label>
-              <select id="yaml-source" name="yaml_source" class="form-select terminal-select mb-2" aria-label="YAML source"><option value="default">Default YAML</option><option value="custom">Custom YAML</option></select>
-              <div id="source-hint" class="form-text mb-2" role="status"></div>
-              <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml">
-              <div class="form-text mt-2">可上傳朋友的 Clash/Mihomo YAML；不選檔案時會使用伺服器內建的預設 YAML。</div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label">02 / Batch Nodes</label>
-              <textarea id="batch_nodes" class="form-control terminal-input" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
-              <div class="form-text mt-2">每行支援 COUNTRY|NAME|URI、NAME|URI 或 URI；VMess / VLESS。Unknown 是 Warning，仍可生成。</div>
-            </div>
-
-            <div class="mb-4">
-              <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-                <div>
-                  <label class="form-label mb-1">03 / Auxiliary Multi Nodes</label>
-                  <div class="form-text">新增多個節點，Country 可留空自動識別；Parse 與 Generate 都會包含這些節點。</div>
-                </div>
-                <button type="button" id="add-node-row" class="btn btn-outline-terminal btn-terminal">+ Add Row</button>
-              </div>
-
-              <div id="aux-node-rows">
-                <div class="node-row">
-                  <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                      <label class="form-label">Country</label>
-                      <input class="form-control terminal-input country-search mb-1" type="search" placeholder="Search ISO / English / 中文" aria-label="Search country">
-                      <select class="form-select terminal-select aux-country" aria-label="Country">
-                        <option value="">Auto detect</option>
-                        {% for code, info in country_mapping.items() %}
-                          <option value="{{ code }}">{{ info.emoji }} {{ code }} · {{ info.english }} / {{ info.chinese }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label">Node Name</label>
-                      <input type="text" class="form-control terminal-input aux-name" placeholder="GIA">
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label">Node Link</label>
-                      <input type="text" class="form-control terminal-input aux-link" placeholder="vmess:// 或 vless:// 連結">
-                    </div>
-                    <div class="col-md-1 d-grid">
-                      <button type="button" class="btn btn-danger-terminal btn-terminal remove-node-row">DEL</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div id="aux-node-alert" class="terminal-alert error p-3 mt-3 d-none"></div>
-            </div>
-
-            <input type="hidden" name="aux_nodes" id="aux-nodes-data">
-            <input type="hidden" name="node_overrides" id="node-overrides-data">
-            <div class="mb-4">
-              <button type="button" id="parse-nodes" class="btn btn-outline-terminal btn-terminal">Parse Nodes</button>
-              <span id="parse-summary" class="form-text ms-2" role="status">Changes not parsed yet</span>
-              <div id="parse-preview" class="mt-3"></div>
-            </div>
-                  <section class="terminal-panel mb-4">
-        <div class="panel-inner">
-          <div class="panel-title-row">
-            <h2 class="panel-title">04 / Policy Options</h2>
-            <span class="panel-subtitle">Optional Groups</span>
-          </div>
-
-          <p class="helper-text mb-3">勾選後，所有新節點會加入對應特殊策略組。預設不勾選。</p>
-
-          <div class="row g-3">
-            {% for group in default_special_groups %}
-              <div class="col-md-6">
-                <label class="terminal-check">
-                  <input class="form-check-input" type="checkbox" name="special_groups" value="{{ group }}" form="process-form" id="special_group_{{ loop.index }}">
-                  <span>{{ group }}</span>
-                </label>
-              </div>
-            {% endfor %}
-          </div>
-        </div>
-      </section>
+            {% include '_generator_fields.html' %}
             <label class="form-label">05 / Generate YAML</label>
             <div class="d-grid">
               <button type="submit" id="generate-yaml" name="action" value="generate" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
@@ -824,6 +748,7 @@
           </div>
         </div>
       </section>
+      {% endblock %}
     {% endif %}
 
       <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
@@ -880,9 +805,11 @@
 
   <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}{% if build_channel == 'main' %} <span class="badge text-bg-secondary" title="Development Build">DEV · Development Build</span>{% elif build_channel == 'local' %} · LOCAL{% elif build_channel == 'unknown' %} · Build metadata unavailable{% endif %}</div>
 
+  {% block generator_scripts %}
   <script src="{{ url_for('static', filename='draft.js') }}"></script>
   <script id="country-data" type="application/json">{{ country_mapping | tojson }}</script>
   <script src="{{ url_for('static', filename='nodes.js') }}"></script>
+  {% endblock %}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

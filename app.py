@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import sys
@@ -8,16 +7,18 @@ from datetime import datetime, timezone, timedelta
 from functools import wraps
 from typing import Any, Dict
 
-from flask import jsonify, Flask, redirect, render_template, request, send_from_directory, session, url_for
+from flask import jsonify, Flask, Response, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
-from core import parser
+from core import parser, generator
 from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
 from core.state import StateError, file_lock, atomic_write
 from core.temporary_links import TemporaryLinks
+from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG as FIXED_SLUG
+from core.fixed_views import blueprint as fixed_blueprint
 from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
 from core.version import read_version
@@ -90,6 +91,12 @@ def setup_logging() -> None:
             logging.StreamHandler(sys.stdout),
         ],
     )
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(FixedBearerFilter())
+    for name in ('werkzeug', 'gunicorn.access', 'gunicorn.error'):
+        logger = logging.getLogger(name)
+        if not any(isinstance(f, FixedBearerFilter) for f in logger.filters):
+            logger.addFilter(FixedBearerFilter())
 
 
 def cleanup_old_files() -> None:
@@ -127,6 +134,7 @@ def cleanup_old_files() -> None:
 
 ensure_directories()
 temporary_links = TemporaryLinks(DIR_STATE)
+fixed_subscriptions = FixedSubscriptions(DIR_STATE)
 auth_store = AuthStore(DIR_STATE)
 login_limiter = LoginLimiter(
     DIR_STATE,
@@ -445,32 +453,7 @@ def change_password():
 
 
 def parse_form_nodes():
-    """Shared input path for Preview and Generate; never trust a cached preview."""
-    text = request.form.get('batch_nodes', '').strip()
-    try:
-        rows = json.loads(request.form.get('aux_nodes', '[]'))
-        overrides = json.loads(request.form.get('node_overrides', '{}'))
-        if not isinstance(rows, list) or not isinstance(overrides, dict):
-            raise ValueError
-        for override in overrides.values():
-            if not isinstance(override, dict) or any(k not in ('country', 'name') or not isinstance(v, str)
-                                                    for k, v in override.items()):
-                raise ValueError
-        for row in rows:
-            if not isinstance(row, dict) or any(not isinstance(row.get(k), str) for k in ('country', 'name', 'link')):
-                raise ValueError
-            country, name, link = (row[k].strip() for k in ('country', 'name', 'link'))
-            if not any((country, name, link)):
-                continue
-            if not link or not name or any(c in country + name + link for c in ('\n', '\r')) or '|' in country + name:
-                raise ValueError
-            text += '\n' + (country + '|' if country else '') + name + '|' + link
-    except (ValueError, TypeError):
-        raise ValueError('辅助节点或手工修改格式无效，请检查名称、国家及链接。') from None
-    country, name, link = (request.form.get('single_' + k, '').strip() for k in ('country', 'name', 'link'))
-    if country and name and link:
-        text += f'\n{country}|{name}|{link}'
-    return parser.parse_batch_nodes(text, overrides)
+    return generator.parse_form_nodes(request.form)
 
 
 @app.route('/parse-nodes', methods=['POST'])
@@ -535,14 +518,7 @@ def process_config():
     raw_special_groups = request.form.getlist("special_groups")
     special_groups = [group for group in raw_special_groups if group in DEFAULT_SPECIAL_GROUPS]
 
-    yaml_result = yaml_utils.process_yaml_config(
-        input_path=upload_path,
-        output_dir=DIR_OUTPUTS,
-        backup_dir=DIR_BACKUPS,
-        new_nodes=parsed_result["nodes"],
-        countries=parsed_result["countries"],
-        special_groups=special_groups,
-    )
+    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups)
 
     if not yaml_result["success"]:
         context["error_messages"].extend(yaml_result["errors"])
@@ -599,8 +575,19 @@ def subscribe_file(token, filename):
 
 @app.route("/s/<slug>", methods=["GET"])
 def short_subscribe_file(slug):
+    if FIXED_SLUG.fullmatch(slug):
+        content = fixed_subscriptions.resolve(slug)
+        if content is not None:
+            response = Response(content, content_type='application/x-yaml; charset=utf-8')
+            response.headers['Cache-Control'] = 'no-store'
+            response.headers['Referrer-Policy'] = 'no-referrer'
+            if request.args.get('download') == '1':
+                response.headers['Content-Disposition'] = 'attachment; filename="subscription.yaml"'
+            return response
     filename, _signature = parse_short_subscription_slug(slug)
     if not filename:
+        if '-fs_' in slug:
+            return 'Not found.', 404, {'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer'}
         return "Invalid download token.", 403, {"Content-Type": "text/plain; charset=utf-8"}
     return send_yaml_output(filename, as_attachment=False)
 
@@ -655,7 +642,29 @@ def csrf_failed(error):
     )
     if request.endpoint == 'parse_nodes':
         return jsonify(code='csrf_failed', error='Session or security token expired; refresh or log in again. Any saved draft will be restored.'), 400
+    if request.blueprint == 'fixed' and session.get('logged_in'):
+        if request.endpoint in ('fixed.create', 'fixed.edit'):
+            return redirect(url_for(request.endpoint, **(request.view_args or {})), code=303)
+        return redirect(url_for('fixed.index'), code=303)
     return redirect(url_for('index'), code=303)
+
+
+def fixed_public_url(slug):
+    path = url_for('short_subscribe_file', slug=slug)
+    return DOWNLOAD_BASE_URL + path if DOWNLOAD_BASE_URL else url_for(
+        'short_subscribe_file', slug=slug, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme)
+
+
+app.register_blueprint(fixed_blueprint(fixed_subscriptions, get_base_context, login_required,
+                                      DEFAULT_YAML_PATH, DEFAULT_SPECIAL_GROUPS, fixed_public_url))
+
+
+@app.after_request
+def private_fixed_pages(response):
+    if request.blueprint == 'fixed':
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 if __name__ == "__main__":

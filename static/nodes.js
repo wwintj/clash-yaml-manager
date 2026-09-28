@@ -123,7 +123,8 @@
       if (!root.saveDraft()) { event.preventDefault(); return; }
       serialize();
       const source = document.getElementById('yaml-source');
-      if (source.value === 'custom' && !form.querySelector('[name=yaml_file]').files.length) {
+      if (source.value === 'custom' && !form.querySelector('[name=yaml_file]').files.length &&
+          form.dataset.savedCustom !== 'true') {
         event.preventDefault(); document.getElementById('source-hint').textContent = 'Custom YAML needs to be selected again.'; return;
       }
       // The server always parses the latest text and overrides, even without Parse Nodes.

@@ -1,0 +1,14 @@
+.fixed-table { width:100%; table-layout:fixed; font-size:.8rem; }
+.fixed-table th, .fixed-table td { padding:.65rem; border-bottom:1px solid #343434; vertical-align:top; overflow-wrap:anywhere; }
+.fixed-table th:nth-child(6) { width:23%; }
+.fixed-table th:last-child { width:20%; }
+.fixed-actions { display:flex; flex-wrap:wrap; gap:.4rem; }
+.fixed-actions form { margin:0; }
+.fixed-url { width:100%; min-width:0; text-overflow:ellipsis; margin-bottom:.5rem; }
+.copy-status { display:block; overflow-wrap:anywhere; }
+@media (max-width:767px) {
+  .fixed-table, .fixed-table tbody, .fixed-table tr, .fixed-table td { display:block; width:100%; }
+  .fixed-table thead { display:none; }
+  .fixed-table tr { margin-bottom:1rem; border:1px solid #343434; }
+  .fixed-table td::before { content:attr(data-label); display:block; color:#a0a0a0; margin-bottom:.3rem; }
+}

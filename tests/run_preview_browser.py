@@ -4,6 +4,7 @@ Requires Node with Playwright/Chromium installed (NODE_PATH may supply the modul
 BOOTSTRAP_CSS_PATH may point to a cached copy of the page's Bootstrap 5.3.3 CSS.
 Run with the project's Python environment: python tests/run_preview_browser.py.
 """
+import argparse
 import importlib.util
 import logging
 import os
@@ -19,6 +20,9 @@ from werkzeug.serving import make_server
 
 
 def main():
+    arguments = argparse.ArgumentParser()
+    arguments.add_argument('--suite', choices=('all', 'preview', 'fixed'), default='all')
+    suite = arguments.parse_args().suite
     root = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory(prefix='clash-preview-browser-') as temporary:
         work = Path(temporary)
@@ -40,9 +44,12 @@ def main():
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         try:
-            subprocess.run(['node', str(root / 'tests/test_preview_layout.cjs')], check=True,
-                           env=dict(os.environ, PREVIEW_TEST_URL=f'http://127.0.0.1:{server.server_port}',
-                                    PREVIEW_TEST_PASSWORD=password), timeout=180)
+            for script in ('test_preview_layout.cjs', 'test_fixed_browser.cjs'):
+                if suite != 'all' and suite not in script:
+                    continue
+                subprocess.run(['node', str(root / 'tests' / script)], check=True,
+                               env=dict(os.environ, PREVIEW_TEST_URL=f'http://127.0.0.1:{server.server_port}',
+                                        PREVIEW_TEST_PASSWORD=password), timeout=180)
         finally:
             server.shutdown()
             worker.join(timeout=5)

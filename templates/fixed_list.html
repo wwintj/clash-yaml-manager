@@ -1,0 +1,32 @@
+{% extends 'index.html' %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='fixed.css') }}">{% endblock %}
+{% block workspace %}
+<section class="terminal-panel"><div class="panel-inner">
+  <div class="panel-title-row flex-wrap gap-3">
+    <h2 class="panel-title">Fixed Subscriptions</h2>
+    <a href="{{ url_for('fixed.create') }}" class="btn btn-green btn-terminal">Create Fixed Subscription</a>
+  </div>
+  <p class="helper-text">Saved subscriptions keep their URL until you change the prefix, regenerate the link, or delete them.</p>
+  {% if not entries %}
+    <p>No fixed subscriptions yet.</p><p>Create your first fixed subscription.</p>
+  {% else %}
+  <table class="fixed-table"><thead><tr>{% for title in ['Name','Status','Nodes','Updated','Last Access','Subscription URL','Actions'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for entry in entries %}<tr>
+    <td data-label="Name">{{ entry.name }}</td>
+    <td data-label="Status"><span class="badge text-bg-secondary">{{ entry.status | upper }}</span></td>
+    <td data-label="Nodes">{{ entry.node_count }}</td>
+    <td data-label="Updated">{{ entry.updated_at_display }}</td>
+    <td data-label="Last Access">{{ entry.last_access_at_display }}</td>
+    <td data-label="Subscription URL"><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></td>
+    <td data-label="Actions"><div class="fixed-actions">
+      <a class="btn btn-outline-terminal btn-terminal" href="{{ url_for('fixed.edit',key=entry.id) }}">Edit</a>
+      {% for action, label, confirmation in [('disable' if entry.status == 'active' else 'enable', 'Disable' if entry.status == 'active' else 'Enable', ''), ('regenerate','Regenerate Link','This will invalidate the old subscription URL.'), ('delete','Delete','Delete this fixed subscription? Its URL will stop working permanently.')] %}
+      <form method="POST" action="{{ url_for('fixed.action',key=entry.id,action=action) }}" {% if confirmation %}data-confirm="{{ confirmation }}"{% endif %}>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-terminal btn-terminal" type="submit">{{ label }}</button>
+      </form>{% endfor %}
+    </div></td>
+  </tr>{% endfor %}</tbody></table>
+  {% endif %}
+</div></section>
+{% endblock %}
+{% block generator_scripts %}<script src="{{ url_for('static', filename='fixed.js') }}"></script>{% endblock %}

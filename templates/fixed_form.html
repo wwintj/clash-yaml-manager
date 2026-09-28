@@ -1,0 +1,21 @@
+{% extends 'fixed_list.html' %}
+{% block workspace %}
+<section class="terminal-panel"><div class="panel-inner">
+  <div class="panel-title-row"><h2 class="panel-title">{{ 'Edit Fixed Subscription' if entry else 'Create Fixed Subscription' }}</h2></div>
+  {% if entry %}<div class="mb-4"><label class="form-label">Subscription URL</label><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></div>{% endif %}
+  <form id="process-form" method="POST" enctype="multipart/form-data" data-fixed="true" data-saved-custom="{{ 'true' if saved_custom else 'false' }}">
+    <div class="mb-4"><label class="form-label" for="subscription-name">Name</label><input id="subscription-name" class="form-control terminal-input" name="name" value="{{ fields.name }}" required maxlength="128"></div>
+    <div class="mb-4"><label class="form-label" for="url-prefix">URL Prefix</label><input id="url-prefix" class="form-control terminal-input" name="prefix" value="{{ fields.prefix }}"><div class="form-text">Letters, numbers and hyphens; normalized to 1–64 characters. Changing the prefix invalidates the old URL.</div></div>
+    {% if saved_custom %}<p class="form-text">Current custom YAML: saved. Leave the upload empty to keep it.</p>{% endif %}
+    {% include '_generator_fields.html' %}
+    <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal">{{ 'Save Changes' if entry else 'Create Fixed Subscription' }}</button>
+    <a href="{{ url_for('fixed.index') }}" class="btn btn-outline-terminal btn-terminal">Back to list</a>
+  </form>
+  <script id="fixed-fields" type="application/json">{{ fields | tojson }}</script>
+</div></section>
+{% endblock %}
+{% block generator_scripts %}
+<script src="{{ url_for('static', filename='fixed.js') }}"></script>
+<script id="country-data" type="application/json">{{ country_mapping | tojson }}</script>
+<script src="{{ url_for('static', filename='nodes.js') }}"></script>
+{% endblock %}

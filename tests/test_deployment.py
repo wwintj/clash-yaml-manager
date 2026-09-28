@@ -21,6 +21,29 @@ def test_production_readiness_timeout_is_explicit(script_name):
     assert 'if ! wait_for_application; then' not in script
 
 
+def test_fixed_subscription_survives_upgrade_and_backup(deployment):
+    from core.fixed_subscriptions import FixedSubscriptions
+    from core import generator
+    from conftest import LINK
+    installed, source, service, events, env, run = deployment
+    store = FixedSubscriptions(installed / 'state')
+    config = dict(yaml_source='custom', batch_nodes='US|Preserved|' + LINK,
+                  aux_nodes=[], node_overrides={}, special_groups=[])
+    entry = store.save(None, 'Preserved', 'preserved', config,
+                       generator.parse_form_nodes({'batch_nodes':config['batch_nodes']}),
+                       source / 'unused.yaml', b'proxies: []\nproxy-groups: []\nrules: []\n')
+    slug = store.slug(entry); before = store.resolve(slug)
+    result = run()
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert FixedSubscriptions(installed / 'state').resolve(slug) == before
+    backups = list(installed.parent.glob('upgrade-backup-*/state'))
+    assert len(backups) == 1 and FixedSubscriptions(backups[0]).resolve(slug) == before
+    result = run('uninstall.sh', input_text='y\n\n')
+    assert result.returncode == 0, result.stdout + result.stderr
+    uninstall_backup = next(installed.parent.glob('uninstall-backup-*'))
+    assert FixedSubscriptions(uninstall_backup / 'state').resolve(slug) == before
+
+
 def executable(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text('#!/usr/bin/env bash\nset -eu\n' + text)
