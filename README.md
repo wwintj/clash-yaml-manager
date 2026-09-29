@@ -47,6 +47,12 @@ Fixed Subscription 的健康檢查預設 **Off**；可在 Edit 頁面切換為 *
 此檢查**不驗證**代理認證或端到端轉發，也不測試 TLS、WebSocket 或 Reality 協議；沒有自動健康排程。
 私網和非全球可路由地址會被封鎖，結果存入獨立私有狀態，不改動 Fixed URL 或 revision。架構、限制及安全細節見 [Node Health](docs/NODE_HEALTH.md)。
 
+### Full Proxy Validation — main development
+
+Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理的 **Mihomo v1.19.31** 對目前已保存的 VMess/VLESS 節點執行端到端 HTTPS URL probe。預設 **Off**；管理員在 Edit 頁面改為 **Manual** 後才可按 **Check Proxies Now**。普通安裝或更新不會安裝、更新或啟動 Mihomo；須在 VPS 透過 SSH 執行 `sudo bash /opt/clash-yaml-manager/mihomoctl.sh install`，Web 只顯示引擎狀態。
+
+預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。檢查不移除節點、不更改 YAML/策略或固定 URL，也不觸發自動切換或排程。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：

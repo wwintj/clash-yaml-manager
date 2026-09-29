@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add optional, exactly pinned Mihomo v1.19.31 management for Linux amd64/arm64 and manual end-to-end HTTPS proxy checks of committed Fixed Subscription VMess/VLESS nodes, with global and per-subscription probe settings and independent Proxy/Endpoint observations.
 - Add manual, Off-by-default TCP endpoint reachability checks for committed Fixed Subscription VMess/VLESS nodes, with connect latency and Unknown/Healthy/Suspect/Unhealthy observations in private auxiliary state.
 - Schedule each remote Fixed Subscription source through a separate systemd timer with seven intervals, Off by default, fixed failure backoff and bounded refresh history; keep public URLs and last-good data available during provider failures.
 - Merge ordered manual, remote URL and persistent uploaded sources in Fixed Subscriptions; import VMess/VLESS from Clash/Mihomo YAML, raw URI lists and Base64 lists with manual refresh, source controls and last-good cache status.
@@ -10,11 +11,14 @@
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
 ### Changed
+- Keep managed Mihomo binaries and metadata across ordinary project updates; leave proxy checks Off after upgrades and never alter Fixed YAML, URL, groups or policy based on health results.
 - Keep unhealthy nodes in generated YAML and proxy groups; preserve health on name-only edits, reset identity when connection configuration changes, and discard probe results when the Fixed revision changes during a check.
 - Normalize fixed registry v1/v2 to v3 in memory with existing schedules Off; persist on successful management or required scheduler mutations while preserving URLs, manual settings and complete revision files.
 - Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
 
 ### Security
+- Verify pinned archive and executable hashes, architecture and exact version before installing a root-owned binary; run probes in private short-lived directories through a secret-protected localhost controller with bounded batches, concurrency and process cleanup.
+- Restrict probe targets to public HTTPS with all locally resolved addresses safe, store only opaque health metadata and sanitized errors, and reject stale revisions or concurrent checks without penalizing nodes.
 - Validate every resolved node address before pinned numeric TCP connection, block private/mixed DNS answers, bound probes to three seconds, sixteen concurrent workers and 256 nodes, and keep endpoints, credentials and fingerprints out of logs and health UI.
 - Bound automatic work, use a nonblocking shared worker lock, reject stale candidates and keep refresh history/journal free of source credentials and raw exceptions.
 - Validate each remote URL/DNS/redirect, pin connections to approved public IPs, verify HTTPS hostnames/system CAs, ignore proxy environment settings, and bound DNS/connect/read time and payload size; keep remote credentials out of errors and browser storage.
