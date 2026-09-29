@@ -1,4 +1,4 @@
-"""Auxiliary manual full-proxy observations; never changes a Fixed revision."""
+"""Auxiliary full-proxy observations; never changes a Fixed revision."""
 import copy
 import ipaddress
 import json
@@ -9,7 +9,7 @@ import socket
 import time
 from urllib.parse import urlsplit
 
-from core import mihomo_probe, node_health, source_fetch
+from core import health_schedule, mihomo_probe, node_health, source_fetch
 from core.mihomo_manager import ManagedMihomo
 from core.refresh_schedule import timestamp
 from core.source_errors import SourceError
@@ -21,7 +21,8 @@ ERRORS = ('timeout','proxy_connect_failed','probe_status_mismatch','proxy_failed
 MESSAGES = {
     'unavailable':'Proxy health state unavailable.',
     'save':'Proxy health results could not be saved.',
-    'mode':'Enable Manual full proxy validation before checking.',
+    'mode':'Enable Manual or Automatic full proxy validation before checking.',
+    'not_due':'Automatic proxy check is not due or the subscription is paused.',
     'settings':'Select valid proxy probe settings.',
     'target':'Probe target must be a public HTTPS URL without credentials, query or fragment.',
     'limit':'Full proxy validation supports up to 256 nodes per run.',
@@ -133,19 +134,22 @@ def valid_record(record):
 
 
 def empty_entry():
-    return dict(mode='off',use_global=True,override=None,last_check_at=None,nodes={})
+    return dict(mode='off',use_global=True,override=None,last_check_at=None,nodes={},**health_schedule.defaults())
 
 
 def valid_state(data):
     try:
         if (not isinstance(data, dict) or set(data) != {'version','global','subscriptions'}
-                or type(data['version']) is not int or data['version'] != 1 or not valid_settings(data['global'])
+                or type(data['version']) is not int or data['version'] not in (1,2) or not valid_settings(data['global'])
                 or not isinstance(data['subscriptions'], dict)):
             return False
         for key, entry in data['subscriptions'].items():
-            if not isinstance(key,str) or not node_health.ID.fullmatch(key) or not isinstance(entry,dict) or set(entry) != set(empty_entry()):
+            fields = set(empty_entry()) if data['version'] == 2 else {'mode','use_global','override','last_check_at','nodes'}
+            if not isinstance(key,str) or not node_health.ID.fullmatch(key) or not isinstance(entry,dict) or set(entry) != fields:
                 return False
-            if entry['mode'] not in ('off','manual') or type(entry['use_global']) is not bool:
+            if (type(entry['use_global']) is not bool
+                    or data['version'] == 1 and entry['mode'] not in ('off','manual')
+                    or data['version'] == 2 and not health_schedule.valid(entry)):
                 return False
             if entry['use_global'] and entry['override'] is not None or not entry['use_global'] and not valid_settings(entry['override']):
                 return False
@@ -161,7 +165,7 @@ def valid_state(data):
         return False
 
 
-class ProxyHealth:
+class ProxyHealth(health_schedule.ScheduledHealth):
     def __init__(self, fixed, *, engine=None, runner=None, clock=None, resolver=None):
         self.fixed = fixed
         self.state = Path(fixed.state)
@@ -196,10 +200,10 @@ class ProxyHealth:
             def reject_constant(_):
                 raise ValueError
             data = (json.loads(raw, object_pairs_hook=unique, parse_constant=reject_constant)
-                    if raw is not None else {'version':1,'global':copy.deepcopy(DEFAULT_PROBE),'subscriptions':{}})
+                    if raw is not None else {'version':2,'global':copy.deepcopy(DEFAULT_PROBE),'subscriptions':{}})
             if not valid_state(data):
                 raise ValueError
-            return data, raw
+            return health_schedule.migrate(data), raw
         except (OSError, StateError, ValueError, TypeError):
             raise ProxyHealthError('unavailable') from None
 
@@ -217,6 +221,9 @@ class ProxyHealth:
             except (OSError, StateError):
                 pass
             raise ProxyHealthError('save') from None
+
+    def _schedule_locked(self):
+        return self._locked(self.lock)
 
     @staticmethod
     def _prune(data, ids):
@@ -249,7 +256,7 @@ class ProxyHealth:
         return dict(mode=entry['mode'],use_global=entry['use_global'],override=entry['override'],
                     global_settings=global_settings,effective=global_settings if entry['use_global'] else entry['override'],
                     last_check_at=entry['last_check_at'],total=len(nodes),rows=rows,counts=counts,
-                    revision=snapshot['revision'])
+                    revision=snapshot['revision'],**health_schedule.details(entry))
 
     def set_global(self, settings):
         validated = validate_target(settings, self.resolver)
@@ -261,13 +268,18 @@ class ProxyHealth:
                         if entry['use_global']:
                             entry['nodes'] = {}
                             entry['last_check_at'] = None
+                            health_schedule.configure(entry,entry['mode'],entry['interval_seconds'],self.clock(),reset=True)
                 data['global'] = copy.deepcopy(validated)
                 self._commit(data, previous)
         except (OSError, StateError):
             raise ProxyHealthError('unavailable') from None
 
-    def settings(self, key, mode, use_global, override=None):
-        if mode not in ('off','manual') or type(use_global) is not bool:
+    def settings(self, key, mode, use_global, override=None, interval_seconds=None):
+        try:
+            health_schedule.configure(empty_entry(),mode,interval_seconds,self.clock())
+        except ValueError:
+            raise ProxyHealthError('settings') from None
+        if type(use_global) is not bool:
             raise ProxyHealthError('settings')
         if use_global:
             override = None
@@ -285,84 +297,108 @@ class ProxyHealth:
                     if previous_probe != current_probe:
                         entry['nodes'] = {}
                         entry['last_check_at'] = None
-                    entry.update(mode=mode,use_global=use_global,override=copy.deepcopy(override))
+                    health_schedule.configure(entry,mode,interval_seconds,self.clock(),reset=previous_probe != current_probe)
+                    entry.update(use_global=use_global,override=copy.deepcopy(override))
                     self._commit(data, previous)
         except (OSError, StateError):
             raise ProxyHealthError('unavailable') from None
         except SourceError:
             raise ProxyHealthError('conflict') from None
 
-    def check(self, key):
-        snapshot, payload = self.fixed.snapshot(key)
+    def check(self, key, trigger='manual'):
+        expected_entry, expected_global, started = None, None, False
         try:
+            if trigger != 'auto':
+                snapshot, payload = self.fixed.snapshot(key)
             with self._locked(self.lock):
                 data, _ = self._read()
-                expected_entry = copy.deepcopy(data['subscriptions'].get(key, empty_entry()))
+                expected_entry = copy.deepcopy(data['subscriptions'].get(key,empty_entry()))
                 expected_global = copy.deepcopy(data['global'])
-            if expected_entry['mode'] != 'manual':
-                raise ProxyHealthError('mode')
-            nodes = node_health.extract(payload, include_config=True)
-            if len(nodes) > 256:
-                raise ProxyHealthError('limit')
-            targets = list({node['fingerprint']:node for node in nodes}.values())
-            effective = expected_global if expected_entry['use_global'] else expected_entry['override']
-            with self._locked(self.job_lock, blocking=False):
-                if self.engine.status()['status'] != 'COMPATIBLE':
-                    raise ProxyHealthError('compatible')
-                validate_target(effective, self.resolver)
-                LOGGER.info('Proxy probe started subscription=%s nodes=%d', key, len(targets))
-                results = self.runner(self.engine.binary, targets, effective, self.state)
-                if set(results) != {node['fingerprint'] for node in targets}:
-                    raise ProxyHealthError('engine')
-                at = self.clock()
-                records = {}
-                for node in targets:
-                    fp = node['fingerprint']
-                    result = results[fp]
-                    if not isinstance(result, dict) or result.get('kind') not in ('success','failure','unsupported'):
-                        raise ProxyHealthError('engine')
-                    record = copy.deepcopy(expected_entry['nodes'].get(fp, unknown()))
-                    record['last_checked_at'] = at
-                    if result['kind'] == 'success':
-                        record.update(status='healthy',consecutive_failures=0,latency_ms=result.get('latency_ms'),
-                                      last_success_at=at,error=None)
-                    elif result['kind'] == 'unsupported':
-                        record.update(status='unsupported',latency_ms=None,error='unsupported_config')
-                    else:
-                        code = result.get('error')
-                        if code not in ERRORS or code == 'unsupported_config':
-                            raise ProxyHealthError('engine')
-                        count = min(record['consecutive_failures']+1, 1_000_000_000)
-                        record.update(status='suspect' if count < 3 else 'unhealthy',consecutive_failures=count,
-                                      latency_ms=None,error=code)
-                    if not valid_record(record):
-                        raise ProxyHealthError('engine')
-                    records[fp] = record
-                with self.fixed.revision_guard(key, snapshot['revision']) as ids:
-                    with self._locked(self.lock):
-                        data, previous = self._read()
-                        if (data['subscriptions'].get(key, empty_entry()) != expected_entry
-                                or data['global'] != expected_global):
-                            raise ProxyHealthError('health_conflict')
-                        self._prune(data, ids)
-                        data['subscriptions'][key] = dict(mode='manual',use_global=expected_entry['use_global'],
-                            override=expected_entry['override'],last_check_at=at,nodes=records)
-                        self._commit(data, previous)
-                counts = {status:sum(record['status']==status for record in records.values())
-                          for status in ('healthy','suspect','unhealthy','unsupported')}
-                LOGGER.info('Proxy probe completed subscription=%s nodes=%d healthy=%d suspect=%d unhealthy=%d unsupported=%d',
-                            key,len(targets),counts['healthy'],counts['suspect'],counts['unhealthy'],counts['unsupported'])
-                return counts
+            if not health_schedule.allowed(expected_entry,trigger,self.clock()):
+                raise ProxyHealthError('not_due' if trigger == 'auto' else 'mode')
+            if trigger == 'auto':
+                started = True
+                snapshot, payload = self.fixed.snapshot(key)
+                if snapshot['status'] != 'active':
+                    raise ProxyHealthError('not_due')
+            started = True
+            try:
+                return self._check(key,snapshot,payload,expected_entry,expected_global,trigger)
+            except KeyError:
+                raise ProxyHealthError('engine') from None
         except LockBusyError:
-            raise ProxyHealthError('busy') from None
+            failure = ProxyHealthError('busy')
         except (OSError, StateError):
-            raise ProxyHealthError('unavailable') from None
-        except SourceError:
-            raise ProxyHealthError('conflict') from None
-        except ProxyHealthError:
+            failure = ProxyHealthError('unavailable')
+        except SourceError as error:
+            failure = ProxyHealthError('conflict' if error.code == 'conflict' else 'unavailable')
+        except KeyError:
             raise
+        except ProxyHealthError as error:
+            failure = error
         except Exception:
-            raise ProxyHealthError('engine') from None
+            failure = ProxyHealthError('engine')
+        if trigger == 'auto' and started:
+            self._record_failed_job(key,expected_entry,health_schedule.failure_result(failure.code),expected_global)
+        raise failure from None
+
+    def _check(self, key, snapshot, payload, expected_entry, expected_global, trigger):
+        nodes = node_health.extract(payload, include_config=True)
+        if len(nodes) > 256:
+            raise ProxyHealthError('limit')
+        targets = list({node['fingerprint']:node for node in nodes}.values())
+        effective = expected_global if expected_entry['use_global'] else expected_entry['override']
+        with self._locked(self.job_lock, blocking=False):
+            if self.engine.status()['status'] != 'COMPATIBLE':
+                raise ProxyHealthError('compatible')
+            validate_target(effective, self.resolver)
+            LOGGER.info('Proxy probe started subscription=%s nodes=%d', key, len(targets))
+            results = self.runner(self.engine.binary, targets, effective, self.state)
+            if set(results) != {node['fingerprint'] for node in targets}:
+                raise ProxyHealthError('engine')
+            at = self.clock()
+            records = {}
+            for node in targets:
+                fp = node['fingerprint']
+                result = results[fp]
+                if not isinstance(result, dict) or result.get('kind') not in ('success','failure','unsupported'):
+                    raise ProxyHealthError('engine')
+                record = copy.deepcopy(expected_entry['nodes'].get(fp, unknown()))
+                record['last_checked_at'] = at
+                if result['kind'] == 'success':
+                    record.update(status='healthy',consecutive_failures=0,latency_ms=result.get('latency_ms'),
+                                  last_success_at=at,error=None)
+                elif result['kind'] == 'unsupported':
+                    record.update(status='unsupported',latency_ms=None,error='unsupported_config')
+                else:
+                    code = result.get('error')
+                    if code not in ERRORS or code == 'unsupported_config':
+                        raise ProxyHealthError('engine')
+                    count = min(record['consecutive_failures']+1, 1_000_000_000)
+                    record.update(status='suspect' if count < 3 else 'unhealthy',consecutive_failures=count,
+                                  latency_ms=None,error=code)
+                if not valid_record(record):
+                    raise ProxyHealthError('engine')
+                records[fp] = record
+            with self.fixed.revision_guard(key, snapshot['revision']) as ids:
+                if trigger == 'auto' and self.fixed._read()['subscriptions'][key]['status'] != 'active':
+                    raise ProxyHealthError('conflict')
+                with self._locked(self.lock):
+                    data, previous = self._read()
+                    if (not health_schedule.same_check_state(data['subscriptions'].get(key,empty_entry()),expected_entry)
+                            or data['global'] != expected_global):
+                        raise ProxyHealthError('health_conflict')
+                    self._prune(data, ids)
+                    completed = copy.deepcopy(expected_entry)
+                    completed.update(last_check_at=at,nodes=records)
+                    health_schedule.record(completed,trigger,'success',at)
+                    data['subscriptions'][key] = completed
+                    self._commit(data, previous)
+            counts = {status:sum(record['status']==status for record in records.values())
+                      for status in ('healthy','suspect','unhealthy','unsupported')}
+            LOGGER.info('Proxy probe completed subscription=%s nodes=%d healthy=%d suspect=%d unhealthy=%d unsupported=%d',
+                        key,len(targets),counts['healthy'],counts['suspect'],counts['unhealthy'],counts['unsupported'])
+            return counts
 
     def remove(self, key):
         try:
