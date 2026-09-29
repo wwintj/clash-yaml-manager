@@ -46,7 +46,7 @@ repair_permissions() {
   for entry in "${INSTALL_DIR}"/*; do
     name="$(basename "${entry}")"
     case "${name}" in
-      uploads|outputs|backups|logs|state|.env|.service-account|.git) continue ;;
+      bin|uploads|outputs|backups|logs|state|.env|.service-account|.git) continue ;;
     esac
     # Do not follow symlinks into another application or the system Python.
     chown -hR root:root "${entry}"
@@ -63,6 +63,21 @@ repair_permissions() {
   done
   chown root:root "${INSTALL_DIR}/.env" "${ACCOUNT_MARKER}"
   chmod 600 "${INSTALL_DIR}/.env" "${ACCOUNT_MARKER}"
+}
+
+backup_private_state() {
+  local source_dir="$1" destination_dir="$2" item name
+  mkdir -p "${destination_dir}"
+  chmod 700 "${destination_dir}"
+  shopt -s dotglob nullglob
+  for item in "${source_dir}"/*; do
+    name="$(basename "${item}")"
+    # A hard-killed Web worker can leave a sensitive ephemeral Mihomo config.
+    # It is runtime scratch data, not backup material.
+    [[ "${name}" == .proxy-probe-* ]] && continue
+    cp -a "${item}" "${destination_dir}/"
+  done
+  shopt -u dotglob nullglob
 }
 
 write_service_unit() {

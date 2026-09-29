@@ -55,7 +55,7 @@ Required checks before mutation:
 3. GitHub repository write access, fixed default branch main, complete README markers and
    reviewed Unreleased notes.
 4. Full pytest (including 10,410-rule round trip), Python compilation in memory, pip check,
-   bash -n for five entrypoints and the helper, generated bootstrap synchronization, diff check,
+   bash -n for six entrypoints and the helper, generated bootstrap synchronization, diff check,
    removed-email exclusion and a fixed byte checksum for the default YAML.
 5. ShellCheck when present; otherwise print unavailable. ShellCheck is not a runtime dependency.
 

@@ -138,7 +138,7 @@ fi
 # Stop writers before backing up/migrating shared auth state. Legacy .env was
 # backed up above; the runtime never edits it after this migration.
 if [[ -d "${INSTALL_DIR}/state" ]]; then
-  cp -a "${INSTALL_DIR}/state" "${BACKUP_DIR}/state"
+  backup_private_state "${INSTALL_DIR}/state" "${BACKUP_DIR}/state"
 fi
 "${INSTALL_DIR}/venv/bin/python" -m core.migrate --env-file "${INSTALL_DIR}/.env" --state-dir "${INSTALL_DIR}/state"
 
@@ -147,7 +147,7 @@ shopt -s dotglob nullglob
 for item in "${CURRENT_DIR}"/*; do
   name="$(basename "${item}")"
   case "${name}" in
-    .env|INSTALLATION.json|.git|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
+    .env|INSTALLATION.json|.git|.venv|venv|bin|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
       continue
       ;;
     defaults)

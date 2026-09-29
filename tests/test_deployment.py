@@ -65,6 +65,8 @@ def deployment(tmp_path):
     shutil.copytree(ROOT / 'core', source / 'core', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copytree(ROOT / 'scripts', source / 'scripts')
     shutil.copy2(ROOT / 'VERSION', source / 'VERSION')
+    shutil.copy2(ROOT / 'mihomoctl.sh', source / 'mihomoctl.sh')
+    shutil.copy2(ROOT / 'mihomo-manifest.json', source / 'mihomo-manifest.json')
     (source / 'app.py').write_text('VERSION = "new"\n')
     shutil.copy2(ROOT / 'requirements.txt', source / 'requirements.txt')
     (source / '.env').write_text('DO_NOT_COPY=source-secret\n')

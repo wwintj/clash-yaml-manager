@@ -91,7 +91,11 @@ if [[ -d "${INSTALL_DIR}" ]]; then
 
       for item in state .env VERSION INSTALLATION.json; do
         if [[ -e "${INSTALL_DIR}/${item}" ]]; then
-          cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DEST}/"
+          if [[ "${item}" == state ]]; then
+            backup_private_state "${INSTALL_DIR}/state" "${BACKUP_DEST}/state"
+          else
+            cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DEST}/"
+          fi
           copied_any=1
         fi
       done

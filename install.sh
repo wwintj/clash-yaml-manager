@@ -58,7 +58,7 @@ if [[ "${CURRENT_DIR}" != "${INSTALL_DIR}" ]]; then
   for item in "${CURRENT_DIR}"/*; do
     name="$(basename "${item}")"
     case "${name}" in
-      .env|INSTALLATION.json|.venv|venv|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
+      .env|INSTALLATION.json|.venv|venv|bin|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
         continue
         ;;
       *)
