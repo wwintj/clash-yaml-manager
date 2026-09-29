@@ -1,4 +1,7 @@
-# Fixed Subscriptions MVP (unreleased main)
+# Fixed Subscriptions (unreleased main)
+
+External node sources extend this MVP; see [External Sources](EXTERNAL_SOURCES.md)
+for formats, SSRF, cache, migration and refresh behavior.
 
 VERSION and Latest Stable remain 1.1.1. Test this feature only with explicit
 `--channel main`; this development work creates no tag or Release.
@@ -16,25 +19,27 @@ Private files live under the existing service-owned state directory:
 state/fixed_subscriptions.json
 state/fixed_subscriptions.lock
 state/fixed_subscriptions/<internal-id>/<revision>/current.yaml
-state/fixed_subscriptions/<internal-id>/<revision>/base.yaml  (custom source only)
+state/fixed_subscriptions/<internal-id>/<revision>/base.yaml  (default or custom snapshot)
 ```
 
-The version-1 registry contains subscription UUID4 ids, name, prefix, token, status,
+The version-2 registry (with in-memory v1 migration) contains subscription UUID4 ids, name, prefix, token, status,
 source type, batch/auxiliary nodes, preview overrides, existing policy options,
 node/group/rule counts, UTC timestamps and SHA256 retired-token tombstones.
 Directories are 0700 and files 0600. A custom base is persisted separately from
-uploads; leaving the edit upload empty reuses it. Default-source subscriptions use
-the current built-in template when saved, without retaining a private template copy.
+uploads; leaving the edit upload empty reuses it. Default-source subscriptions snapshot
+the current built-in template when saved; existing v1 default revisions remain readable.
 
 ## Atomic save and concurrency
 
 All registry reads/mutations and public reads use the existing `core.state.file_lock`
 on one stable lock inode. Generation uses the shared parser and YAML engine. A private
-candidate directory receives the base (if custom) and validated current YAML via
+candidate directory outside subscription homes receives the base, source payloads and validated current YAML via
 atomic writes. Directory entries are synced before one atomic registry update selects
 the candidate and its source configuration together. This indirection avoids a window
 where replacing a single `current.yaml` before metadata would expose mismatched state.
 
+Network and generation work runs outside the registry lock. Commit reacquires the lock
+and rejects changes to the snapshotted management identity (excluding Last Access).
 Until that commit, the old configuration and YAML remain selected. Candidate-generation,
 base/current replacement and metadata-write failures are covered by failure injection,
 including an error after metadata replacement. If a registry write reports an error,
@@ -73,7 +78,8 @@ Tokens remain in private state and authenticated UI only. Application, Werkzeug 
 Gunicorn request logs redact fixed URLs. A separately configured reverse proxy has its
 own logging policy and should omit/redact bearer subscription paths. No token is written
 to `.env`, installation metadata or documentation. Filesystem traversal and symlinks are
-rejected. Upload extensions and the existing 50MB request limit remain unchanged.
+rejected. Custom base upload extensions and the existing 50MB request limit remain unchanged.
+External node payloads have a separate 10 MiB limit and do not rely on filename extensions.
 
 Last Access is initially Never and updates on successful public reads at most once per
 60 seconds across workers. It does not change Updated. Management operations update
@@ -98,5 +104,5 @@ auth/CSRF, fixed/V2/legacy/temporary route coexistence and upgrade preservation.
 and Fixed CRUD at desktop size, with mobile list overflow/action checks, custom-base
 reuse, Copy, confirmations, failed-save preservation and draft separation.
 
-Deferred: Duplicate, detail tabs, external subscriptions/sources, refresh schedules,
+Deferred: Duplicate, detail tabs, refresh schedules,
 node health/latency checks, advanced policies, rule editors, databases and history.

@@ -20,7 +20,12 @@ Disable 暫停匿名讀取，Enable 恢復原地址。固定地址使用 `/s/<pr
 
 這是尚未發布的 main 功能，Latest Stable 仍為 **v1.1.1**。測試 VPS 使用下方 `--channel main` 命令。
 Custom Base YAML 與生成結果保存在私有 `state/`，編輯時不必重新上傳；瀏覽器的 Generate 草稿仍獨立。
-儲存、原子更新、安全模型及測試範圍見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)。
+Node Sources 支援 **Manual、Remote URL、Uploaded source**，可以合併多個來源；Base YAML 仍獨立選擇 Default / Custom。
+外部來源接受 Clash/Mihomo YAML、Raw VMess/VLESS URI list、Base64 URI list，僅匯入 VMess / VLESS。
+Save 或手動 Refresh 更新遠端資料，抓取失敗可使用未變更來源的 last-good cache，固定 URL 保持不變。
+**Manual refresh only — no scheduled refresh yet.**
+
+儲存及固定 URL 見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)；來源格式、SSRF、快取、v1 → v2 migration 與並發模型見 [External Sources](docs/EXTERNAL_SOURCES.md)。
 
 ## 一鍵安裝
 

@@ -3,10 +3,16 @@
 ## Unreleased
 
 ### Added
+- Merge ordered manual, remote URL and persistent uploaded sources in Fixed Subscriptions; import VMess/VLESS from Clash/Mihomo YAML, raw URI lists and Base64 lists with manual refresh, source controls and last-good cache status.
 - Add authenticated Fixed Subscriptions management with persistent source configuration and custom base YAML, stable readable bearer URLs, edit, copy, disable/enable, confirmed link regeneration and deletion.
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
+### Changed
+- Migrate fixed registry v1 to v2 only on successful management mutations, preserving existing URLs and manual settings; snapshot complete base/source/output files in each new revision.
+- Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
+
 ### Security
+- Validate each remote URL/DNS/redirect, pin connections to approved public IPs, verify HTTPS hostnames/system CAs, ignore proxy environment settings, and bound DNS/connect/read time and payload size; keep remote credentials out of errors and browser storage.
 - Commit fixed configuration and generated YAML together through private candidate files and an atomic registry pointer under a shared file lock; preserve the previous subscription on failed saves.
 - Use 128-bit random tokens, permanent token-hash tombstones, constant-time authorization, private state permissions, strict schema/path checks and fixed-URL access-log redaction.
 
