@@ -144,7 +144,8 @@ A real tim x86_64 VPS reported the generic upstream v3 artifact downloading,
 hashing and passing ELF validation, then failing the real version execution.
 Its Intel Xeon SierraForest model exposed v2 flags but lacked AVX2, BMI1/BMI2,
 FMA, LZCNT and MOVBE. Installation correctly remained NOT INSTALLED. The patch
-is **FIXED IN CONTROLLED TESTS / REAL VPS RE-TEST REQUIRED**. On that VPS, the
+is **FIXED IN CONTROLLED TESTS**, with the tim amd64 path now covered by
+**OPERATOR-ATTESTED REAL VPS ACCEPTANCE** below. On that VPS, the
 expected CPU Level is v2 and Build amd64-v2; if verified v2 cannot execute, the
 helper should select v1. Run the operator sequence above and confirm actual
 detector output, hash and `-v`, then recheck real VMess, real VLESS and bad UUID.
@@ -251,15 +252,27 @@ URL test may resolve the hostname again through a different resolver. Operators
 should select trusted, stable public probe hosts; this local validation is not
 a guarantee about the final DNS destination.
 
-## Verification boundary
+## Verification boundary and real VPS closeout
+
+**OPERATOR-ATTESTED REAL VPS ACCEPTANCE**, supplied by the operator on
+2026-09-30; Codex did not independently connect to or reproduce the VPS run.
+The tim VPS ran application build `1.1.1-dev+e2e430d`, amd64, CPU Level v2,
+Build amd64-v2, Preferred Build amd64-v2, managed engine COMPATIBLE and
+Mihomo v1.19.31. Its real binary SHA256 was
+`8a9d3e867c422605bb61f572636f1e50b05c16f6b78b4eabff9857947ad2eb35`;
+real execution returned `Mihomo Meta v1.19.31 linux amd64`, and `/healthz`
+returned HTTP 200 OK.
+
+The operator explicitly attested PASS for real VMess and VLESS full proxy
+validation, bad UUID differentiation, reachable Endpoint with failing proxy
+credentials, Suspect/Unhealthy progression, healthy recovery, unchanged Fixed
+URL and YAML, and continued application health. No latency, endpoint, UUID,
+node name or count was supplied or inferred. Reality and real arm64 acceptance
+remain unevidenced. This closes the tim manual proxy/CPU compatibility check;
+it does not establish automatic timer-triggered health acceptance.
 
 Offline pytest and Playwright use controlled binary, process, DNS and
-controller fixtures. The upstream Linux assets were downloaded and hashed, but
-the current macOS host did **not** execute them. No real VPS VMess/VLESS or
-Reality node was probed by this patch: **NOT VERIFIED ON REAL VPS**. Real VPS
-acceptance should reverify tim amd64 CPU selection and installation (and arm64
-when available), COMPATIBLE status, one real
-VMess and VLESS (plus Reality if available) becoming HEALTHY, a deliberately
-wrong UUID/config producing a Proxy failure while Endpoint may remain HEALTHY,
-and an unchanged Fixed URL/YAML throughout. See
-[PROXY_HEALTH_REPORT.md](PROXY_HEALTH_REPORT.md) for automated gates.
+controller fixtures. The upstream Linux assets were independently downloaded
+and hashed; the macOS development host did not execute them. See
+[PROXY_HEALTH_REPORT.md](PROXY_HEALTH_REPORT.md) for the controlled gates and
+operator evidence boundary.

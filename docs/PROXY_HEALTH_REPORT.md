@@ -20,7 +20,8 @@ requirements but lacked AVX2, BMI1/BMI2, FMA, LZCNT and MOVBE. This is real
 pre-patch failure evidence; it is not a post-patch successful installation.
 
 **CPU compatibility regression: FIXED IN CONTROLLED TESTS.**
-**REAL VPS RE-TEST REQUIRED.** The macOS host did not execute any Linux asset.
+**Tim amd64 real acceptance is now OPERATOR-ATTESTED**, as recorded below.
+The macOS host did not execute any Linux asset.
 Four exact v1.19.31 assets were independently downloaded and checked against
 GitHub Release sizes/digests, then decompressed, hashed and checked as ELF.
 The exact names, compressed/binary SHA256 and byte sizes are recorded in
@@ -43,13 +44,29 @@ Go v2/v3 requirements and Linux flag names/OS-state inference are cited in the
 | Arm64 / CLI / Web display | PASS | Unchanged arm64 asset, null CPU level and older fieldless metadata accepted; CPU Level/Build/Preferred Build shown; no Web management button added. |
 | Full Proxy Validation and existing regressions | PASS | Existing controlled probe lifecycle/API/state unchanged; full pytest and all browser suites cover Fixed/V2/Legacy `/s`, temporary `/t`, Generate, sources, refresh, Endpoint, Proxy, auth/CSRF and deployment/release tooling. |
 
-For tim, follow the updated [operator sequence](PROXY_HEALTH.md#operator-workflow):
-explicit main project update → helper status → helper install → status →
-`sha256sum` → binary `-v` → `/healthz`. Expected host CPU Level is **v2**,
-Build **amd64-v2**; actual execution may choose v1 after verified v2 failure.
-Only after COMPATIBLE, test real VMess, real VLESS and deliberately bad UUID
-through Full Proxy Validation, preserving Fixed URL and YAML. Arm64 still
-requires real Linux/VPS acceptance when available.
+## Operator-attested real VPS acceptance closeout
+
+**OPERATOR-ATTESTED REAL VPS ACCEPTANCE**, explicitly supplied by the operator
+on 2026-09-30. Codex did not independently connect to the VPS or reproduce its
+execution. Tim build: `1.1.1-dev+e2e430d`; Architecture amd64; CPU Level v2;
+Build amd64-v2; Preferred Build amd64-v2; engine COMPATIBLE; Mihomo v1.19.31.
+The real executable SHA256 was
+`8a9d3e867c422605bb61f572636f1e50b05c16f6b78b4eabff9857947ad2eb35`.
+Real binary execution returned `Mihomo Meta v1.19.31 linux amd64`; healthz
+returned **HTTP 200 OK**.
+
+| Operator-provided real acceptance | Result |
+| --- | --- |
+| Real VMess / real VLESS full proxy validation | PASS, operator-attested |
+| Bad UUID differentiation with Endpoint still reachable | PASS, operator-attested |
+| Suspect / Unhealthy progression and healthy recovery | PASS, operator-attested |
+| Fixed URL and YAML unchanged; application healthy | PASS, operator-attested |
+
+No node counts, names, latencies, addresses, credentials or Reality PASS were
+provided or invented. Real arm64 and Reality acceptance remain unevidenced.
+The tim manual proxy/CPU compatibility closeout is **PASS, operator-attested**.
+Automatic timer-triggered health is a separate phase and remains **NOT RUN**
+until a real timer invocation and due jobs are observed on the VPS.
 
 ## Evidence boundary
 
@@ -61,8 +78,8 @@ VMess/VLESS connection. Official v1.19.31 amd64/arm64 assets were separately
 downloaded, checked against upstream Release SHA256 metadata, decompressed
 and checked as Linux x86-64/AArch64 ELF. The macOS host **cannot execute** the
 Linux binary, so CLI/API behavior was also inspected in pinned upstream tag
-source. **REAL MIHOMO BINARY TEST: NOT RUN. REAL VPS FULL PROXY TEST:
-NOT VERIFIED ON REAL VPS.** The earlier Automatic Refresh main build had VPS
+source. **INITIAL CODEX REAL MIHOMO BINARY TEST: NOT RUN.** The later tim operator
+acceptance is recorded above; these original controlled fixtures remain separate. The earlier Automatic Refresh main build had VPS
 readiness/timer checks, but no real scheduled provider refresh was observed
 there; this phase makes no new real VPS acceptance claim.
 
@@ -104,10 +121,9 @@ there; this phase makes no new real VPS acceptance claim.
 | VERSION / Latest Stable | 1.1.1 / v1.1.1 |
 | New tag / Release | NO / NO |
 
-The remaining **real VPS** acceptance is: deploy explicit main, re-test tim
-amd64 CPU selection (and arm64 when available), install pinned Mihomo through `mihomoctl.sh`, confirm COMPATIBLE and hash verification,
-then test a real VMess node, a real VLESS node and VLESS Reality if available.
-A deliberately wrong UUID/config should fail Proxy Health even if direct TCP
-Endpoint Health remains Healthy. Confirm Fixed URL and YAML stay unchanged.
-The exact operator commands and the pinned API limitations are in
-[PROXY_HEALTH.md](PROXY_HEALTH.md).
+Tim manual proxy and amd64-v2 installation acceptance is closed by the
+operator evidence above. Real arm64/Reality acceptance is not established.
+For the next phase, real automatic health acceptance must observe a genuine
+timer-triggered due Endpoint and Proxy run; a manually started oneshot alone
+is insufficient. See [PROXY_HEALTH.md](PROXY_HEALTH.md) for the established
+manual workflow and evidence boundary.
