@@ -408,6 +408,23 @@ class FixedSubscriptions:
                 except OSError:
                     pass  # Committed data is safe; later mutation retries cleanup.
 
+    def snapshot(self, key):
+        """Snapshot only committed output for observational subsystems, without stats writes."""
+        with self._locked():
+            entry = self._read()['subscriptions'].get(key)
+            if not entry:
+                raise KeyError(key)
+            return copy.deepcopy(entry), self._content(entry, 'current.yaml')
+
+    @contextmanager
+    def revision_guard(self, key, revision):
+        """Keep the revision current during a short auxiliary-state commit. No network here."""
+        with self._locked():
+            entries = self._read()['subscriptions']
+            if key not in entries or entries[key]['revision'] != revision:
+                raise SourceError('conflict')
+            yield set(entries)
+
     def action(self, key, action):
         with self._locked():
             data = self._read()
@@ -429,7 +446,15 @@ class FixedSubscriptions:
             self._commit(data)
             if action == 'delete':
                 shutil.rmtree(self._directories(key))
-            return copy.deepcopy(entry)
+            result = copy.deepcopy(entry)
+        if action == 'delete':
+            # Auxiliary cleanup must never roll back an authoritative deletion.
+            try:
+                from core.node_health import NodeHealth
+                NodeHealth(self).remove(key)
+            except Exception:
+                pass
+        return result
 
     def resolve(self, slug):
         match = SLUG.fullmatch(slug)
