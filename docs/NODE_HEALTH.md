@@ -9,8 +9,8 @@ VERSION and Latest Stable remain **1.1.1 / v1.1.1**; this feature is on explicit
 
 ## Use and meaning
 
-On a Fixed Subscription Edit page, Health Checks starts **Off** for every existing
-and new subscription. Set it to **Manual**, save the setting, then choose **Check
+On a Fixed Subscription Edit page, Health Checks starts **Off** for new subscriptions; upgrades preserve existing
+Off/Manual modes. Set it to **Manual** or **Automatic**, save the setting, then choose **Check
 Now**. The check reads the current committed `current.yaml` and reports Total,
 Healthy, Suspect, Unhealthy, Unknown and Last Check. Each supported row shows Node,
 Protocol, Status, Connect Latency, Consecutive Failures, Last Checked and Last
@@ -27,13 +27,16 @@ preserves Last Success, and increments failures. Failures 1–2 are Suspect; fai
 The latency is monotonic TCP connect time, rounded to an integer millisecond in UI.
 An Unhealthy node remains in the generated YAML and all proxy groups. Health never
 selects a fastest node, removes an endpoint or changes policy/rules. Check Now is
-manual only; the Automatic Refresh timer does not run health checks.
+available manually, with opt-in Automatic mode documented in
+[AUTOMATIC_HEALTH.md](AUTOMATIC_HEALTH.md). The separate health timer runs
+scheduled checks; the Automatic Refresh timer does not run health checks.
 
 ## Private state and identity
 
 `state/node_health.json` (0600) and `state/node_health.lock` (0600) are independent
 of the authoritative v3 Fixed registry and selected YAML revision. Health has its
-own schema version 1 and stores per-subscription mode, Last Check and at most 256
+own schema version 2 (read-compatible with v1) and stores scheduling metadata,
+per-subscription mode, Last Check and at most 256
 per-node records. Records are keyed by SHA256 of canonical, plain supported proxy
 configuration **excluding only the root `name` key**. Canonical JSON uses sorted
 mapping keys. This covers protocol, server, port, UUID, network, TLS, SNI,

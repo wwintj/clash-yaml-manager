@@ -41,19 +41,25 @@ journalctl -u clash-yaml-manager-refresh.service -n 50 --no-pager
 
 ### Node Health / Endpoint Reachability — main development
 
-Fixed Subscription 的健康檢查預設 **Off**；可在 Edit 頁面切換為 **Manual**，再按 **Check Now**。
+Fixed Subscription 的健康檢查預設 **Off**；可在 Edit 頁面切換為 **Manual** 或 **Automatic**，再按 **Check Now**。
 它只測試 VPS 能否與當前已保存 YAML 中的 VMess/VLESS 節點 `server:port` 建立 TCP 連接，並顯示連線耗時。
 連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy；之後成功立即恢復 Healthy。Unhealthy 節點**仍保留**在 YAML 及所有代理群組中。
-此檢查**不驗證**代理認證或端到端轉發，也不測試 TLS、WebSocket 或 Reality 協議；沒有自動健康排程。
+此檢查**不驗證**代理認證或端到端轉發，也不測試 TLS、WebSocket 或 Reality 協議；Automatic 模式使用下述獨立健康排程。
 私網和非全球可路由地址會被封鎖，結果存入獨立私有狀態，不改動 Fixed URL 或 revision。架構、限制及安全細節見 [Node Health](docs/NODE_HEALTH.md)。
 
 ### Full Proxy Validation — main development
 
-Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理的 **Mihomo v1.19.31** 對目前已保存的 VMess/VLESS 節點執行端到端 HTTPS URL probe。預設 **Off**；管理員在 Edit 頁面改為 **Manual** 後才可按 **Check Proxies Now**。普通安裝或更新不會安裝、更新或啟動 Mihomo；須在 VPS 透過 SSH 執行 `sudo bash /opt/clash-yaml-manager/mihomoctl.sh install`，Web 只顯示引擎狀態。
+Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理的 **Mihomo v1.19.31** 對目前已保存的 VMess/VLESS 節點執行端到端 HTTPS URL probe。預設 **Off**；管理員在 Edit 頁面改為 **Manual** 或 **Automatic** 後可按 **Check Proxies Now**。普通安裝或更新不會安裝、更新或啟動 Mihomo；須在 VPS 透過 SSH 執行 `sudo bash /opt/clash-yaml-manager/mihomoctl.sh install`，Web 只顯示引擎狀態。
 
-**Unreleased / main**：amd64 引擎依所有可見 CPU 的 Linux flags 交集，選擇固定的 GOAMD64 v1/v2/v3 資產；完整性校驗通過後若 `-v` 無法執行，才逐級嘗試較低版本。CPU 型號不參與判斷；arm64 資產不變。既有通用 amd64 安裝按 v3 識別，CPU 降級時顯示 INCOMPATIBLE，可透過 SSH `mihomoctl.sh update` 重新選擇。tim VPS 的修復已通過受控測試，仍須真機重驗。
+**Unreleased / main**：amd64 引擎依所有可見 CPU 的 Linux flags 交集，選擇固定的 GOAMD64 v1/v2/v3 資產；完整性校驗通過後若 `-v` 無法執行，才逐級嘗試較低版本。CPU 型號不參與判斷；arm64 資產不變。既有通用 amd64 安裝按 v3 識別，CPU 降級時顯示 INCOMPATIBLE，可透過 SSH `mihomoctl.sh update` 重新選擇。tim VPS 的 amd64-v2 與真實 VMess/VLESS 手動代理驗收已由 operator 明確回報 PASS；未宣稱 Codex 獨立重現。
 
-預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。檢查不移除節點、不更改 YAML/策略或固定 URL，也不觸發自動切換或排程。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
+預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。檢查不移除節點、不更改 YAML/策略或固定 URL，也不觸發自動策略切換；只有明確啟用 Automatic 才會排程健康檢查。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
+
+## Automatic Health（Unreleased / main）
+
+Endpoint 與 Full Proxy Health 可各自選擇 **Off / Manual / Automatic**，預設仍為 Off，既有 Manual 不會自動啟用排程。Automatic 支援 15 分鐘至 24 小時的七檔間隔，仍保留手動 Check Now。獨立 `clash-yaml-manager-health.timer` 掃描到期工作，每輪最多 4 個 Endpoint 訂閱及 1 個 Proxy 訂閱；來源刷新 timer 保持獨立。檢查只讀已保存 YAML，不刷新來源、不移除節點、不修改策略、Fixed URL 或 YAML。調度錯誤使用獨立退避，Mihomo 不可用時保留節點觀察。
+
+架構、狀態遷移及 VPS 指令見 [Automatic Health](docs/AUTOMATIC_HEALTH.md)，受控 Gate 見 [驗收報告](docs/AUTOMATIC_HEALTH_REPORT.md)。**自動 timer 真機觸發驗收尚未執行**，必須等待到期排程實際觸發後確認；手動啟動 oneshot 不算完成驗收。VERSION / Latest Stable 仍為 **1.1.1 / v1.1.1**。
 
 ## 一鍵安裝
 

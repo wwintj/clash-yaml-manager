@@ -29,7 +29,9 @@ curl -i http://127.0.0.1:8899/healthz
 
 The same helper supports `update` (reverify and replace the pinned version)
 and `remove`. No Web install/update button exists. On the Fixed Subscription
-Edit page, choose Full Proxy Checks **Manual**, save, then **Check Proxies Now**.
+Edit page, choose Full Proxy Checks **Manual** or **Automatic**, save, then **Check Proxies Now**.
+Opt-in Automatic scheduling uses a separate health timer; see
+[AUTOMATIC_HEALTH.md](AUTOMATIC_HEALTH.md).
 The default is **Off** for existing and new subscriptions, and Automatic Refresh
 never launches a proxy check. A disabled Fixed Subscription can still be
 checked by an administrator; its public URL remains disabled.

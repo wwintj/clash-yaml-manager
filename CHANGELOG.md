@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add opt-in Automatic Endpoint and Full Proxy Health checks with seven intervals, independent scheduling metadata and a bounded dedicated systemd health timer; retain manual checks in Automatic mode.
 - Add optional, exactly pinned Mihomo v1.19.31 management for Linux amd64/arm64 and manual end-to-end HTTPS proxy checks of committed Fixed Subscription VMess/VLESS nodes, with global and per-subscription probe settings and independent Proxy/Endpoint observations.
 - Add manual, Off-by-default TCP endpoint reachability checks for committed Fixed Subscription VMess/VLESS nodes, with connect latency and Unknown/Healthy/Suspect/Unhealthy observations in private auxiliary state.
 - Schedule each remote Fixed Subscription source through a separate systemd timer with seven intervals, Off by default, fixed failure backoff and bounded refresh history; keep public URLs and last-good data available during provider failures.
@@ -11,6 +12,7 @@
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
 ### Changed
+- Read health schema v1 as v2 in memory without changing existing Off/Manual modes; separate scheduler backoff from node observations and preserve newer settings/results during busy or revision races.
 - Select explicit pinned Mihomo amd64 v1/v2/v3 builds from the intersection of Linux-exposed CPU capabilities, with verified execution-only fallback and legacy generic v3 metadata recognition; preserve the arm64 asset and ordinary update behavior.
 - Keep managed Mihomo binaries and metadata across ordinary project updates; leave proxy checks Off after upgrades and never alter Fixed YAML, URL, groups or policy based on health results.
 - Keep unhealthy nodes in generated YAML and proxy groups; preserve health on name-only edits, reset identity when connection configuration changes, and discard probe results when the Fixed revision changes during a check.
@@ -27,6 +29,7 @@
 - Use 128-bit random tokens, permanent token-hash tombstones, constant-time authorization, private state permissions, strict schema/path checks and fixed-URL access-log redaction.
 
 ### Deployment
+- Manage separate health oneshot/timer units on install, update and uninstall, preserve health state, stop writers before backup, and recover the health unit pair and prior timer flags on setup failure.
 - Install and enable refresh oneshot/timer units, back up all existing units on upgrade, stop refresh writers before state backup/code replacement, and remove units on uninstall while preserving retained state.
 
 ## v1.1.1 - 2026-09-28
