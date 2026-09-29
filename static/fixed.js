@@ -37,7 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
         name:card.querySelector('.source-name').value,
         enabled:card.querySelector('.source-enabled').checked,
         format:card.querySelector('.source-format').value,
-        ...(card.dataset.sourceType === 'remote_url' ? {url:card.querySelector('.source-url').value} : {})};
+        ...(card.dataset.sourceType === 'remote_url' ? {url:card.querySelector('.source-url').value,
+          refresh_interval_seconds:card.querySelector('.source-refresh-interval').value === '' ? null :
+            Number(card.querySelector('.source-refresh-interval').value)} : {})};
     });
     document.getElementById('external-sources-data').value = JSON.stringify(sources);
   }

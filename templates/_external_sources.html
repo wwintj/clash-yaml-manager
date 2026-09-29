@@ -9,6 +9,9 @@
     <div class="mb-3"><label class="form-label">Source Name<input class="source-name form-control terminal-input" value="{{ fields.name }}" required maxlength="128"></label></div>
     {% if fields.type == 'remote_url' %}
     <div class="mb-3"><label class="form-label">Remote URL<input type="url" class="source-url form-control terminal-input" value="{{ fields.url }}" autocomplete="off" spellcheck="false" required placeholder="https://example.com/sub?token=..."></label></div>
+    <div class="mb-3"><label class="form-label">Auto Refresh<select class="source-refresh-interval form-select terminal-select">
+      {% for value, label in refresh_options %}<option value="{{ value if value is not none else '' }}" {% if fields.refresh_interval_seconds == value or value is none and not fields.refresh_interval_seconds %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label></div>
     {% else %}
     {% if saved %}<p class="form-text">Current source file: saved. Leave empty to keep it.</p>{% endif %}
     <div class="mb-3"><label class="form-label">Node source file<input type="file" class="source-file form-control terminal-file" {% if not saved %}required{% endif %}></label></div>
@@ -18,7 +21,17 @@
     </select></label></div>
     <label class="terminal-check mb-3"><input type="checkbox" class="source-enabled form-check-input" {% if fields.enabled %}checked{% endif %}><span>Enabled</span></label>
     {% if saved %}
-    <p class="form-text">Last successful refresh: {{ saved.success_display }}</p>
+    {% if saved.type == 'remote_url' %}
+    <div class="form-text source-schedule">
+      <p>Last Attempt: {{ saved.attempt_display }}</p>
+      <p>Last Success: {{ saved.success_display }}</p>
+      <p>Next Refresh: <span class="next-refresh" data-next-refresh="{{ saved.next_refresh_at if saved.next_refresh_at is not none else '' }}">{{ saved.next_display }}</span></p>
+      <p>Consecutive Failures: {{ saved.consecutive_failures }}</p>
+    </div>
+    <details class="source-history mb-3"><summary>Recent Refreshes</summary>
+      {% for record in saved.history_display %}<p class="form-text mt-2">{{ record.at_display }} · {{ record.trigger|upper }} · {{ record.result|upper }} · {{ record.node_count }} nodes{% if record.error_display %} · {{ record.error_display }}{% endif %}</p>{% else %}<p class="form-text">No refresh history.</p>{% endfor %}
+    </details>
+    {% else %}<p class="form-text">Last successful refresh: {{ saved.success_display }}</p>{% endif %}
     {% if saved.using_cache %}<p class="source-warning">Using last successful data.</p>{% endif %}
     {% if saved.error_display %}<p class="source-warning">{{ saved.error_display }}</p>{% endif %}
     {% for warning in saved.warnings %}<p class="source-warning">{{ warning }}</p>{% endfor %}
@@ -41,7 +54,7 @@
     <button type="button" id="add-uploaded-source" class="btn btn-outline-terminal btn-terminal">Add Uploaded Source</button>
     {% if entry %}<button type="submit" form="refresh-all-sources" class="btn btn-outline-terminal btn-terminal">Refresh All Sources</button>{% endif %}
   </div>
-  <p class="form-text mt-2">Manual refresh only; no scheduled refresh.</p>
+  <p class="form-text mt-2">Auto Refresh is Off by default. A systemd timer checks enabled remote sources every five minutes. Failed refreshes use last-good data and retry with backoff. Refresh actions use saved settings.</p>
 </div>
-<template id="remote-source-template">{{ source_card(dict(id='',type='remote_url',name='',url='',format='auto',enabled=true)) }}</template>
+<template id="remote-source-template">{{ source_card(dict(id='',type='remote_url',name='',url='',format='auto',enabled=true,refresh_interval_seconds=none)) }}</template>
 <template id="uploaded-source-template">{{ source_card(dict(id='',type='uploaded',name='',format='auto',enabled=true)) }}</template>

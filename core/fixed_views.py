@@ -4,7 +4,7 @@ import json
 
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
-from core import generator
+from core import generator, refresh_schedule
 from core.fixed_subscriptions import GenerationError
 from core.source_errors import SourceError, message
 from core.source_parser import MAX_PAYLOAD
@@ -37,6 +37,14 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         value['success_display'] = ('Never' if item['last_success_at'] is None else
             datetime.fromtimestamp(item['last_success_at'], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
         value['error_display'] = message(item['last_error']) if item['last_error'] else ''
+        if item['type'] == 'remote_url':
+            def utc(at, empty='Never'):
+                return empty if at is None else datetime.fromtimestamp(at, timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+            value['attempt_display'] = utc(item['last_attempt_at'])
+            value['next_display'] = utc(item['next_refresh_at'], '—')
+            value['history_display'] = [dict(record, at_display=utc(record['at']),
+                error_display=message(record['error']) if record['error'] else '')
+                for record in reversed(item['refresh_history'][-5:])]
         return value
 
     @views.route('')
@@ -103,11 +111,13 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         for row in external[:63]:
             identifier = row.get('id', '')
             saved = saved_sources.get(identifier) if isinstance(identifier, str) else None
-            cards.append(dict(fields={k: row.get(k, '') for k in ('id','type','name','url','format','enabled')},
+            cards.append(dict(fields={k: row.get(k, None if k == 'refresh_interval_seconds' else '') for k in
+                                      ('id','type','name','url','format','enabled','refresh_interval_seconds')},
                               saved=source_display(saved) if saved else None))
         return render_template('fixed_form.html', **ctx, fields=fields,
                                entry=display(entry) if entry else None,
                                external_cards=cards,
+                               refresh_options=refresh_schedule.OPTIONS,
                                saved_custom=bool(entry and entry['yaml_source'] == 'custom')), status
 
     @views.route('/new', methods=['GET', 'POST'])
