@@ -2,7 +2,8 @@
 
 **Channel:** `main` (unreleased development build; not a Stable Release)
 **Stable baseline:** `v1.1.1` (unchanged)
-**Reported build:** `1.1.1-dev+029e413` — commit `029e4132aac86d30b067b02555550d68ad8eed5118`
+**Reported build:** `1.1.1-dev+6b55cf1` — commit `6b55cf1c53c50d9051c07117f52ad77147d7dd9a`
+(feature code at `029e413`; `6b55cf1` is the docs-only report commit)
 **Date:** 2026-09-29
 
 ---
@@ -99,10 +100,10 @@ curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remo
 
 | Item | Result |
 | --- | --- |
-| Main resolved commit | `029e4132aac86d30b067b02555550d68ad8eed5118` (matches local / origin `main` HEAD) |
-| Installed build on test VPS | `1.1.1-dev+029e413` |
+| Main resolved commit | `6b55cf1c53c50d9051c07117f52ad77147d7dd9a` (matches local / origin `main` HEAD at verification) |
+| Installed build on test VPS | `1.1.1-dev+6b55cf1` |
 | Service | active (running); `healthz` → `OK` |
-| Web identity | `Clash YAML Manager v1.1.1-dev+029e413` + `DEV · Development Build` badge |
+| Web identity | `Clash YAML Manager v1.1.1-dev+6b55cf1` + `DEV · Development Build` badge |
 | External reachability | reachable (app port allowed in UFW) |
 
 ## VERDICT
