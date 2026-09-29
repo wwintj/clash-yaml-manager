@@ -176,8 +176,10 @@ claim operation on a real VPS or real provider subscription.
 ## Acceptance record — 2026-09-29
 
 Baseline main: `64d9317d08954a678aacabd71ac10e6f536dc7af`, clean and equal to
-origin/main; **446 passed**. Final full suite: **594 passed** (148 additional cases).
-Python 3.12.14 was used in an isolated test environment; repository runtime data
+origin/main; **446 passed**. Final full suite: **593 non-environment tests passed,
+1 environment-only failure** (gunicorn service-flag test on Python 3.9.6, which
+cannot install gunicorn >= 25.1.0; not a code defect) — 594 collected (148
+additional non-environment cases). Python 3.12.14 was used in an isolated test
 and the developer machine's system services/accounts were not changed.
 
 | Gate | Result |
