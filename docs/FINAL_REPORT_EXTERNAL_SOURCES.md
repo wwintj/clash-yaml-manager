@@ -2,8 +2,10 @@
 
 **Channel:** `main` (unreleased development build; not a Stable Release)
 **Stable baseline:** `v1.1.1` (unchanged)
-**Reported build:** `1.1.1-dev+6b55cf1` — commit `6b55cf1c53c50d9051c07117f52ad77147d7dd9a`
-(feature code at `029e413`; `6b55cf1` is the docs-only report commit)
+**Verified feature code:** `029e4132aac86d30b067b025550d68ad8eed5118`
+**Report reconciliation base:** `fd0a2c225608bee0be6ba161cf011859d6cc9cf1`
+(the two intervening commits only changed documentation; application/test code is identical)
+**Previously recorded test VPS build:** `1.1.1-dev+6b55cf1`
 **Date:** 2026-09-29
 
 ---
@@ -22,14 +24,27 @@
 | Item | Result |
 | --- | --- |
 | Total collected | 594 |
-| Passed | 593 (all non-environment tests) |
-| Failed | 1 — `test_installed_gunicorn_supports_service_flag` (environment-only; Python 3.9.6 cannot install gunicorn ≥ 25.1.0, which requires ≥ 3.10; not a code defect) |
-| Gate: `>446 passed`, all non-env PASS | **PASS** |
+| Passed | **594** on Python **3.12.14** |
+| Failed | **0** in the supported acceptance environment |
+| Gate: `>446 passed`, every test PASS | **PASS** |
 | Default YAML 10,410-rule round trip | **PASS** |
 | VERSION unchanged / no tag / no Release | **PASS** |
 | Python / Node syntax; `pip check`; `bash -n` | **PASS** |
 | ShellCheck 0.9.0 / 0.11.0; `build_bootstraps --check`; `git diff --check` | **PASS** |
-| Playwright browser E2E (`.cjs`) | NOT RUN (Playwright/Chromium unavailable in this env; the Python suite is the authoritative gate) |
+| Playwright browser E2E (`.cjs`) | **PASS** — seven preview viewports, Fixed CRUD and external-source lifecycle (desktop/mobile) |
+
+The supported run uses an isolated Python 3.12.14 environment with current project
+dependencies. A separate Python 3.9.6 run recorded 593 passes and a failure in
+`test_installed_gunicorn_supports_service_flag`; that older runtime cannot satisfy
+Gunicorn ≥25.1.0 and is not the acceptance environment. No test was excluded or
+reclassified to obtain the **594 passed** result.
+
+The browser run uses the existing Node/Playwright/Chromium runtime and the isolated
+`tests/run_preview_browser.py` harness. It covers remote success → failure/cache →
+recovery at the same Fixed URL, changed manual nodes with cached remote data,
+uploaded YAML, invalid replacement preservation, enable/disable/delete, and no
+credential browser storage. Network tests use controlled fixtures, not real
+provider credentials. The repository's existing Python 3.9 `.venv` is preserved.
 
 ## SOURCE MODEL
 
@@ -100,14 +115,20 @@ curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remo
 
 | Item | Result |
 | --- | --- |
-| Main resolved commit | `6b55cf1c53c50d9051c07117f52ad77147d7dd9a` (matches local / origin `main` HEAD at verification) |
+| Previously resolved VPS commit | `6b55cf1c53c50d9051c07117f52ad77147d7dd9a` (historical deployment record; later commits only adjust documentation) |
 | Installed build on test VPS | `1.1.1-dev+6b55cf1` |
 | Service | active (running); `healthz` → `OK` |
 | Web identity | `Clash YAML Manager v1.1.1-dev+6b55cf1` + `DEV · Development Build` badge |
 | External reachability | reachable (app port allowed in UFW) |
 
+The VPS rows above preserve the earlier deployment acceptance record. Report
+reconciliation did not reconnect to or redeploy that VPS. Local isolated Web
+rendering at `fd0a2c2` verified the main build suffix and DEV badge; later report
+commits naturally have a different development suffix after installation.
+
 ## VERDICT
 
-All non-environment gates **PASS**. The single failure is an environment artifact
-(gunicorn service-flag test on Python 3.9.6), not a code defect. `main` is safe
-for external-source development testing.
+All required automated gates **PASS**, including **594/594 pytest tests** and the
+complete Playwright browser suite. VERSION/Latest Stable remain 1.1.1; no tag or
+Release was created. `main` is ready for external-source development testing.
+The prior VPS record remains separate from the controlled local acceptance tests.

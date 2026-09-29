@@ -176,11 +176,16 @@ claim operation on a real VPS or real provider subscription.
 ## Acceptance record — 2026-09-29
 
 Baseline main: `64d9317d08954a678aacabd71ac10e6f536dc7af`, clean and equal to
-origin/main; **446 passed**. Final full suite: **593 non-environment tests passed,
-1 environment-only failure** (gunicorn service-flag test on Python 3.9.6, which
-cannot install gunicorn >= 25.1.0; not a code defect) — 594 collected (148
-additional non-environment cases). Python 3.12.14 was used in an isolated test
-and the developer machine's system services/accounts were not changed.
+origin/main; **446 passed**. Final full suite on supported Python 3.12.14:
+**594 passed, 0 failed** (148 additional cases). The complete browser suite also
+passed: seven preview viewports, Fixed CRUD, and the external-source lifecycle.
+Repository runtime data and the developer machine's system services/accounts
+were not changed.
+
+A separate run on Python 3.9.6 recorded 593 passes and one Gunicorn service-flag
+failure because that runtime cannot satisfy the current Gunicorn requirement.
+That unsupported-environment result does not replace the successful Python 3.12
+and browser acceptance gates. See [the final report](FINAL_REPORT_EXTERNAL_SOURCES.md).
 
 | Gate | Result |
 | --- | --- |
