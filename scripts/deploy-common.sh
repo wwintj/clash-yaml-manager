@@ -3,6 +3,9 @@
 SERVICE_USER="clashyaml"
 SERVICE_GROUP="clashyaml"
 ACCOUNT_MARKER="${INSTALL_DIR}/.service-account"
+REFRESH_SERVICE_NAME="${SERVICE_NAME}-refresh"
+REFRESH_SERVICE_FILE="${SERVICE_FILE%.service}-refresh.service"
+REFRESH_TIMER_FILE="${SERVICE_FILE%.service}-refresh.timer"
 
 service_account_matches() {
   local account account_name _account_pass account_uid account_gid account_comment account_home account_shell
@@ -92,6 +95,57 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
   chmod 644 "${SERVICE_FILE}"
+}
+
+write_refresh_units() {
+  cat > "${REFRESH_SERVICE_FILE}" <<EOF
+[Unit]
+Description=Refresh due Clash YAML fixed subscription sources
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=clashyaml
+Group=clashyaml
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+Environment=PYTHONDONTWRITEBYTECODE=1
+WorkingDirectory=${INSTALL_DIR}
+EnvironmentFile=${INSTALL_DIR}/.env
+ExecStart=${INSTALL_DIR}/venv/bin/python -m core.auto_refresh --once
+TimeoutStartSec=20min
+EOF
+  cat > "${REFRESH_TIMER_FILE}" <<EOF
+[Unit]
+Description=Schedule Clash YAML fixed subscription refreshes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+RandomizedDelaySec=30s
+Persistent=true
+Unit=${REFRESH_SERVICE_NAME}.service
+
+[Install]
+WantedBy=timers.target
+EOF
+  chmod 644 "${REFRESH_SERVICE_FILE}" "${REFRESH_TIMER_FILE}"
+}
+
+stop_refresh_units() {
+  # Stop the timer first, then wait for the oneshot to stop before state/code changes.
+  if [[ -f "${REFRESH_TIMER_FILE}" ]] || systemctl is-active --quiet "${REFRESH_SERVICE_NAME}.timer"; then
+    systemctl stop "${REFRESH_SERVICE_NAME}.timer"
+    if [[ "${1:-}" == disable ]]; then
+      systemctl disable "${REFRESH_SERVICE_NAME}.timer"
+    fi
+  fi
+  if [[ -f "${REFRESH_SERVICE_FILE}" ]] || systemctl is-active --quiet "${REFRESH_SERVICE_NAME}.service"; then
+    systemctl stop "${REFRESH_SERVICE_NAME}.service"
+  fi
 }
 
 wait_for_application() {

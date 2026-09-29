@@ -27,6 +27,7 @@ echo "开始卸载 ${SERVICE_NAME}"
 echo "=========================================================="
 
 echo ">> 步骤 1: 停止并禁用 systemd 服务"
+stop_refresh_units disable
 
 if [[ -f "${SERVICE_FILE}" ]] || systemctl is-active --quiet "${SERVICE_NAME}"; then
   if systemctl is-active --quiet "${SERVICE_NAME}"; then
@@ -53,6 +54,7 @@ else
   echo "未找到 service 文件，跳过删除：${SERVICE_FILE}"
 fi
 
+rm -f "${REFRESH_SERVICE_FILE}" "${REFRESH_TIMER_FILE}"
 systemctl daemon-reload
 echo "已重新加载 systemd daemon。"
 

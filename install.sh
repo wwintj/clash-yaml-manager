@@ -153,9 +153,11 @@ ensure_service_user
 "${INSTALL_DIR}/venv/bin/python" -c 'import sys; from core.install_info import finalize_install; finalize_install(sys.argv[1])' "${INSTALL_DIR}"
 repair_permissions
 write_service_unit
+write_refresh_units
 
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
+systemctl enable --now "${REFRESH_SERVICE_NAME}.timer"
 systemctl restart "${SERVICE_NAME}"
 
 if ! wait_for_application 30; then
