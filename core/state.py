@@ -74,3 +74,21 @@ def read_json(path):
             return json.load(source)
     except (OSError, ValueError, TypeError):
         raise StateError('状态文件不可读取或已损坏，请检查权限并从备份恢复。') from None
+
+
+def read_private_bytes(path, max_bytes=None):
+    """Read a private regular file without following links or blocking on a FIFO."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, 'rb') as source:
+            info = os.fstat(source.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:
+                raise StateError('私有状态文件无效。')
+            if max_bytes is not None and info.st_size > max_bytes:
+                raise StateError('私有状态文件过大。')
+            data = source.read(max_bytes + 1 if max_bytes is not None else -1)
+            if max_bytes is not None and len(data) > max_bytes:
+                raise StateError('私有状态文件过大。')
+            return data
+    except OSError:
+        raise StateError('私有状态文件不可读取。') from None
