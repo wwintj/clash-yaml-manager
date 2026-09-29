@@ -158,6 +158,7 @@ write_refresh_units
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl enable --now "${REFRESH_SERVICE_NAME}.timer"
+setup_health_units
 systemctl restart "${SERVICE_NAME}"
 
 if ! wait_for_application 30; then

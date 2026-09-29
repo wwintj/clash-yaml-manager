@@ -1,7 +1,7 @@
 <section id="proxy-health" class="terminal-panel mt-4"><div class="panel-inner">
   <h3 class="panel-title mb-3">FULL PROXY VALIDATION</h3>
   <p class="helper-text">End-to-end proxy probe through Mihomo. Tests the selected proxy against the configured HTTPS target. A healthy result applies only to that probe target.</p>
-  <p class="form-text">Manual only. Proxy results are independent of TCP endpoint results and never remove nodes or change the generated YAML.</p>
+  <p class="form-text">Manual or opt-in Automatic. Proxy results are independent of TCP endpoint results and never remove nodes or change the generated YAML.</p>
   {% if proxy_notice %}<p class="health-notice" role="status">{{ proxy_notice }}</p>{% endif %}
   <div class="proxy-engine-card mb-4">
     <h4 class="panel-title">PROXY PROBE ENGINE</h4>
@@ -11,6 +11,7 @@
   </div>
   {% if proxy_health.unavailable %}<p class="source-warning" role="status">{{ proxy_health.unavailable }}</p>
   {% else %}
+  {% if proxy_health.mode == 'automatic' and proxy_health.engine.status != 'COMPATIBLE' %}<p class="source-warning" role="status">Automatic proxy checks require a compatible managed engine. Unavailable-engine jobs use scheduler backoff and preserve node observations.</p>{% endif %}
   <form id="proxy-defaults" method="POST" action="{{ url_for('fixed.proxy_defaults') }}" class="mb-4">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="subscription_id" value="{{ entry.id }}">
     <h4 class="panel-title">PROXY PROBE DEFAULTS</h4>
@@ -25,9 +26,10 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h4 class="panel-title">THIS SUBSCRIPTION</h4>
     <div class="proxy-settings-grid">
-      <label>Full Proxy Checks<select id="proxy-mode" name="mode" class="form-select terminal-select">{% for mode in ['off','manual'] %}<option value="{{ mode }}" {% if proxy_health.mode == mode %}selected{% endif %}>{{ mode|capitalize }}</option>{% endfor %}</select></label>
+      <label>Full Proxy Checks<select id="proxy-mode" data-health-mode name="mode" class="form-select terminal-select">{% for mode in ['off','manual','automatic'] %}<option value="{{ mode }}" {% if proxy_health.mode == mode %}selected{% endif %}>{{ mode|capitalize }}</option>{% endfor %}</select></label>
       <label>Probe Settings<select id="proxy-scope" name="scope" class="form-select terminal-select" data-proxy-scope><option value="global" {% if proxy_health.use_global %}selected{% endif %}>Use global defaults</option><option value="custom" {% if not proxy_health.use_global %}selected{% endif %}>Custom probe settings</option></select></label>
     </div>
+    {% set health_schedule = proxy_health %}{% set health_prefix = 'proxy' %}{% include '_health_interval.html' %}
     {% set custom = proxy_health.override or proxy_health.global_settings %}
     <div id="proxy-custom-fields" class="proxy-settings-grid mt-2" {% if proxy_health.use_global %}hidden{% endif %}>
       <label>Custom HTTPS URL<input name="custom_url" class="form-control terminal-input" type="url" value="{{ custom.url }}" maxlength="2048"></label>
@@ -36,7 +38,7 @@
     </div>
     <button type="submit" class="btn btn-outline-terminal btn-terminal mt-2">Save Proxy Settings</button>
   </form>
-  {% if proxy_health.mode == 'manual' %}
+  {% if proxy_health.mode in ['manual','automatic'] %}
   <form id="proxy-check" action="{{ url_for('fixed.proxy_action', key=entry.id, operation='check') }}" method="POST" class="mb-3" data-proxy-check>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn btn-green btn-terminal" {% if proxy_health.engine.status != 'COMPATIBLE' %}disabled{% endif %}>Check Proxies Now</button>
@@ -45,6 +47,7 @@
   {% endif %}
   <div class="health-summary form-text mb-3">
     <p>{{ proxy_health.total }} Nodes · Healthy {{ proxy_health.counts.healthy }} · Suspect {{ proxy_health.counts.suspect }} · Unhealthy {{ proxy_health.counts.unhealthy }} · Unknown {{ proxy_health.counts.unknown }} · Unsupported {{ proxy_health.counts.unsupported }}</p>
+    {% set health_schedule = proxy_health %}{% include '_health_schedule_status.html' %}
     <p>Last Proxy Check: {{ proxy_health.check_display }} · Active target: {{ proxy_health.effective.url }} · Expected: {{ proxy_health.effective.expected_status }}</p>
   </div>
   <table class="proxy-health-table"><thead><tr>{% for title in ['Node','Protocol','Endpoint','Proxy','TCP Latency','Proxy Latency','Endpoint Failures','Proxy Failures','Last Proxy Check'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>

@@ -35,6 +35,15 @@ document.addEventListener('DOMContentLoaded', () => {
       button.disabled = true; button.textContent = 'Checking...';
     });
   });
+  document.querySelectorAll('[data-health-mode]').forEach(mode => {
+    const field = mode.form.querySelector('[data-health-interval]');
+    const select = field.querySelector('select');
+    const show = () => {
+      field.hidden = mode.value !== 'automatic';
+      select.disabled = field.hidden; select.required = !field.hidden;
+    };
+    mode.addEventListener('change', show); show();
+  });
   const proxyScope = document.querySelector('[data-proxy-scope]');
   if (proxyScope) {
     const custom = document.getElementById('proxy-custom-fields');

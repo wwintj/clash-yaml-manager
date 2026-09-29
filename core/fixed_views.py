@@ -4,7 +4,7 @@ import json
 
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
-from core import generator, refresh_schedule
+from core import generator, health_schedule, refresh_schedule
 from core.fixed_subscriptions import GenerationError
 from core.node_health import NodeHealth, HealthError, PROBE_MESSAGES
 from core.proxy_health import ProxyHealth, ProxyHealthError, DEFAULT_PROBE
@@ -72,6 +72,9 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             row['success_display'] = utc(row['last_success_at'])
             row['error_display'] = PROBE_MESSAGES.get(row['error'], '')
         value['check_display'] = utc(value['last_check_at'])
+        value['next_display'] = utc(value['next_check_at'])
+        value['trigger_display'] = value['last_trigger'] or '—'
+        value['scheduler_display'] = value['last_job_result'] or '—'
         return value
 
     def proxy_display(key, endpoint):
@@ -98,6 +101,9 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             row['proxy_check_display'] = utc(row['last_checked_at'])
         value['engine'] = engine
         value['check_display'] = utc(value['last_check_at'])
+        value['next_display'] = utc(value['next_check_at'])
+        value['trigger_display'] = value['last_trigger'] or '—'
+        value['scheduler_display'] = value['last_job_result'] or '—'
         return value
 
     @views.route('')
@@ -172,7 +178,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         return render_template('fixed_form.html', **ctx, fields=fields,
                                entry=display(entry) if entry else None,
                                external_cards=cards,
-                               refresh_options=refresh_schedule.OPTIONS,
+                               refresh_options=refresh_schedule.OPTIONS, health_options=health_schedule.OPTIONS,
                                node_health=endpoint, proxy_health=proxy,
                                saved_custom=bool(entry and entry['yaml_source'] == 'custom')), status
 
@@ -186,13 +192,26 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
     def edit(key):
         return form_page(key)
 
+    def health_interval():
+        value = request.form.get('interval_seconds')
+        if value in (None,''):
+            return None
+        try:
+            return int(value)
+        except (ValueError,TypeError):
+            raise ValueError('Invalid health interval.') from None
+
     @views.route('/<key>/health/<operation>', methods=['POST'])
     @login_required
     def health_action(key, operation):
         if operation not in ('settings','check'): abort(404)
         try:
             if operation == 'settings':
-                health.settings(key, request.form.get('mode'))
+                try:
+                    seconds = health_interval()
+                except ValueError:
+                    raise HealthError('config') from None
+                health.settings(key, request.form.get('mode'),seconds)
                 session['health_notice'] = 'Health settings saved.'
             else:
                 health.check(key)
@@ -242,8 +261,12 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                 scope = request.form.get('scope')
                 if scope not in ('global','custom'):
                     raise ProxyHealthError('settings')
+                try:
+                    seconds = health_interval()
+                except ValueError:
+                    raise ProxyHealthError('settings') from None
                 proxy_health.settings(key, request.form.get('mode'), scope == 'global',
-                                      probe_fields('custom_') if scope == 'custom' else None)
+                                      probe_fields('custom_') if scope == 'custom' else None,seconds)
                 session['proxy_notice'] = 'Full proxy validation settings saved.'
             else:
                 proxy_health.check(key)

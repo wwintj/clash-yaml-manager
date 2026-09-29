@@ -1,0 +1,5 @@
+<label class="d-block my-2" data-health-interval {% if health_schedule.mode != 'automatic' %}hidden{% endif %}>Automatic Check Interval
+  <select id="{{ health_prefix }}-interval" name="interval_seconds" class="form-select terminal-select" {% if health_schedule.mode != 'automatic' %}disabled{% else %}required{% endif %}>
+    {% for seconds, label in health_options %}<option value="{{ seconds }}" {% if health_schedule.interval_seconds == seconds %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+</label>

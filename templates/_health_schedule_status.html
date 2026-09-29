@@ -1,0 +1,2 @@
+<p>Next Automatic Check: {{ health_schedule.next_display }}{% if entry.status == 'disabled' and health_schedule.mode == 'automatic' %} · Paused while subscription is disabled{% endif %}</p>
+<p>Last Trigger: {{ health_schedule.trigger_display }} · Scheduler Result: {{ health_schedule.scheduler_display }}</p>

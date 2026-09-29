@@ -82,7 +82,7 @@ BACKUP_DIR="$(mktemp -d "/root/${SERVICE_NAME}-update-backup-${TIMESTAMP}.XXXXXX
 
 upgrade_failed() {
   echo "升级失败。备份保留于 ${BACKUP_DIR}，请勿再次运行 install.sh。" >&2
-  echo "回滚：先停止 refresh timer/oneshot 和 ${SERVICE_NAME}；恢复备份代码、venv、.env、defaults 和三个原 unit（旧版本没有 refresh unit 时移除新增 unit）；若回到旧 root 版本，恢复备份 .env 中的旧凭据。保留运行数据；state 回滚须核对密码和订阅版本，详见 docs/PHASE2.md、docs/AUTO_REFRESH.md。daemon-reload 后重启。" >&2
+  echo "回滚：先停止 refresh 和 health timer/oneshot 和 ${SERVICE_NAME}；恢复备份代码、venv、.env、defaults 和五个原 unit（旧版本没有 refresh/health unit 时移除新增 unit）；若回到旧 root 版本，恢复备份 .env 中的旧凭据。保留运行数据；state 回滚须核对密码和订阅版本，详见 docs/PHASE2.md、docs/AUTO_REFRESH.md、docs/AUTOMATIC_HEALTH.md。daemon-reload 后重启。" >&2
 }
 trap upgrade_failed ERR
 
@@ -105,7 +105,7 @@ done
 if [[ -f "${SERVICE_FILE}" ]]; then
   cp -a "${SERVICE_FILE}" "${BACKUP_DIR}/${SERVICE_NAME}.service"
 fi
-for refresh_unit in "${REFRESH_SERVICE_FILE}" "${REFRESH_TIMER_FILE}"; do
+for refresh_unit in "${REFRESH_SERVICE_FILE}" "${REFRESH_TIMER_FILE}" "${HEALTH_SERVICE_FILE}" "${HEALTH_TIMER_FILE}"; do
   if [[ -f "${refresh_unit}" ]]; then
     cp -a "${refresh_unit}" "${BACKUP_DIR}/$(basename "${refresh_unit}")"
   fi
@@ -129,6 +129,7 @@ fi
 "${INSTALL_DIR}/venv/bin/pip" check
 ensure_service_user
 stop_refresh_units keep-enabled
+stop_health_units keep-enabled
 
 if [[ -f "${SERVICE_FILE}" ]]; then
   echo "正在停止服务..."
@@ -192,6 +193,7 @@ write_refresh_units
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl enable --now "${REFRESH_SERVICE_NAME}.timer"
+setup_health_units
 systemctl restart "${SERVICE_NAME}"
 
 if ! wait_for_application 30; then

@@ -88,7 +88,13 @@ def deployment(tmp_path):
                TEST_ACCOUNT=str(tmp_path / 'account.db'), TEST_PYTHON=sys.executable)
     (commands / 'python3').symlink_to(sys.executable)
     executable(commands / 'systemctl', '''echo "systemctl $*" >> "$TEST_EVENTS"
-if [[ "$1" == is-active ]]; then exit "${TEST_INACTIVE:-0}"; fi
+if [[ "$1" == enable && "${2:-}" == --now && "${3:-}" == clash-yaml-manager-health.timer && "${TEST_FAIL_HEALTH_ENABLE:-0}" == 1 ]]; then exit 1; fi
+if [[ "$1" == is-enabled && "${3:-}" == clash-yaml-manager-health.timer && "${TEST_FAIL_HEALTH_ENABLED:-0}" == 1 ]]; then exit 1; fi
+if [[ "$1" == is-active ]]; then
+  if [[ "${3:-}" == clash-yaml-manager-health.timer && "${TEST_FAIL_HEALTH_ACTIVE:-0}" == 1 ]]; then exit 1; fi
+  if [[ "${3:-}" == clash-yaml-manager || "${3:-}" == clash-yaml-manager.service ]]; then exit "${TEST_INACTIVE:-0}"; fi
+  exit 0
+fi
 if [[ "$1" == stop && "$2" == "${TEST_FAIL_STOP:-}" ]]; then exit 1; fi
 if [[ "$1" == stop && "$2" == clash-yaml-manager-refresh.service && -n "${TEST_STOP_MARKER:-}" ]]; then
   echo stopped > "$TEST_STOP_MARKER"
@@ -557,3 +563,104 @@ def test_readiness_curl_timeout_is_bounded_by_remaining_budget(deployment):
     assert '--connect-timeout 1' in events.read_text()
     assert '--noproxy *' in events.read_text()
     assert 'Health check FAILED' in result.stderr
+
+
+def assert_health_units(installed,service,events):
+    import configparser
+    oneshot=Path(str(service).removesuffix('.service')+'-health.service')
+    timer=Path(str(service).removesuffix('.service')+'-health.timer')
+    config=configparser.ConfigParser(interpolation=None);config.optionxform=str;config.read(oneshot)
+    assert dict(config['Service'])==dict(Type='oneshot',User='clashyaml',Group='clashyaml',UMask='0077',
+        NoNewPrivileges='true',PrivateTmp='true',Environment='PYTHONDONTWRITEBYTECODE=1',
+        WorkingDirectory=str(installed),EnvironmentFile=f'{installed}/.env',
+        ExecStart=f'{installed}/venv/bin/python -m core.auto_health --once',TimeoutStartSec='15min',
+        TimeoutStopSec='10s',KillMode='control-group')
+    config.read(timer)
+    assert dict(config['Timer'])==dict(OnBootSec='2min',OnUnitActiveSec='5min',AccuracySec='30s',
+        RandomizedDelaySec='30s',Persistent='true',Unit='clash-yaml-manager-health.service')
+    assert config['Install']['WantedBy']=='timers.target'
+    assert oneshot.stat().st_mode & 0o777==timer.stat().st_mode & 0o777==0o644
+    log=events.read_text()
+    assert 'systemctl enable --now clash-yaml-manager-health.timer' in log
+    assert 'systemctl is-enabled --quiet clash-yaml-manager-health.timer' in log
+    assert 'systemctl is-active --quiet clash-yaml-manager-health.timer' in log
+    assert log.index('systemctl enable --now clash-yaml-manager-refresh.timer') < log.index('systemctl enable --now clash-yaml-manager-health.timer') < log.index('systemctl restart clash-yaml-manager\n')
+    assert '-m core.auto_health' not in service.read_text()
+    return oneshot,timer
+
+
+def test_health_update_units_backup_stop_order_json_preservation_and_uninstall(deployment):
+    installed,source,service,events,env,run=deployment
+    oneshot=Path(str(service)+'-health.service');timer=Path(str(service)+'-health.timer')
+    oneshot.write_text('old health service\n');timer.write_text('old health timer\n')
+    state=installed/'state';state.mkdir(mode=0o700)
+    for filename in ('node_health.json','proxy_health.json'):
+        (state/filename).write_bytes(b'private health fixture bytes');(state/filename).chmod(0o600)
+    result=run();assert result.returncode==0,result.stdout+result.stderr
+    assert_health_units(installed,service,events);log=events.read_text()
+    assert log.index('systemctl stop clash-yaml-manager-health.timer') < log.index('systemctl stop clash-yaml-manager-health.service') < log.index('systemctl stop clash-yaml-manager\n')
+    backup=next(installed.parent.glob('upgrade-backup-*'))
+    assert (backup/oneshot.name).read_text()=='old health service\n'
+    assert (backup/timer.name).read_text()=='old health timer\n'
+    for filename in ('node_health.json','proxy_health.json'):
+        assert (state/filename).read_bytes()==(backup/'state'/filename).read_bytes()==b'private health fixture bytes'
+    result=run('uninstall.sh',input_text='y\n\n');assert result.returncode==0,result.stderr
+    assert not oneshot.exists() and not timer.exists() and not service.exists()
+    log=events.read_text().split('systemctl restart clash-yaml-manager\n')[-1]
+    assert log.index('systemctl stop clash-yaml-manager-health.timer') < log.index('systemctl disable clash-yaml-manager-health.timer') < log.index('systemctl stop clash-yaml-manager-health.service')
+    backup=next(installed.parent.glob('uninstall-backup-*'))
+    for filename in ('node_health.json','proxy_health.json'):assert (backup/'state'/filename).read_bytes()==b'private health fixture bytes'
+
+
+@pytest.mark.parametrize('script',['update.sh','uninstall.sh'])
+@pytest.mark.parametrize('unit',['clash-yaml-manager-health.timer','clash-yaml-manager-health.service'])
+def test_health_stop_failure_aborts_before_runtime_backup_or_code_changes(deployment,script,unit):
+    installed,_,_,events,env,run=deployment;env['TEST_FAIL_STOP']=unit
+    result=run(script,input_text='y\n\n')
+    assert result.returncode!=0 and (installed/'app.py').read_text()=='VERSION = "old"\n'
+    assert 'systemctl stop clash-yaml-manager\n' not in events.read_text()
+    assert not list(installed.parent.glob('upgrade-backup-*/state'))
+
+
+@pytest.mark.parametrize('existing',[False,True])
+@pytest.mark.parametrize('fault',['enable','active','enabled','first_replace','second_replace','write'])
+def test_health_setup_failure_restores_complete_old_unit_pair_and_retains_backup(deployment,existing,fault):
+    installed,_,service,events,env,run=deployment
+    oneshot=Path(str(service)+'-health.service');timer=Path(str(service)+'-health.timer')
+    if existing:
+        oneshot.write_text('old health service\n');timer.write_text('old health timer\n')
+    commands=Path(env['PATH'].split(os.pathsep)[0])
+    if fault in ('enable','active','enabled'):
+        env['TEST_FAIL_HEALTH_'+fault.upper()]='1'
+    elif fault in ('first_replace','second_replace'):
+        target=oneshot if fault=='first_replace' else timer
+        executable(commands/'mv',f'if [[ "${{3:-}}" == "{target}" ]]; then exit 1; fi\nexec /bin/mv "$@"\n')
+    else:
+        executable(commands/'chmod','if [[ "${2:-}" == */.health-units.*/new.service ]]; then exit 1; fi\nexec /bin/chmod "$@"\n')
+    result=run()
+    assert result.returncode!=0 and '升级完成。' not in result.stdout and 'Health timer setup failed' in result.stderr
+    if existing:
+        assert oneshot.read_text()=='old health service\n' and timer.read_text()=='old health timer\n'
+        backup=next(installed.parent.glob('upgrade-backup-*'))
+        assert (backup/oneshot.name).read_text()=='old health service\n' and (backup/timer.name).read_text()=='old health timer\n'
+        if fault=='enable':assert 'systemctl start clash-yaml-manager-health.timer' in events.read_text()
+    else:
+        assert not oneshot.exists() and not timer.exists()
+        assert 'systemctl disable clash-yaml-manager-health.timer' in events.read_text()
+    assert not list(service.parent.glob('.health-units.*'))
+
+
+def test_all_five_units_real_systemd_verify_where_available(deployment):
+    installed,_,service,events,_,run=deployment
+    result=run();assert result.returncode==0,result.stderr
+    health_service,health_timer=assert_health_units(installed,service,events)
+    refresh_service,refresh_timer=assert_refresh_units(installed,service,events)
+    analyze=shutil.which('systemd-analyze')
+    if analyze:
+        directory=service.parent/'verify-all';directory.mkdir()
+        executable(installed/'venv/bin/gunicorn','exit 0\n')
+        names=['clash-yaml-manager.service','clash-yaml-manager-refresh.service','clash-yaml-manager-refresh.timer',
+               'clash-yaml-manager-health.service','clash-yaml-manager-health.timer']
+        for path,name in zip([service,refresh_service,refresh_timer,health_service,health_timer],names):shutil.copy2(path,directory/name)
+        result=subprocess.run([analyze,'verify',*[str(directory/name) for name in names]],capture_output=True,text=True,timeout=15)
+        assert result.returncode==0,result.stderr
