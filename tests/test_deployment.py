@@ -87,6 +87,10 @@ def deployment(tmp_path):
     (commands / 'python3').symlink_to(sys.executable)
     executable(commands / 'systemctl', '''echo "systemctl $*" >> "$TEST_EVENTS"
 if [[ "$1" == is-active ]]; then exit "${TEST_INACTIVE:-0}"; fi
+if [[ "$1" == stop && "$2" == "${TEST_FAIL_STOP:-}" ]]; then exit 1; fi
+if [[ "$1" == stop && "$2" == clash-yaml-manager-refresh.service && -n "${TEST_STOP_MARKER:-}" ]]; then
+  echo stopped > "$TEST_STOP_MARKER"
+fi
 ''')
     executable(commands / 'journalctl', 'echo "journalctl $*" >> "$TEST_EVENTS"\n')
     executable(commands / 'curl', '''echo "curl $*" >> "$TEST_EVENTS"
@@ -302,6 +306,7 @@ exec "$TEST_PYTHON" "$@"
     assert 'NoNewPrivileges=true' in service.read_text() and 'PrivateTmp=true' in service.read_text()
     assert 'Environment=HOME=' not in service.read_text()
     assert not (installed / '.venv').exists()
+    assert_refresh_units(installed, service, events)
 
 
 def test_uninstall_keep_data_choice(deployment):
@@ -311,6 +316,79 @@ def test_uninstall_keep_data_choice(deployment):
     assert not service.exists()
     assert (installed / '.env').exists()
     assert (installed / 'outputs/keep').read_text() == 'preserved\n'
+
+
+def assert_refresh_units(installed, service, events):
+    import configparser
+    oneshot = Path(str(service).removesuffix('.service') + '-refresh.service')
+    timer = Path(str(service).removesuffix('.service') + '-refresh.timer')
+    config = configparser.ConfigParser(interpolation=None, strict=True)
+    config.optionxform = str
+    config.read(oneshot)
+    assert dict(config['Service']) == dict(Type='oneshot', User='clashyaml', Group='clashyaml', UMask='0077',
+        NoNewPrivileges='true',PrivateTmp='true',Environment='PYTHONDONTWRITEBYTECODE=1',
+        WorkingDirectory=str(installed),EnvironmentFile=str(installed/'.env'),
+        ExecStart=f'{installed}/venv/bin/python -m core.auto_refresh --once',TimeoutStartSec='20min')
+    config.read(timer)
+    assert dict(config['Timer']) == dict(OnBootSec='2min',OnUnitActiveSec='5min',AccuracySec='30s',
+        RandomizedDelaySec='30s',Persistent='true',Unit='clash-yaml-manager-refresh.service')
+    assert config['Install']['WantedBy'] == 'timers.target'
+    assert oneshot.stat().st_mode & 0o777 == timer.stat().st_mode & 0o777 == 0o644
+    log = events.read_text()
+    assert log.index('systemctl daemon-reload') < log.index('systemctl enable --now clash-yaml-manager-refresh.timer')
+    assert log.index('systemctl enable --now clash-yaml-manager-refresh.timer') < log.index('systemctl restart clash-yaml-manager')
+    return oneshot, timer
+
+
+def test_refresh_upgrade_backup_stop_order_and_keep_state_uninstall(deployment):
+    installed, _, service, events, env, run = deployment
+    oneshot = Path(str(service)+'-refresh.service'); timer = Path(str(service)+'-refresh.timer')
+    oneshot.write_text('old refresh service\n'); timer.write_text('old timer\n')
+    (installed/'state').mkdir(mode=0o700)
+    marker = installed/'state/stop-marker'; env['TEST_STOP_MARKER'] = str(marker)
+    result = run(); assert result.returncode == 0, result.stdout+result.stderr
+    assert_refresh_units(installed, service, events)
+    log = events.read_text()
+    assert log.index('systemctl stop clash-yaml-manager-refresh.timer') < log.index('systemctl stop clash-yaml-manager-refresh.service')
+    assert log.index('systemctl stop clash-yaml-manager-refresh.service') < log.index('systemctl stop clash-yaml-manager\n')
+    backup = next(installed.parent.glob('upgrade-backup-*'))
+    assert (backup/oneshot.name).read_text() == 'old refresh service\n'
+    assert (backup/timer.name).read_text() == 'old timer\n'
+    assert (backup/'state/stop-marker').read_text() == 'stopped\n'
+    result = run('uninstall.sh',input_text='n\n'); assert result.returncode == 0, result.stderr
+    assert not oneshot.exists() and not timer.exists() and not service.exists()
+    assert marker.read_text() == 'stopped\n'
+    log = events.read_text().split('systemctl enable --now clash-yaml-manager-refresh.timer')[-1]
+    assert log.index('systemctl stop clash-yaml-manager-refresh.timer') < log.index('systemctl disable clash-yaml-manager-refresh.timer')
+    assert log.index('systemctl disable clash-yaml-manager-refresh.timer') < log.index('systemctl stop clash-yaml-manager-refresh.service')
+    assert log.index('systemctl stop clash-yaml-manager-refresh.service') < log.index('systemctl stop clash-yaml-manager\n')
+
+
+@pytest.mark.parametrize('script', ['update.sh', 'uninstall.sh'])
+@pytest.mark.parametrize('unit', ['clash-yaml-manager-refresh.timer', 'clash-yaml-manager-refresh.service'])
+def test_refresh_stop_failure_aborts_before_state_backup_or_code_delete(deployment, script, unit):
+    installed, _, _, events, env, run = deployment
+    env['TEST_FAIL_STOP'] = unit
+    result = run(script,input_text='y\ny\n'); assert result.returncode != 0
+    assert (installed/'app.py').read_text() == 'VERSION = "old"\n'
+    assert 'systemctl stop clash-yaml-manager\n' not in events.read_text()
+    assert not list(installed.parent.glob('upgrade-backup-*/state'))
+
+
+def test_refresh_real_systemd_verify_if_available(deployment):
+    # Run only against temp fixture units; never register/start anything on the host.
+    installed, _, service, events, _, run = deployment
+    result = run(); assert result.returncode == 0, result.stderr
+    oneshot, timer = assert_refresh_units(installed, service, events)
+    analyze = shutil.which('systemd-analyze')
+    if analyze:
+        # Unit filenames must match the timer's explicit Unit= target for verification.
+        directory = service.parent/'verify'; directory.mkdir()
+        shutil.copy2(oneshot,directory/'clash-yaml-manager-refresh.service')
+        shutil.copy2(timer,directory/'clash-yaml-manager-refresh.timer')
+        result = subprocess.run([analyze,'verify',str(directory/'clash-yaml-manager-refresh.service'),
+            str(directory/'clash-yaml-manager-refresh.timer')],capture_output=True,text=True,timeout=15)
+        assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize('script', ['install.sh', 'update.sh', 'remote-install.sh', 'remote-update.sh', 'uninstall.sh', 'scripts/deploy-common.sh'])

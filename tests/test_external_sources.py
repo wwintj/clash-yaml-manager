@@ -58,7 +58,7 @@ def test_seven_node_order_country_groups_and_self_contained_revision(store, base
     assert store._content(entry,'base.yaml') == BASE
     assert store._payload(entry, entry['sources'][1]['id']) == response['payload']
     assert store._payload(entry, entry['sources'][2]['id']) == payload('Germany-upload','London-upload')
-    assert json.loads(store.path.read_bytes())['version'] == 2
+    assert json.loads(store.path.read_bytes())['version'] == 3
     for path in store.state.rglob('*'):
         assert path.stat().st_mode & 0o777 == (0o700 if path.is_dir() else 0o600)
 
@@ -242,7 +242,7 @@ def test_v1_migration_preserves_url_bytes_manual_and_fails_closed(store,base,mon
     assert store.resolve(store.slug(entry))==old and json.loads(store.path.read_text())['version']==1
     changed=save(store,base,entry['id'],source('New'))
     assert store.slug(changed)==store.slug(entry) and changed['sources'][0]['id']==entry['id']
-    assert b'New' in store.resolve(store.slug(entry)) and json.loads(store.path.read_text())['version']==2
+    assert b'New' in store.resolve(store.slug(entry)) and json.loads(store.path.read_text())['version']==3
 
 
 @pytest.mark.parametrize('field,value',[('id','../bad'),('id','a'*32),('name',''),('name','x'*129),

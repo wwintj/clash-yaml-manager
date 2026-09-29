@@ -266,4 +266,4 @@ def test_process_shared_read_mutation_races(store, base, action):
     assert [queue.get(timeout=2) for _ in workers] == ['ok'] * len(workers)
     if action in ('regenerate','delete'): assert store.resolve(store.slug(entry)) is None
     if action == 'save': assert b'Second' in store.resolve(store.slug(entry))
-    assert json.loads(store.path.read_text())['version'] == 2
+    assert json.loads(store.path.read_text())['version'] == 3
