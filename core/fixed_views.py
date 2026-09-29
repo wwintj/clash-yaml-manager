@@ -6,17 +6,20 @@ from flask import Blueprint, abort, redirect, render_template, request, session,
 
 from core import generator, refresh_schedule
 from core.fixed_subscriptions import GenerationError
+from core.node_health import NodeHealth, HealthError, PROBE_MESSAGES
 from core.source_errors import SourceError, message
 from core.source_parser import MAX_PAYLOAD
 
 
 def blueprint(store, base_context, login_required, default_yaml, special_groups, public_url):
     views = Blueprint('fixed', __name__, url_prefix='/fixed-subscriptions')
+    health = NodeHealth(store)
 
     def context():
         value = base_context()
         value['success_message'] = session.pop('fixed_notice', '')
         value['csrf_notice'] = session.pop('csrf_notice', '')
+        value['health_notice'] = session.pop('health_notice', '')
         error = session.pop('fixed_error', '')
         if error:
             value['error_messages'] = [error]
@@ -45,6 +48,23 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             value['history_display'] = [dict(record, at_display=utc(record['at']),
                 error_display=message(record['error']) if record['error'] else '')
                 for record in reversed(item['refresh_history'][-5:])]
+        return value
+
+    def health_display(key):
+        def utc(at):
+            return '—' if at is None else datetime.fromtimestamp(at, timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+        try:
+            value = health.describe(key)
+        except KeyError:
+            return dict(unavailable='Health state unavailable.')
+        except HealthError as error:
+            return dict(unavailable=str(error))
+        for row in value['rows']:
+            row['latency_display'] = '—' if row['latency_ms'] is None else str(int(row['latency_ms'] + .5)) + ' ms'
+            row['checked_display'] = utc(row['last_checked_at'])
+            row['success_display'] = utc(row['last_success_at'])
+            row['error_display'] = PROBE_MESSAGES.get(row['error'], '')
+        value['check_display'] = utc(value['last_check_at'])
         return value
 
     @views.route('')
@@ -118,6 +138,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                                entry=display(entry) if entry else None,
                                external_cards=cards,
                                refresh_options=refresh_schedule.OPTIONS,
+                               node_health=health_display(key) if entry else None,
                                saved_custom=bool(entry and entry['yaml_source'] == 'custom')), status
 
     @views.route('/new', methods=['GET', 'POST'])
@@ -129,6 +150,27 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
     @login_required
     def edit(key):
         return form_page(key)
+
+    @views.route('/<key>/health/<operation>', methods=['POST'])
+    @login_required
+    def health_action(key, operation):
+        if operation not in ('settings','check'): abort(404)
+        try:
+            if operation == 'settings':
+                health.settings(key, request.form.get('mode'))
+                session['health_notice'] = 'Health settings saved.'
+            else:
+                health.check(key)
+                session['health_notice'] = 'Endpoint reachability check completed.'
+        except KeyError:
+            abort(404)
+        except HealthError as error:
+            session['health_notice'] = str(error)
+        if store.get(key):
+            return redirect(url_for('fixed.edit', key=key), code=303)
+        if session.get('health_notice'):
+            session['fixed_error'] = session.pop('health_notice')
+        return redirect(url_for('fixed.index'), code=303)
 
     @views.route('/<key>/sources/refresh-all', methods=['POST'])
     @views.route('/<key>/sources/<identifier>/<operation>', methods=['POST'])

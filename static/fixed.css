@@ -16,3 +16,19 @@
 .external-source input, .external-source select { max-width: 100%; min-width: 0; }
 .source-status { color: var(--green, #82e7b3); font-weight: 600; }
 .source-warning { color: #f3ce7b; overflow-wrap: anywhere; }
+.health-mode { width: auto; max-width: 100%; min-width: 0; }
+.health-table { width: 100%; table-layout: fixed; font-size: .8rem; }
+.health-table th, .health-table td { padding: .65rem; border-bottom: 1px solid #343434; vertical-align: top; overflow-wrap: anywhere; }
+.health-table th:first-child { width: 23%; }
+.health-badge { font-size: .75rem; border: 1px solid currentColor; border-radius: .25rem; padding: .1rem .3rem; }
+.health-healthy { color: #82e7b3; }
+.health-suspect { color: #f3ce7b; }
+.health-unhealthy { color: #ed9292; }
+.health-unknown { color: #a0a0a0; }
+.health-error { display: block; margin-top: .4rem; }
+@media (max-width: 767px) {
+  .health-table, .health-table tbody, .health-table tr, .health-table td { display: block; width: 100%; }
+  .health-table thead { display: none; }
+  .health-table tr { border: 1px solid #343434; margin-bottom: 1rem; }
+  .health-table td::before { content: attr(data-label); display: block; color: #a0a0a0; margin-bottom: .3rem; }
+}

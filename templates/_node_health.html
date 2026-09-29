@@ -1,0 +1,43 @@
+<section id="node-health" class="terminal-panel mt-4">
+  <div class="panel-inner">
+    <h3 class="panel-title mb-3">NODE HEALTH / REACHABILITY</h3>
+    <p class="helper-text">Endpoint reachability only. This checks whether the node server and port are reachable from this VPS. It does not verify proxy authentication or end-to-end proxy forwarding.</p>
+    <p class="form-text">Unhealthy nodes remain in the generated YAML. Checks use the currently saved subscription.</p>
+    {% if health_notice %}<p class="health-notice" role="status">{{ health_notice }}</p>{% endif %}
+    {% if node_health.unavailable %}<p class="source-warning" role="status">{{ node_health.unavailable }}</p>
+    {% else %}
+    <form id="health-settings" action="{{ url_for('fixed.health_action', key=entry.id, operation='settings') }}" method="POST" class="mb-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="form-label" for="health-mode">Health Checks</label>
+      <div class="d-flex flex-wrap gap-2">
+        <select id="health-mode" name="mode" class="form-select terminal-select health-mode">
+          {% for mode in ['off','manual'] %}<option value="{{ mode }}" {% if node_health.mode == mode %}selected{% endif %}>{{ mode|capitalize }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-outline-terminal btn-terminal">Save Health Settings</button>
+      </div>
+    </form>
+    {% if node_health.mode == 'manual' %}
+    <form id="health-check" action="{{ url_for('fixed.health_action', key=entry.id, operation='check') }}" method="POST" class="mb-3" data-health-check>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-green btn-terminal">Check Now</button>
+      <span class="form-text">Up to 256 nodes per run; checks may take about a minute.</span>
+    </form>
+    {% endif %}
+    <div class="health-summary form-text mb-3">
+      <p>{{ node_health.total }} Nodes · Healthy {{ node_health.counts.healthy }} · Suspect {{ node_health.counts.suspect }} · Unhealthy {{ node_health.counts.unhealthy }} · Unknown {{ node_health.counts.unknown }}</p>
+      <p>Last Check: {{ node_health.check_display }}</p>
+    </div>
+    <table class="health-table"><thead><tr>{% for title in ['Node','Protocol','Status','Connect Latency','Failures','Last Checked','Last Success'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for node in node_health.rows %}<tr>
+        <td data-label="Node">{{ node.name }}</td>
+        <td data-label="Protocol">{{ node.protocol|upper }}</td>
+        <td data-label="Status"><span class="health-badge health-{{ node.status }}">{{ node.status|upper }}</span>{% if node.error_display %}<small class="health-error">{{ node.error_display }}</small>{% endif %}</td>
+        <td data-label="Connect Latency">{{ node.latency_display }}</td>
+        <td data-label="Failures">{{ node.consecutive_failures }}</td>
+        <td data-label="Last Checked">{{ node.checked_display }}</td>
+        <td data-label="Last Success">{{ node.success_display }}</td>
+      </tr>{% else %}<tr><td colspan="7">No supported VMess/VLESS nodes.</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+  </div>
+</section>

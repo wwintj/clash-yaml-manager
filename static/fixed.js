@@ -26,6 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+  document.querySelectorAll('form[data-health-check]').forEach(action => {
+    action.addEventListener('submit', event => {
+      if (action.dataset.busy) { event.preventDefault(); return; }
+      action.dataset.busy = 'true';
+      const button = action.querySelector('button');
+      button.dataset.idleText = button.textContent;
+      button.disabled = true; button.textContent = 'Checking...';
+    });
+  });
   const form = document.querySelector('form[data-fixed]');
   if (!form) return;
   const external = document.getElementById('external-sources');
