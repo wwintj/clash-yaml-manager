@@ -21,6 +21,8 @@ curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remo
 sudo bash /opt/clash-yaml-manager/mihomoctl.sh status
 sudo bash /opt/clash-yaml-manager/mihomoctl.sh install
 sudo bash /opt/clash-yaml-manager/mihomoctl.sh status
+sudo sha256sum /opt/clash-yaml-manager/bin/mihomo
+sudo /opt/clash-yaml-manager/bin/mihomo -v
 systemctl status clash-yaml-manager --no-pager -l
 curl -i http://127.0.0.1:8899/healthz
 ```
@@ -49,10 +51,12 @@ subscriptions with an unchanged custom override.
 [MetaCubeX/mihomo v1.19.31](https://github.com/MetaCubeX/mihomo/releases/tag/v1.19.31)
 exactly, for Linux amd64 and arm64 only:
 
-| Platform | Release asset | Compressed SHA256 | Decompressed SHA256 |
-| --- | --- | --- | --- |
-| amd64 | `mihomo-linux-amd64-v1.19.31.gz` | `d5e74bbddbdfff49a1aef7775bf5911da59f0d7196ed509a0ac914b3653dd5f1` | `08787faafea19c1ab0f83fa5a1b22363b7d03ea78da18091a4c883aecaaa5979` |
-| arm64 | `mihomo-linux-arm64-v1.19.31.gz` | `9e0f11afbf38426b8bd88fdc594678f8161c57eccb4e1b77acb12b493904f1d4` | `1b315bc038d05f84ee86d232f3c3d2b020b5044e9b971bb8fe215b6e6a2148f3` |
+| Build | Release asset | Compressed SHA256 | Decompressed SHA256 | Bytes |
+| --- | --- | --- | --- | --- |
+| amd64-v1 | `mihomo-linux-amd64-v1-v1.19.31.gz` | `d4304c546c3cddcb6fafd4b4fddb0ba1a95ffa36606fda56d75db2e59ad24114` | `12d97b7b7fa22cb4456e62c6e35db4be952dbb1c53eacaa9ef437c95d5068a9d` | 22821828 |
+| amd64-v2 | `mihomo-linux-amd64-v2-v1.19.31.gz` | `560a14ba51482e85e90b6c9b141f3b7b1543795f9ecd82eb9a6c5153a1b7960b` | `8a9d3e867c422605bb61f572636f1e50b05c16f6b78b4eabff9857947ad2eb35` | 22805792 |
+| amd64-v3 | `mihomo-linux-amd64-v3-v1.19.31.gz` | `4e8808e79f1e452a0300ce1ee89fcaf2cccd5249a100f2238877214e5ca316b3` | `81d4e533a66d17b8ac12b92e1891d681d2a34c788dfaf57f8b1bd0bb22a34cec` | 22789796 |
+| arm64 | `mihomo-linux-arm64-v1.19.31.gz` | `9e0f11afbf38426b8bd88fdc594678f8161c57eccb4e1b77acb12b493904f1d4` | `1b315bc038d05f84ee86d232f3c3d2b020b5044e9b971bb8fe215b6e6a2148f3` | 20757911 |
 
 These hashes were checked against the upstream Release asset metadata and
 independently downloaded compressed assets; the decompressed files identify as
@@ -67,7 +71,8 @@ environment settings, rejects an HTTP redirect, checks exact compressed size
 and SHA256, decompresses privately with a size cap, checks the decompressed hash
 and ELF architecture, then runs bounded `mihomo -v` and requires
 `Mihomo Meta v1.19.31 linux <arch>`. It stages the binary and metadata before
-replacing either live file and restores both on an ordinary replacement error.
+replacing either live file and restores both on an ordinary replacement error
+or failed post-replacement verification.
 The managed paths are `/opt/clash-yaml-manager/bin/mihomo` (root:root 0755)
 and `bin/mihomo.json` (root:root 0644); the Web service account executes the
 binary but cannot modify it. Status reports **NOT INSTALLED**, **COMPATIBLE**,
@@ -77,6 +82,73 @@ project updates preserve the entire `bin/` directory and do not repair or
 replace Mihomo. The code and engine are separate versioned components: after a
 code rollback, a mismatched installed engine blocks only Proxy Health until an
 operator aligns the component. No stable Release is changed by this feature.
+
+## CPU-aware selection and VPS migration
+
+New amd64 installs use only the explicit `amd64-v1`, `amd64-v2` and
+`amd64-v3` assets above. The manifest validates every variant, exact asset name,
+URL, hash and positive bounded size, including unselected variants. It never
+queries latest, discovers assets dynamically or installs the generic amd64
+or compatible-named build. Arm64 continues to use its unchanged pinned asset.
+
+The pure detector parses `/proc/cpuinfo` and intersects flags from **every
+visible processor**. It ignores model names. Missing/unreadable cpuinfo,
+missing flags on any CPU, duplicate processor/flag records or malformed input
+choose portable **v1**. Hypervisors can mask capabilities even on a modern Xeon,
+EPYC or Ryzen, so a model name cannot guarantee a GOAMD64 level.
+
+[Go minimum requirements](https://go.dev/wiki/MinimumRequirements) and
+[Go runtime checks](https://go.dev/src/runtime/asm_amd64.s) define v2 as
+CMPXCHG16B, LAHF/SAHF, POPCNT, SSE3, SSSE3, SSE4.1 and SSE4.2. Their
+[Linux names](https://github.com/torvalds/linux/blob/v6.17/arch/x86/include/asm/cpufeatures.h)
+are `cx16 lahf_lm popcnt pni ssse3 sse4_1 sse4_2`.
+V3 additionally requires AVX, AVX2, BMI1, BMI2, FMA, F16C, LZCNT (`abm`),
+MOVBE and OSXSAVE with OS XMM/YMM state enabled. Linux does not export an
+`osxsave` cpuinfo name; this detector uses kernel-enabled `xsave`, `avx` and
+`avx2` as its local OS-support signal. This is an inference from
+[Linux's enabled-flags contract](https://docs.kernel.org/arch/x86/cpuinfo.html)
+and [xstate setup](https://github.com/torvalds/linux/blob/v6.17/arch/x86/kernel/fpu/xstate.c),
+not a direct XGETBV measurement. The verified candidate's three-second `-v`
+execution is the final compatibility check, including Go's OSXSAVE/XGETBV check.
+
+The preferred build is the highest detected level. Only after exact archive
+size/hash, gzip, executable hash and ELF class/endian/architecture checks pass,
+an execution failure (nonzero, SIGILL, timeout or launch failure) can try the
+next lower pinned build: v3 → v2 → v1. Download, integrity, package, malformed
+version output and wrong version/architecture failures stop immediately;
+they never trigger downgrade. All attempts stay in private staging. If no
+candidate executes correctly, existing binary and metadata remain unchanged.
+
+New `bin/mihomo.json` records exact version, platform, `cpu_level`, asset,
+archive SHA256 and binary SHA256. Arm64 writes `cpu_level: null`; its older
+metadata without that field remains accepted. CLI and the existing Web engine
+card display host **CPU Level**, installed **Build** and **Preferred Build**.
+A valid v1/v2 install remains COMPATIBLE on a v3 host. A verified installed
+build above the detected host level is INCOMPATIBLE without executing it;
+run `sudo bash /opt/clash-yaml-manager/mihomoctl.sh update` over SSH to migrate.
+Unsafe ownership/modes, corrupt metadata, hash drift and unexpected execution
+failure for a supposedly compatible explicit build are BROKEN.
+
+The earlier generic `mihomo-linux-amd64-v1.19.31.gz` is a **legacy v3** build,
+confirmed in the [pinned upstream build matrix](https://github.com/MetaCubeX/mihomo/blob/ab405bad5beeeac8b003bb01f60f134f6df54471/.github/workflows/build.yml).
+Its exact old metadata is recognized only with archive SHA256
+`d5e74bbddbdfff49a1aef7775bf5911da59f0d7196ed509a0ac914b3653dd5f1`
+and binary SHA256
+`08787faafea19c1ab0f83fa5a1b22363b7d03ea78da18091a4c883aecaaa5979`.
+Safe metadata, matching executable hash, host v3 support and successful exact
+version execution keep it COMPATIBLE. CPU downgrade or legacy runtime failure
+reports INCOMPATIBLE rather than corrupt metadata. Explicit helper `update`
+selects the new pinned variant; ordinary project update preserves `bin/`.
+
+A real tim x86_64 VPS reported the generic upstream v3 artifact downloading,
+hashing and passing ELF validation, then failing the real version execution.
+Its Intel Xeon SierraForest model exposed v2 flags but lacked AVX2, BMI1/BMI2,
+FMA, LZCNT and MOVBE. Installation correctly remained NOT INSTALLED. The patch
+is **FIXED IN CONTROLLED TESTS / REAL VPS RE-TEST REQUIRED**. On that VPS, the
+expected CPU Level is v2 and Build amd64-v2; if verified v2 cannot execute, the
+helper should select v1. Run the operator sequence above and confirm actual
+detector output, hash and `-v`, then recheck real VMess, real VLESS and bad UUID.
+Fixed URL and YAML must remain unchanged throughout.
 
 ## Probe lifecycle and pinned controller behavior
 
@@ -184,8 +256,9 @@ a guarantee about the final DNS destination.
 Offline pytest and Playwright use controlled binary, process, DNS and
 controller fixtures. The upstream Linux assets were downloaded and hashed, but
 the current macOS host did **not** execute them. No real VPS VMess/VLESS or
-Reality node was probed in this phase: **NOT VERIFIED ON REAL VPS**. Real VPS
-acceptance should verify arm64 installation and COMPATIBLE status, one real
+Reality node was probed by this patch: **NOT VERIFIED ON REAL VPS**. Real VPS
+acceptance should reverify tim amd64 CPU selection and installation (and arm64
+when available), COMPATIBLE status, one real
 VMess and VLESS (plus Reality if available) becoming HEALTHY, a deliberately
 wrong UUID/config producing a Proxy failure while Endpoint may remain HEALTHY,
 and an unchanged Fixed URL/YAML throughout. See

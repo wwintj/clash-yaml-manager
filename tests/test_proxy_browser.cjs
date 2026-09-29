@@ -50,6 +50,7 @@ assert(control && new URL(control).hostname === '127.0.0.1');
     await setMode('proxy-engine-compatible');
     await page.reload();
     assert(await section.getByText('COMPATIBLE',{exact:true}).isVisible());
+    assert(await section.getByText('CPU Level: v2 · Build: amd64-v2 · Preferred Build: amd64-v2',{exact:true}).isVisible());
     assert(await section.getByRole('button',{name:'Check Proxies Now'}).isEnabled());
     await setMode('proxy-success');
     await navigate(section.getByRole('button',{name:'Check Proxies Now'}));

@@ -11,6 +11,7 @@
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
 ### Changed
+- Select explicit pinned Mihomo amd64 v1/v2/v3 builds from the intersection of Linux-exposed CPU capabilities, with verified execution-only fallback and legacy generic v3 metadata recognition; preserve the arm64 asset and ordinary update behavior.
 - Keep managed Mihomo binaries and metadata across ordinary project updates; leave proxy checks Off after upgrades and never alter Fixed YAML, URL, groups or policy based on health results.
 - Keep unhealthy nodes in generated YAML and proxy groups; preserve health on name-only edits, reset identity when connection configuration changes, and discard probe results when the Fixed revision changes during a check.
 - Normalize fixed registry v1/v2 to v3 in memory with existing schedules Off; persist on successful management or required scheduler mutations while preserving URLs, manual settings and complete revision files.

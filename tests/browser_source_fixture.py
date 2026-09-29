@@ -58,7 +58,8 @@ def external_source_server():
         return dict(status='COMPATIBLE' if state['proxy_engine']=='compatible' else 'NOT INSTALLED',
                     required='v1.19.31',
                     installed='v1.19.31' if state['proxy_engine']=='compatible' else None,
-                    architecture='arm64')
+                    architecture='amd64',cpu_level='v2',preferred_build='amd64-v2',
+                    build='amd64-v2' if state['proxy_engine']=='compatible' else None)
     def proxy_run(binary, nodes, settings, directory):
         if state['proxy_result']=='engine-error':
             raise mihomo_probe.ProbeEngineError('PRIVATE controller failure')

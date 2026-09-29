@@ -6,6 +6,7 @@
   <div class="proxy-engine-card mb-4">
     <h4 class="panel-title">PROXY PROBE ENGINE</h4>
     <p>Status: <strong>{{ proxy_health.engine.status }}</strong> · Required: {{ proxy_health.engine.required }} · Installed: {{ proxy_health.engine.installed or '—' }} · Architecture: {{ proxy_health.engine.architecture }}</p>
+    {% if proxy_health.engine.get('preferred_build') %}<p>CPU Level: {{ proxy_health.engine.get('cpu_level') or '—' }} · Build: {{ proxy_health.engine.get('build') or '—' }} · Preferred Build: {{ proxy_health.engine.preferred_build }}</p>{% endif %}
     <p class="form-text">Install or update over SSH: <code>sudo bash /opt/clash-yaml-manager/mihomoctl.sh status</code> / <code>install</code>. The Web app never installs Mihomo.</p>
   </div>
   {% if proxy_health.unavailable %}<p class="source-warning" role="status">{{ proxy_health.unavailable }}</p>
