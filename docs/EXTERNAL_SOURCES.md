@@ -31,8 +31,10 @@ duplicate final display names and an empty aggregate stop the entire operation.
 Save fetches all enabled remote sources. Refresh fetches the selected enabled
 remote; Refresh All fetches enabled remotes. Other sources use their saved content.
 Refresh buttons operate on **saved settings**; save form edits first. Public fixed
-URLs never fetch or parse sources. No schedule, cron, refresh thread, health check,
-new protocol, advanced policy or duplicate-subscription action is added.
+URLs never fetch or parse sources. Remote sources now support a separate systemd
+timer with Off by default; see [Automatic Refresh](AUTO_REFRESH.md) for v3 migration,
+scheduling, history and operations. No web refresh thread, node health check, new
+protocol, advanced policy or duplicate-subscription action is added.
 
 Status shows Never fetched, Ready, Cached, Error or Disabled, imported node count,
 last successful refresh in UTC, and sanitized warnings. Refresh buttons show
@@ -99,7 +101,7 @@ authenticated form, never shown on the list and never placed in browser storage.
 Forms/public responses retain no-store and no-referrer. Existing fixed bearer
 access-log redaction, login and POST+CSRF controls remain in place.
 
-## Registry v2 and private revisions
+## Registry and private revisions
 
 Each source has a server-generated UUID4 hex id, type, name, enabled, format,
 node_count, last_attempt_at, last_success_at, last_error, using_cache and warnings.
@@ -109,7 +111,7 @@ manual input. Source list order is persistent. Array indices are used only to
 associate multipart uploads with this submitted form, never as stored identifiers.
 
 ```text
-state/fixed_subscriptions.json                           # version 2
+state/fixed_subscriptions.json                           # version 3 (v1/v2 readable)
 state/fixed_subscriptions.lock
 state/fixed_subscriptions/<subscription-id>/<revision>/
   base.yaml                                             # default OR custom snapshot
@@ -126,8 +128,10 @@ Version 1 is strictly validated and normalized in memory into one Manual source.
 Its existing subscription UUID is reused as the scoped manual source id so reads
 are deterministic without writing. Manual batch, auxiliary rows, overrides,
 prefix, token, current revision and public bytes are unchanged. Public access-stat
-writes preserve the v1 schema. Only a successful management mutation atomically
-writes version 2 under the process-shared lock. A failed migration never resets
+writes preserve the original v1/v2 schema. A successful management mutation atomically
+writes version 3 under the process-shared lock. The automatic worker also writes
+v3 when a due refresh requires mutation, while all-Off scans leave v1/v2 untouched.
+See [Automatic Refresh](AUTO_REFRESH.md) for remote scheduling fields. A failed migration never resets
 state; corruption fails closed. No deletion of the old registry is required.
 
 ## Atomicity and concurrency

@@ -23,9 +23,21 @@ Custom Base YAML 與生成結果保存在私有 `state/`，編輯時不必重新
 Node Sources 支援 **Manual、Remote URL、Uploaded source**，可以合併多個來源；Base YAML 仍獨立選擇 Default / Custom。
 外部來源接受 Clash/Mihomo YAML、Raw VMess/VLESS URI list、Base64 URI list，僅匯入 VMess / VLESS。
 Save 或手動 Refresh 更新遠端資料，抓取失敗可使用未變更來源的 last-good cache，固定 URL 保持不變。
-**Manual refresh only — no scheduled refresh yet.**
 
-儲存及固定 URL 見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)；來源格式、SSRF、快取、v1 → v2 migration 與並發模型見 [External Sources](docs/EXTERNAL_SOURCES.md)。
+### Automatic Refresh — main development
+
+每個 Remote Source 可設定 Auto Refresh：**Off（預設）**、15m、30m、1h、3h、6h、12h、24h。
+由獨立 systemd timer 約每五分鐘檢查到期來源；Gunicorn 不承擔排程。
+成功會重新計算 Next Refresh；失敗保留 last-good cache，按 5m → 15m → 30m → 1h → 2h → 6h 退避重試。
+頁面顯示 UTC 刷新時間、連續失敗次數及最近五筆歷史（最多保存二十筆）。Manual / Uploaded 不自動刷新，目前沒有節點健康檢查。
+
+```bash
+systemctl status clash-yaml-manager-refresh.timer --no-pager -l
+systemctl list-timers clash-yaml-manager-refresh.timer
+journalctl -u clash-yaml-manager-refresh.service -n 50 --no-pager
+```
+
+儲存及固定 URL 見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)；來源格式、SSRF 與快取見 [External Sources](docs/EXTERNAL_SOURCES.md)；排程、v1/v2 → v3 migration、退避、並發及運維見 [Automatic Refresh](docs/AUTO_REFRESH.md)。
 
 ## 一鍵安裝
 
