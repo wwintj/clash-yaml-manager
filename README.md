@@ -29,7 +29,7 @@ Save 或手動 Refresh 更新遠端資料，抓取失敗可使用未變更來源
 每個 Remote Source 可設定 Auto Refresh：**Off（預設）**、15m、30m、1h、3h、6h、12h、24h。
 由獨立 systemd timer 約每五分鐘檢查到期來源；Gunicorn 不承擔排程。
 成功會重新計算 Next Refresh；失敗保留 last-good cache，按 5m → 15m → 30m → 1h → 2h → 6h 退避重試。
-頁面顯示 UTC 刷新時間、連續失敗次數及最近五筆歷史（最多保存二十筆）。Manual / Uploaded 不自動刷新，目前沒有節點健康檢查。
+頁面顯示 UTC 刷新時間、連續失敗次數及最近五筆歷史（最多保存二十筆）。Manual / Uploaded 不自動刷新；自動刷新排程不執行節點健康檢查。
 
 ```bash
 systemctl status clash-yaml-manager-refresh.timer --no-pager -l
@@ -38,6 +38,14 @@ journalctl -u clash-yaml-manager-refresh.service -n 50 --no-pager
 ```
 
 儲存及固定 URL 見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)；來源格式、SSRF 與快取見 [External Sources](docs/EXTERNAL_SOURCES.md)；排程、v1/v2 → v3 migration、退避、並發及運維見 [Automatic Refresh](docs/AUTO_REFRESH.md)。
+
+### Node Health / Endpoint Reachability — main development
+
+Fixed Subscription 的健康檢查預設 **Off**；可在 Edit 頁面切換為 **Manual**，再按 **Check Now**。
+它只測試 VPS 能否與當前已保存 YAML 中的 VMess/VLESS 節點 `server:port` 建立 TCP 連接，並顯示連線耗時。
+連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy；之後成功立即恢復 Healthy。Unhealthy 節點**仍保留**在 YAML 及所有代理群組中。
+此檢查**不驗證**代理認證或端到端轉發，也不測試 TLS、WebSocket 或 Reality 協議；沒有自動健康排程。
+私網和非全球可路由地址會被封鎖，結果存入獨立私有狀態，不改動 Fixed URL 或 revision。架構、限制及安全細節見 [Node Health](docs/NODE_HEALTH.md)。
 
 ## 一鍵安裝
 
