@@ -22,7 +22,7 @@
   {% endif %}
   <script id="fixed-fields" type="application/json">{{ fields | tojson }}</script>
 </div></section>
-{% if entry %}{% include '_node_health.html' %}{% endif %}
+{% if entry %}{% include '_node_health.html' %}{% include '_proxy_health.html' %}{% endif %}
 {% endblock %}
 {% block generator_scripts %}
 <script src="{{ url_for('static', filename='fixed.js') }}"></script>

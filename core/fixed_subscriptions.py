@@ -454,6 +454,11 @@ class FixedSubscriptions:
                 NodeHealth(self).remove(key)
             except Exception:
                 pass
+            try:
+                from core.proxy_health import ProxyHealth
+                ProxyHealth(self).remove(key)
+            except Exception:
+                pass
         return result
 
     def resolve(self, slug):

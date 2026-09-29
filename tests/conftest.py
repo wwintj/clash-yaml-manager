@@ -19,7 +19,7 @@ def node():
 @pytest.fixture
 def web(tmp_path, monkeypatch):
     # Import-time logging/cleanup must never touch the checkout's runtime data.
-    for name in ('app.py', 'VERSION'):
+    for name in ('app.py', 'VERSION', 'mihomo-manifest.json'):
         shutil.copy2(ROOT / name, tmp_path / name)
     for name in ('templates', 'static', 'defaults'):
         shutil.copytree(ROOT / name, tmp_path / name)

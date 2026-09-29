@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
-  document.querySelectorAll('form[data-health-check]').forEach(action => {
+  document.querySelectorAll('form[data-health-check], form[data-proxy-check]').forEach(action => {
     action.addEventListener('submit', event => {
       if (action.dataset.busy) { event.preventDefault(); return; }
       action.dataset.busy = 'true';
@@ -35,6 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
       button.disabled = true; button.textContent = 'Checking...';
     });
   });
+  const proxyScope = document.querySelector('[data-proxy-scope]');
+  if (proxyScope) {
+    const custom = document.getElementById('proxy-custom-fields');
+    const show = () => { custom.hidden = proxyScope.value !== 'custom'; };
+    proxyScope.addEventListener('change', show);
+    show();
+  }
   const form = document.querySelector('form[data-fixed]');
   if (!form) return;
   const external = document.getElementById('external-sources');

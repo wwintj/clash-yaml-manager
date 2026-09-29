@@ -52,7 +52,7 @@ def fingerprint(config):
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
-def extract(payload):
+def extract(payload, include_config=False):
     """Read current proxies without fetching, aggregating, renaming or generating."""
     try:
         if not isinstance(payload, bytes) or len(payload) > MAX_YAML_BYTES:
@@ -78,7 +78,10 @@ def extract(payload):
                     or isinstance(credential, str) and credential and credential in name
                     or re.search(r'(?:https?://|vmess://|vless://|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', name)):
                 name = 'Node ' + str(index + 1)
-            nodes.append(dict(fingerprint=fingerprint(config), name=name, protocol=config['type'], server=server, port=port))
+            node = dict(fingerprint=fingerprint(config), name=name, protocol=config['type'], server=server, port=port)
+            if include_config:
+                node['config'] = config  # In-memory only; never persisted or rendered.
+            nodes.append(node)
         return nodes
     except (ValueError, TypeError, UnicodeError, RecursionError, SourceError, YAMLError):
         raise HealthError('unavailable') from None
@@ -205,8 +208,9 @@ class NodeHealth:
             name = node['name']
             if snapshot['token'] in name:
                 name = 'Node ' + str(index + 1)
-            rows.append(dict(name=name,protocol=node['protocol'],**record))
-        return dict(mode=entry['mode'],rows=rows,counts=counts,total=len(nodes),last_check_at=entry['last_check_at'])
+            rows.append(dict(name=name,protocol=node['protocol'],fingerprint=node['fingerprint'],**record))
+        return dict(mode=entry['mode'],rows=rows,counts=counts,total=len(nodes),
+                    revision=snapshot['revision'],last_check_at=entry['last_check_at'])
 
     def settings(self, key, mode):
         if mode not in ('off','manual'): raise HealthError('config')

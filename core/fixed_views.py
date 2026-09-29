@@ -7,6 +7,7 @@ from flask import Blueprint, abort, redirect, render_template, request, session,
 from core import generator, refresh_schedule
 from core.fixed_subscriptions import GenerationError
 from core.node_health import NodeHealth, HealthError, PROBE_MESSAGES
+from core.proxy_health import ProxyHealth, ProxyHealthError, DEFAULT_PROBE
 from core.source_errors import SourceError, message
 from core.source_parser import MAX_PAYLOAD
 
@@ -14,12 +15,18 @@ from core.source_parser import MAX_PAYLOAD
 def blueprint(store, base_context, login_required, default_yaml, special_groups, public_url):
     views = Blueprint('fixed', __name__, url_prefix='/fixed-subscriptions')
     health = NodeHealth(store)
+    try:
+        proxy_health = ProxyHealth(store)
+    except Exception:
+        # The managed engine/manifest is optional; Fixed management stays usable.
+        proxy_health = None
 
     def context():
         value = base_context()
         value['success_message'] = session.pop('fixed_notice', '')
         value['csrf_notice'] = session.pop('csrf_notice', '')
         value['health_notice'] = session.pop('health_notice', '')
+        value['proxy_notice'] = session.pop('proxy_notice', '')
         error = session.pop('fixed_error', '')
         if error:
             value['error_messages'] = [error]
@@ -64,6 +71,32 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             row['checked_display'] = utc(row['last_checked_at'])
             row['success_display'] = utc(row['last_success_at'])
             row['error_display'] = PROBE_MESSAGES.get(row['error'], '')
+        value['check_display'] = utc(value['last_check_at'])
+        return value
+
+    def proxy_display(key, endpoint):
+        def utc(at):
+            return '—' if at is None else datetime.fromtimestamp(at, timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+        engine = (proxy_health.engine.status() if proxy_health else
+                  dict(status='BROKEN',required='v1.19.31',installed=None,architecture='unknown'))
+        if proxy_health is None:
+            return dict(engine=engine,unavailable='Proxy health state unavailable.',global_settings=DEFAULT_PROBE)
+        try:
+            value = proxy_health.describe(key)
+        except (KeyError, ProxyHealthError, HealthError) as error:
+            return dict(engine=engine,unavailable=(str(error) if isinstance(error, ProxyHealthError)
+                else 'Proxy health state unavailable.'),global_settings=DEFAULT_PROBE)
+        endpoint_rows = ({row['fingerprint']:row for row in endpoint['rows']}
+                         if 'rows' in endpoint and endpoint.get('revision') == value['revision'] else {})
+        for row in value['rows']:
+            observed = endpoint_rows.get(row['fingerprint'], {})
+            row['endpoint_status'] = observed.get('status','unknown')
+            tcp = observed.get('latency_ms')
+            row['tcp_latency_display'] = '—' if tcp is None else str(int(tcp + .5)) + ' ms'
+            row['endpoint_failures'] = observed.get('consecutive_failures',0)
+            row['proxy_latency_display'] = '—' if row['latency_ms'] is None else str(int(row['latency_ms'] + .5)) + ' ms'
+            row['proxy_check_display'] = utc(row['last_checked_at'])
+        value['engine'] = engine
         value['check_display'] = utc(value['last_check_at'])
         return value
 
@@ -134,11 +167,13 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             cards.append(dict(fields={k: row.get(k, None if k == 'refresh_interval_seconds' else '') for k in
                                       ('id','type','name','url','format','enabled','refresh_interval_seconds')},
                               saved=source_display(saved) if saved else None))
+        endpoint = health_display(key) if entry else None
+        proxy = proxy_display(key, endpoint) if entry else None
         return render_template('fixed_form.html', **ctx, fields=fields,
                                entry=display(entry) if entry else None,
                                external_cards=cards,
                                refresh_options=refresh_schedule.OPTIONS,
-                               node_health=health_display(key) if entry else None,
+                               node_health=endpoint, proxy_health=proxy,
                                saved_custom=bool(entry and entry['yaml_source'] == 'custom')), status
 
     @views.route('/new', methods=['GET', 'POST'])
@@ -170,6 +205,57 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             return redirect(url_for('fixed.edit', key=key), code=303)
         if session.get('health_notice'):
             session['fixed_error'] = session.pop('health_notice')
+        return redirect(url_for('fixed.index'), code=303)
+
+    def probe_fields(prefix):
+        try:
+            return dict(url=request.form[prefix+'url'],
+                        expected_status=int(request.form[prefix+'expected_status']),
+                        timeout_ms=int(request.form[prefix+'timeout_ms']))
+        except (ValueError, KeyError, TypeError):
+            raise ProxyHealthError('settings') from None
+
+    @views.route('/proxy-health/defaults', methods=['POST'])
+    @login_required
+    def proxy_defaults():
+        key = request.form.get('subscription_id','')
+        if not store.get(key):
+            abort(404)
+        try:
+            if proxy_health is None:
+                raise ProxyHealthError('compatible')
+            proxy_health.set_global(probe_fields('global_'))
+            session['proxy_notice'] = 'Proxy probe defaults saved.'
+        except ProxyHealthError as error:
+            session['proxy_notice'] = str(error)
+        return redirect(url_for('fixed.edit', key=key), code=303)
+
+    @views.route('/<key>/proxy-health/<operation>', methods=['POST'])
+    @login_required
+    def proxy_action(key, operation):
+        if operation not in ('settings','check'):
+            abort(404)
+        try:
+            if proxy_health is None:
+                raise ProxyHealthError('compatible')
+            if operation == 'settings':
+                scope = request.form.get('scope')
+                if scope not in ('global','custom'):
+                    raise ProxyHealthError('settings')
+                proxy_health.settings(key, request.form.get('mode'), scope == 'global',
+                                      probe_fields('custom_') if scope == 'custom' else None)
+                session['proxy_notice'] = 'Full proxy validation settings saved.'
+            else:
+                proxy_health.check(key)
+                session['proxy_notice'] = 'Full proxy validation completed.'
+        except KeyError:
+            abort(404)
+        except ProxyHealthError as error:
+            session['proxy_notice'] = str(error)
+        if store.get(key):
+            return redirect(url_for('fixed.edit', key=key), code=303)
+        if session.get('proxy_notice'):
+            session['fixed_error'] = session.pop('proxy_notice')
         return redirect(url_for('fixed.index'), code=303)
 
     @views.route('/<key>/sources/refresh-all', methods=['POST'])
