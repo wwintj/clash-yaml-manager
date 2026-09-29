@@ -31,17 +31,24 @@ def test_fixed_subscription_survives_upgrade_and_backup(deployment):
                   aux_nodes=[], node_overrides={}, special_groups=[])
     entry = store.save(None, 'Preserved', 'preserved', config,
                        generator.parse_form_nodes({'batch_nodes':config['batch_nodes']}),
-                       source / 'unused.yaml', b'proxies: []\nproxy-groups: []\nrules: []\n')
+                       source / 'unused.yaml', b'proxies: []\nproxy-groups: []\nrules: []\n',
+                       sources=[dict(type='uploaded', name='Office', enabled=True, format='raw')],
+                       uploads={0:(LINK+'#Tokyo-upload').encode()})
+    source_id = entry['sources'][1]['id']
+    payload = store._payload(entry, source_id)
     slug = store.slug(entry); before = store.resolve(slug)
     result = run()
     assert result.returncode == 0, result.stdout + result.stderr
     assert FixedSubscriptions(installed / 'state').resolve(slug) == before
+    assert FixedSubscriptions(installed / 'state')._payload(entry, source_id) == payload
     backups = list(installed.parent.glob('upgrade-backup-*/state'))
     assert len(backups) == 1 and FixedSubscriptions(backups[0]).resolve(slug) == before
+    assert FixedSubscriptions(backups[0])._payload(entry, source_id) == payload
     result = run('uninstall.sh', input_text='y\n\n')
     assert result.returncode == 0, result.stdout + result.stderr
     uninstall_backup = next(installed.parent.glob('uninstall-backup-*'))
     assert FixedSubscriptions(uninstall_backup / 'state').resolve(slug) == before
+    assert FixedSubscriptions(uninstall_backup / 'state')._payload(entry, source_id) == payload
 
 
 def executable(path, text):

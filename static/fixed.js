@@ -15,8 +15,60 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+  document.querySelectorAll('form[data-source-action]').forEach(action => {
+    action.addEventListener('submit', event => {
+      if (event.defaultPrevented) return;
+      if (action.dataset.busy) { event.preventDefault(); return; }
+      action.dataset.busy = 'true';
+      document.querySelectorAll('button[form="' + action.id + '"]').forEach(button => {
+        button.dataset.idleText = button.textContent;
+        button.disabled = true; button.textContent = 'Refreshing...';
+      });
+    });
+  });
   const form = document.querySelector('form[data-fixed]');
   if (!form) return;
+  const external = document.getElementById('external-sources');
+  function serializeSources() {
+    const sources = [...external.children].map((card, index) => {
+      const file = card.querySelector('.source-file');
+      if (file) file.name = 'source_file_' + index;
+      return {id:card.dataset.sourceId, type:card.dataset.sourceType,
+        name:card.querySelector('.source-name').value,
+        enabled:card.querySelector('.source-enabled').checked,
+        format:card.querySelector('.source-format').value,
+        ...(card.dataset.sourceType === 'remote_url' ? {url:card.querySelector('.source-url').value} : {})};
+    });
+    document.getElementById('external-sources-data').value = JSON.stringify(sources);
+  }
+  for (const kind of ['remote', 'uploaded']) {
+    document.getElementById('add-' + kind + '-source').addEventListener('click', () => {
+      external.append(document.getElementById(kind + '-source-template').content.cloneNode(true));
+      serializeSources();
+    });
+  }
+  external.addEventListener('click', event => {
+    if (event.target.closest('.remove-source')) { event.target.closest('.external-source').remove(); serializeSources(); }
+  });
+  form.addEventListener('submit', event => {
+    if (event.submitter?.id !== 'generate-yaml') return;
+    serializeSources();
+    // Let the shared form validation run before preventing duplicate submissions.
+    queueMicrotask(() => {
+      if (!event.defaultPrevented) {
+        document.getElementById('generate-yaml').dataset.idleText = document.getElementById('generate-yaml').textContent;
+        document.getElementById('generate-yaml').disabled = true;
+        document.getElementById('generate-yaml').textContent = 'Saving and refreshing...';
+      }
+    });
+  });
+  window.addEventListener('pageshow', () => {
+    document.querySelectorAll('button[data-idle-text]').forEach(button => {
+      button.disabled = false; button.textContent = button.dataset.idleText; delete button.dataset.idleText;
+    });
+    document.querySelectorAll('form[data-busy]').forEach(action => { delete action.dataset.busy; });
+  });
+  serializeSources();
   const fields = JSON.parse(document.getElementById('fixed-fields').textContent);
   window.nodeOverrides = fields.node_overrides;
   window.saveDraft = () => true;

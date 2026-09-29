@@ -12,3 +12,7 @@
   .fixed-table tr { margin-bottom:1rem; border:1px solid #343434; }
   .fixed-table td::before { content:attr(data-label); display:block; color:#a0a0a0; margin-bottom:.3rem; }
 }
+.external-source .form-label { display: block; }
+.external-source input, .external-source select { max-width: 100%; min-width: 0; }
+.source-status { color: var(--green, #82e7b3); font-weight: 600; }
+.source-warning { color: #f3ce7b; overflow-wrap: anywhere; }

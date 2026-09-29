@@ -59,7 +59,7 @@ def test_source_save_url_and_stats(store, base):
     changed = save(store, base, entry['id'], prefix='new-prefix')
     assert changed['token'] == entry['token'] and store.resolve(slug) is None
     assert store.resolve(store.slug(changed))
-    assert not (store.directory / entry['id'] / changed['revision'] / 'base.yaml').exists()
+    assert store._content(changed, 'base.yaml') == base.read_bytes()
 
 
 def test_active_disable_enable_regenerate_delete_tombstone(store, base, monkeypatch):
@@ -266,4 +266,4 @@ def test_process_shared_read_mutation_races(store, base, action):
     assert [queue.get(timeout=2) for _ in workers] == ['ok'] * len(workers)
     if action in ('regenerate','delete'): assert store.resolve(store.slug(entry)) is None
     if action == 'save': assert b'Second' in store.resolve(store.slug(entry))
-    assert json.loads(store.path.read_text())['version'] == 1
+    assert json.loads(store.path.read_text())['version'] == 2

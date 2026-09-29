@@ -107,6 +107,8 @@
       const start = revision; parseButton.disabled = true; summary.textContent = 'Parsing…';
       try {
         const data = new FormData(form); data.delete('yaml_file');
+        data.delete('sources');
+        for (const key of [...data.keys()]) if (key.startsWith('source_file_')) data.delete(key);
         const response = await fetch('/parse-nodes', {method:'POST', body:data, credentials:'same-origin'});
         if (response.redirected || !response.headers.get('content-type')?.includes('application/json')) throw Error('Session or CSRF expired. Draft saved; refresh and log in again.');
         const result = await response.json();

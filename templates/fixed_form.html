@@ -7,10 +7,19 @@
     <div class="mb-4"><label class="form-label" for="subscription-name">Name</label><input id="subscription-name" class="form-control terminal-input" name="name" value="{{ fields.name }}" required maxlength="128"></div>
     <div class="mb-4"><label class="form-label" for="url-prefix">URL Prefix</label><input id="url-prefix" class="form-control terminal-input" name="prefix" value="{{ fields.prefix }}"><div class="form-text">Letters, numbers and hyphens; normalized to 1–64 characters. Changing the prefix invalidates the old URL.</div></div>
     {% if saved_custom %}<p class="form-text">Current custom YAML: saved. Leave the upload empty to keep it.</p>{% endif %}
+    {% set fixed_editor = true %}
     {% include '_generator_fields.html' %}
     <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal">{{ 'Save Changes' if entry else 'Create Fixed Subscription' }}</button>
     <a href="{{ url_for('fixed.index') }}" class="btn btn-outline-terminal btn-terminal">Back to list</a>
   </form>
+  {% if entry %}
+  <form id="refresh-all-sources" method="POST" action="{{ url_for('fixed.source_action', key=entry.id) }}" data-source-action><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+  {% for card in external_cards if card.saved %}
+    {% for operation in ['refresh', 'enable', 'disable', 'delete'] %}
+    <form id="source-{{ card.saved.id }}-{{ operation }}" method="POST" action="{{ url_for('fixed.source_action', key=entry.id, identifier=card.saved.id, operation=operation) }}" data-source-action {% if operation == 'delete' %}data-confirm="Delete this source and regenerate the subscription?"{% endif %}><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+    {% endfor %}
+  {% endfor %}
+  {% endif %}
   <script id="fixed-fields" type="application/json">{{ fields | tojson }}</script>
 </div></section>
 {% endblock %}

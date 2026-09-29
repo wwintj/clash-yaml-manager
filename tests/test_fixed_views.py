@@ -66,14 +66,14 @@ def test_fixed_v2_legacy_and_temporary_coexist(web, logged_in):
     assert web.app.test_client().get('/s/' + web.fixed_subscriptions.slug(entry)).status_code == 200
 
 
-def test_default_fixed_survives_output_retention_without_template_copy(web, logged_in):
+def test_default_fixed_survives_output_retention_with_base_snapshot(web, logged_in):
     response = post(logged_in, '/fixed-subscriptions/new',
                     dict(name='Default source', prefix='default-source', yaml_source='default', batch_nodes='US|Default|' + LINK))
     assert response.status_code == 303
     entry = web.fixed_subscriptions.list()[0]
     assert entry['rule_count'] == 10410
     files = web.fixed_subscriptions.directory / entry['id'] / entry['revision']
-    assert not (files / 'base.yaml').exists()
+    assert (files / 'base.yaml').read_bytes() == Path(web.DEFAULT_YAML_PATH).read_bytes()
     now = web.time.time()
     with patch.object(web.time, 'time', return_value=now + 3 * 86400):
         web.cleanup_old_files()

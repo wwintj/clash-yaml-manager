@@ -6,6 +6,8 @@ from flask import Blueprint, abort, redirect, render_template, request, session,
 
 from core import generator
 from core.fixed_subscriptions import GenerationError
+from core.source_errors import SourceError, message
+from core.source_parser import MAX_PAYLOAD
 
 
 def blueprint(store, base_context, login_required, default_yaml, special_groups, public_url):
@@ -15,6 +17,9 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         value = base_context()
         value['success_message'] = session.pop('fixed_notice', '')
         value['csrf_notice'] = session.pop('csrf_notice', '')
+        error = session.pop('fixed_error', '')
+        if error:
+            value['error_messages'] = [error]
         return value
 
     def display(entry):
@@ -22,6 +27,16 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         for field in ('updated_at', 'last_access_at'):
             value[field + '_display'] = ('Never' if entry[field] is None else
                 datetime.fromtimestamp(entry[field], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
+        return value
+
+    def source_display(item):
+        value = dict(item)
+        value['status_display'] = ('Disabled' if not item['enabled'] else
+            'Cached' if item['using_cache'] else 'Error' if item['last_error'] else
+            'Ready' if item['last_success_at'] is not None else 'Never fetched')
+        value['success_display'] = ('Never' if item['last_success_at'] is None else
+            datetime.fromtimestamp(item['last_success_at'], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
+        value['error_display'] = message(item['last_error']) if item['last_error'] else ''
         return value
 
     @views.route('')
@@ -35,6 +50,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             abort(404)
         fields = entry or dict(name='', prefix='', yaml_source='default', batch_nodes='',
                                aux_nodes=[], node_overrides={}, special_groups=[])
+        external = entry['sources'][1:] if entry else []
         ctx = context()
         status = 200
         if request.method == 'POST':
@@ -45,6 +61,9 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                           node_overrides={}, special_groups=[g for g in request.form.getlist('special_groups')
                                                            if g in special_groups])
             try:
+                external = json.loads(request.form.get('sources', json.dumps(external)))
+                if not isinstance(external, list) or len(external) > 63 or any(not isinstance(s, dict) for s in external):
+                    raise SourceError('config')
                 fields['aux_nodes'] = json.loads(request.form.get('aux_nodes', '[]'))
                 fields['node_overrides'] = json.loads(request.form.get('node_overrides', '{}'))
                 parsed = generator.parse_form_nodes(request.form)
@@ -55,9 +74,18 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                         raise GenerationError('仅支持 .yaml / .yml 文件。')
                     custom = upload.read(50 * 1024 * 1024 + 1)
                 source = {k: fields[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups')}
-                saved = store.save(key, fields['name'], fields['prefix'], source, parsed, default_yaml, custom)
+                uploads = {}
+                for index in range(len(external)):
+                    upload = request.files.get('source_file_' + str(index))
+                    if upload and upload.filename:
+                        uploads[index] = upload.read(MAX_PAYLOAD + 1)
+                saved = store.save(key, fields['name'], fields['prefix'], source, parsed, default_yaml, custom,
+                                   sources=external, uploads=uploads, expected=entry)
                 session['fixed_notice'] = 'Fixed subscription saved.' if key else 'Fixed subscription created.'
                 return redirect(url_for('fixed.edit', key=saved['id']), code=303)
+            except SourceError as error:
+                ctx['error_messages'] = ['Unable to save. ' + message(error.code) + '. The previous subscription is unchanged.']
+                status = 409 if error.code == 'conflict' else 400
             except (ValueError, TypeError):
                 ctx['error_messages'] = ['Unable to save. Check the name, nodes, YAML and policy references. The previous subscription is unchanged.']
                 status = 400
@@ -67,8 +95,19 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         from core.fixed_subscriptions import valid_source
         if not valid_source(fields):
             fields = dict(fields, yaml_source='default', aux_nodes=[], node_overrides={}, special_groups=[])
+        if not isinstance(external, list) or any(not isinstance(s, dict) for s in external):
+            external = []
+        # Failed POST values are editable, but status always comes from committed state.
+        saved_sources = {s['id']: s for s in entry['sources'][1:]} if entry else {}
+        cards = []
+        for row in external[:63]:
+            identifier = row.get('id', '')
+            saved = saved_sources.get(identifier) if isinstance(identifier, str) else None
+            cards.append(dict(fields={k: row.get(k, '') for k in ('id','type','name','url','format','enabled')},
+                              saved=source_display(saved) if saved else None))
         return render_template('fixed_form.html', **ctx, fields=fields,
                                entry=display(entry) if entry else None,
+                               external_cards=cards,
                                saved_custom=bool(entry and entry['yaml_source'] == 'custom')), status
 
     @views.route('/new', methods=['GET', 'POST'])
@@ -80,6 +119,24 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
     @login_required
     def edit(key):
         return form_page(key)
+
+    @views.route('/<key>/sources/refresh-all', methods=['POST'])
+    @views.route('/<key>/sources/<identifier>/<operation>', methods=['POST'])
+    @login_required
+    def source_action(key, identifier=None, operation='refresh-all'):
+        if operation not in ('refresh-all', 'refresh', 'enable', 'disable', 'delete'):
+            abort(404)
+        try:
+            store.source_action(key, operation, default_yaml, identifier)
+        except KeyError:
+            abort(404)
+        except (SourceError, GenerationError) as error:
+            # Only allowlisted source codes may be surfaced; never arbitrary exceptions.
+            session['fixed_error'] = ('Unable to update. ' + message(error.code)
+                if isinstance(error, SourceError) else 'Unable to generate. The previous subscription is unchanged.')
+        else:
+            session['fixed_notice'] = 'Sources updated. Cached sources use their last successful data.'
+        return redirect(url_for('fixed.edit', key=key) if store.get(key) else url_for('fixed.index'), code=303)
 
     @views.route('/<key>/<action>', methods=['POST'])
     @login_required

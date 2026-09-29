@@ -16,12 +16,14 @@ import sys
 import tempfile
 import threading
 
+from browser_source_fixture import external_source_server
+
 from werkzeug.serving import make_server
 
 
 def main():
     arguments = argparse.ArgumentParser()
-    arguments.add_argument('--suite', choices=('all', 'preview', 'fixed'), default='all')
+    arguments.add_argument('--suite', choices=('all', 'preview', 'fixed', 'external'), default='all')
     suite = arguments.parse_args().suite
     root = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory(prefix='clash-preview-browser-') as temporary:
@@ -44,12 +46,14 @@ def main():
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         try:
-            for script in ('test_preview_layout.cjs', 'test_fixed_browser.cjs'):
-                if suite != 'all' and suite not in script:
-                    continue
-                subprocess.run(['node', str(root / 'tests' / script)], check=True,
-                               env=dict(os.environ, PREVIEW_TEST_URL=f'http://127.0.0.1:{server.server_port}',
-                                        PREVIEW_TEST_PASSWORD=password), timeout=180)
+            with external_source_server() as fixture_env:
+                for script in ('test_preview_layout.cjs', 'test_fixed_browser.cjs', 'test_external_browser.cjs'):
+                    if suite != 'all' and suite not in script:
+                        continue
+                    subprocess.run(['node', str(root / 'tests' / script)], check=True,
+                                   env=dict(os.environ, **fixture_env,
+                                            PREVIEW_TEST_URL=f'http://127.0.0.1:{server.server_port}',
+                                            PREVIEW_TEST_PASSWORD=password), timeout=180)
         finally:
             server.shutdown()
             worker.join(timeout=5)

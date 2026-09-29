@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import hashlib
 import hmac
 import logging
+import json
 import math
 import os
 from pathlib import Path
@@ -20,7 +21,8 @@ import time
 import uuid
 from urllib.parse import unquote
 
-from core import generator
+from core import generator, fixed_sources
+from core.source_errors import SourceError
 from core.state import StateError, atomic_write, file_lock, private_directory, read_json, write_json
 
 ID = re.compile(r'[0-9a-f]{32}\Z')
@@ -130,7 +132,7 @@ class FixedSubscriptions:
             if not condition:
                 raise ValueError
         try:
-            require(type(data['version']) is int and data['version'] == 1)
+            require(type(data['version']) is int and data['version'] in (1, 2))
             require(isinstance(data['subscriptions'], dict) and isinstance(data['retired_tokens'], list))
             require(all(isinstance(t, str) and re.fullmatch('[0-9a-f]{64}', t) for t in data['retired_tokens']))
             used = set(data['retired_tokens'])
@@ -140,6 +142,10 @@ class FixedSubscriptions:
                 require(isinstance(entry['name'], str) and 0 < len(entry['name'].strip()) <= 128)
                 require(PREFIX.fullmatch(entry['prefix']) and TOKEN.fullmatch(entry['token']))
                 require(entry['status'] in ('active', 'disabled') and valid_source(entry))
+                if data['version'] == 1:
+                    # Existing subscription UUID is already server-generated and stable.
+                    entry['sources'] = [fixed_sources.manual(entry['id'], entry['node_count'])]
+                require(fixed_sources.valid(entry['sources']))
                 digest = token_hash(entry['token'])
                 require(digest not in used)
                 used.add(digest)
@@ -153,7 +159,13 @@ class FixedSubscriptions:
             raise StateError(STATE_ERROR) from None
         return data
 
-    def _commit(self, data):
+    def _commit(self, data, migrate=True):
+        data = copy.deepcopy(data)
+        if migrate:
+            data['version'] = 2
+        elif data['version'] == 1:
+            for entry in data['subscriptions'].values():
+                entry.pop('sources', None)
         # atomic_write may report a directory-fsync error after os.replace. Restore
         # the old registry in that case before exposing an unsuccessful mutation.
         previous = self.path.read_bytes() if self.path.exists() else None
@@ -201,68 +213,140 @@ class FixedSubscriptions:
         with self._locked():
             return copy.deepcopy(self._read()['subscriptions'].get(key))
 
-    def save(self, key, name, prefix, source, parsed, default_path, custom=None):
+    def _payload(self, entry, identifier):
+        revision = self._directories(entry['id'], entry['revision'])
+        for part in ('sources', identifier):
+            revision = revision / part
+            if revision.is_symlink() or not revision.is_dir() or revision.stat().st_mode & 0o077:
+                raise StateError(STATE_ERROR)
+        return self._file(revision / 'payload.bin')
+
+    @staticmethod
+    def _identity(entry):
+        # Public access statistics may advance while fetching; management must not.
+        return {k: v for k, v in entry.items() if k != 'last_access_at'} if entry else None
+
+    def save(self, key, name, prefix, source, parsed, default_path, custom=None,
+             sources=None, uploads=None, refresh=None, expected=None):
         if not isinstance(name, str) or not 0 < len(name.strip()) <= 128 or not valid_source(source):
             raise GenerationError('请检查订阅名称和配置。')
-        if parsed['errors'] or not parsed['nodes']:
-            raise GenerationError('节点无效或为空，请检查节点及手工修改。')
+        if parsed['errors']:
+            raise GenerationError('节点无效，请检查节点及手工修改。')
+        # Snapshot every byte needed later before releasing the shared lock. Other
+        # workers may delete/collect the selected revision during network work.
         with self._locked():
             data = self._read()
-            old = data['subscriptions'].get(key) if key else None
+            old = copy.deepcopy(data['subscriptions'].get(key)) if key else None
             if key and old is None:
                 raise KeyError(key)
+            if expected is not None and self._identity(old) != self._identity(expected):
+                raise SourceError('conflict')
             if old:
                 self._content(old, 'current.yaml')
-                home = self._directories(key)
-            else:
-                home = self._allocate(self.directory, data['subscriptions'])
-                key = home.name
-            candidate = self._allocate(home)
+            previous = old['sources'] if old else [fixed_sources.manual()]
+            configured = fixed_sources.configure(previous, sources)
+            caches = {item['id']: self._payload(old, item['id']) for item in previous
+                      if item['type'] != 'manual' and item['last_success_at'] is not None}
+            if source['yaml_source'] == 'custom' and custom is None:
+                if not old or old['yaml_source'] != 'custom':
+                    raise GenerationError('请选择 Custom YAML。')
+                custom = self._content(old, 'base.yaml')
+        if custom is not None and len(custom) > 50 * 1024 * 1024:
+            raise GenerationError('上传文件过大，最大支持 50MB。')
+        # Staging outside subscription homes prevents GC/delete from touching an
+        # in-flight candidate. No durable pointer references this temporary tree.
+        with tempfile.TemporaryDirectory(prefix='.fixed-candidate-', dir=self.state) as scratch:
+            candidate = self._allocate(Path(scratch))
             revision = candidate.name
-            try:
-                if source['yaml_source'] == 'custom':
-                    if custom is None:
-                        if not old or old['yaml_source'] != 'custom':
-                            raise GenerationError('请选择 Custom YAML。')
-                        custom = self._content(old, 'base.yaml')
-                    if len(custom) > 50 * 1024 * 1024:
-                        raise GenerationError('上传文件过大，最大支持 50MB。')
-                    atomic_write(candidate / 'base.yaml', custom)
-                    base = candidate / 'base.yaml'
-                else:
-                    base = default_path
-                with tempfile.TemporaryDirectory(prefix='.generate-', dir=home) as scratch:
-                    out = private_directory(Path(scratch) / 'output')
-                    backups = private_directory(Path(scratch) / 'backup')
-                    result = generator.generate(base, out, backups, parsed, source['special_groups'])
-                    if not result['success']:
-                        raise GenerationError('生成失败，请检查节点、YAML 结构及策略组引用。旧订阅保持不变。')
-                    atomic_write(candidate / 'current.yaml', Path(result['output_path']).read_bytes())
-                now = time.time()
-                entry = dict(source, id=key, name=name.strip(), prefix=normalize_prefix(prefix or name),
-                             revision=revision, token=old['token'] if old else self._new_token(data),
-                             status=old['status'] if old else 'active',
-                             created_at=old['created_at'] if old else now, updated_at=now,
-                             last_access_at=old['last_access_at'] if old else None,
-                             node_count=result['new_node_count'], group_count=result['group_count'],
-                             rule_count=result['rule_count'])
-                data['subscriptions'][key] = entry
-                self._commit(data)  # The only visible commit point: config and bytes agree.
-            except BaseException:
-                # If even rollback I/O fails, preserve complete candidate bytes;
-                # never delete files the registry might still reference.
-                referenced = True
+            aggregate, payloads = fixed_sources.prepare(configured, previous, caches,
+                                                        uploads or {}, parsed, refresh)
+            base_bytes = custom if source['yaml_source'] == 'custom' else Path(default_path).read_bytes()
+            atomic_write(candidate / 'base.yaml', base_bytes)
+            if payloads:
+                source_root = private_directory(candidate / 'sources')
+                for identifier, payload in payloads.items():
+                    target = private_directory(source_root / identifier)
+                    atomic_write(target / 'payload.bin', payload)
+                fd = os.open(source_root, os.O_RDONLY)
                 try:
-                    referenced = self._read()['subscriptions'].get(key, {}).get('revision') == revision
-                except (StateError, OSError):
-                    pass
-                if not referenced:
-                    shutil.rmtree(candidate)
-                    if not old:
-                        home.rmdir()
-                raise
-            self._collect(home, revision)
-            return copy.deepcopy(entry)
+                    os.fsync(fd)  # Persist the source-id directory entries too.
+                finally:
+                    os.close(fd)
+            out = private_directory(Path(scratch) / 'output')
+            backups = private_directory(Path(scratch) / 'backup')
+            result = generator.generate(candidate / 'base.yaml', out, backups, aggregate, source['special_groups'])
+            if not result['success']:
+                raise GenerationError('生成失败，请检查节点、YAML 结构及策略组引用。旧订阅保持不变。')
+            atomic_write(candidate / 'current.yaml', Path(result['output_path']).read_bytes())
+            with self._locked():
+                data = self._read()
+                current = data['subscriptions'].get(key) if key else None
+                if self._identity(current) != self._identity(old):
+                    raise SourceError('conflict')
+                home = self._directories(key) if old else self._allocate(self.directory, data['subscriptions'])
+                key = home.name
+                selected = home / revision
+                if selected.exists() or selected.is_symlink():
+                    raise StateError(STATE_ERROR)  # Never replace an existing revision, even on a UUID collision.
+                try:
+                    os.rename(candidate, selected)
+                    fd = os.open(home, os.O_RDONLY)
+                    try:
+                        os.fsync(fd)
+                    finally:
+                        os.close(fd)
+                    now = time.time()
+                    entry = dict(source, sources=configured, id=key, name=name.strip(),
+                                 prefix=normalize_prefix(prefix or name), revision=revision,
+                                 token=old['token'] if old else self._new_token(data),
+                                 status=old['status'] if old else 'active',
+                                 created_at=old['created_at'] if old else now, updated_at=now,
+                                 last_access_at=current['last_access_at'] if current else None,
+                                 node_count=result['new_node_count'], group_count=result['group_count'],
+                                 rule_count=result['rule_count'])
+                    data['subscriptions'][key] = entry
+                    self._commit(data)
+                except BaseException:
+                    referenced = True
+                    try:
+                        referenced = self._read()['subscriptions'].get(key, {}).get('revision') == revision
+                    except (StateError, OSError):
+                        pass
+                    if not referenced:
+                        if selected.exists():
+                            shutil.rmtree(selected)
+                        if not old:
+                            home.rmdir()
+                    raise
+                self._collect(home, revision)
+                return copy.deepcopy(entry)
+
+    def source_action(self, key, action, default_path, identifier=None):
+        entry = self.get(key)
+        if not entry:
+            raise KeyError(key)
+        sources = copy.deepcopy(entry['sources'][1:])
+        selected = next((s for s in sources if s['id'] == identifier), None)
+        refresh = set()
+        if action == 'refresh-all':
+            refresh = {s['id'] for s in sources if s['type'] == 'remote_url' and s['enabled']}
+        elif selected is None:
+            raise KeyError(identifier)
+        elif action == 'refresh' and selected['type'] == 'remote_url' and selected['enabled']:
+            refresh = {identifier}
+        elif action == 'delete':
+            sources.remove(selected)
+        elif action in ('enable', 'disable'):
+            selected['enabled'] = action == 'enable'
+            if selected['enabled'] and selected['type'] == 'remote_url':
+                refresh = {identifier}
+        else:
+            raise SourceError('config')
+        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups')}
+        parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
+            aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
+        return self.save(key, entry['name'], entry['prefix'], source, parsed, default_path,
+                         sources=sources, refresh=refresh, expected=entry)
 
     def _collect(self, home, keep=None):
         # No history feature. Unreferenced revisions from a crash are also removed
@@ -322,7 +406,7 @@ class FixedSubscriptions:
                 if entry['last_access_at'] is None or now - entry['last_access_at'] >= 60:
                     entry['last_access_at'] = now
                     try:
-                        self._commit(data)
+                        self._commit(data, migrate=False)
                     except (OSError, StateError):
                         # Access statistics must not make a previously published
                         # subscription unavailable on a full/read-only disk. Still
