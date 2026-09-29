@@ -21,7 +21,7 @@ import time
 import uuid
 from urllib.parse import unquote
 
-from core import generator, fixed_sources
+from core import generator, fixed_sources, refresh_schedule
 from core.source_errors import SourceError
 from core.state import StateError, atomic_write, file_lock, private_directory, read_json, write_json
 
@@ -98,7 +98,7 @@ class FixedSubscriptions:
     @contextmanager
     def _locked(self):
         self._directories()  # Reject replaced directory symlinks before opening the lock.
-        with file_lock(self.lock):
+        with file_lock(self.lock, strict=True):
             yield
 
     @staticmethod
@@ -132,7 +132,7 @@ class FixedSubscriptions:
             if not condition:
                 raise ValueError
         try:
-            require(type(data['version']) is int and data['version'] in (1, 2))
+            require(type(data['version']) is int and data['version'] in (1, 2, 3))
             require(isinstance(data['subscriptions'], dict) and isinstance(data['retired_tokens'], list))
             require(all(isinstance(t, str) and re.fullmatch('[0-9a-f]{64}', t) for t in data['retired_tokens']))
             used = set(data['retired_tokens'])
@@ -145,7 +145,11 @@ class FixedSubscriptions:
                 if data['version'] == 1:
                     # Existing subscription UUID is already server-generated and stable.
                     entry['sources'] = [fixed_sources.manual(entry['id'], entry['node_count'])]
-                require(fixed_sources.valid(entry['sources']))
+                require(fixed_sources.valid(entry['sources'], schedules=data['version'] == 3))
+                if data['version'] < 3:
+                    for item in entry['sources']:
+                        if item['type'] == 'remote_url':
+                            item.update(refresh_schedule.defaults())
                 digest = token_hash(entry['token'])
                 require(digest not in used)
                 used.add(digest)
@@ -162,10 +166,15 @@ class FixedSubscriptions:
     def _commit(self, data, migrate=True):
         data = copy.deepcopy(data)
         if migrate:
-            data['version'] = 2
+            data['version'] = 3
         elif data['version'] == 1:
             for entry in data['subscriptions'].values():
                 entry.pop('sources', None)
+        elif data['version'] == 2:
+            for entry in data['subscriptions'].values():
+                for item in entry['sources']:
+                    for field in refresh_schedule.FIELDS:
+                        item.pop(field, None)
         # atomic_write may report a directory-fsync error after os.replace. Restore
         # the old registry in that case before exposing an unsuccessful mutation.
         previous = self.path.read_bytes() if self.path.exists() else None
@@ -227,7 +236,8 @@ class FixedSubscriptions:
         return {k: v for k, v in entry.items() if k != 'last_access_at'} if entry else None
 
     def save(self, key, name, prefix, source, parsed, default_path, custom=None,
-             sources=None, uploads=None, refresh=None, expected=None):
+             sources=None, uploads=None, refresh=None, expected=None, trigger='save', clock=None):
+        clock = clock or time.time
         if not isinstance(name, str) or not 0 < len(name.strip()) <= 128 or not valid_source(source):
             raise GenerationError('请检查订阅名称和配置。')
         if parsed['errors']:
@@ -238,6 +248,8 @@ class FixedSubscriptions:
             data = self._read()
             old = copy.deepcopy(data['subscriptions'].get(key)) if key else None
             if key and old is None:
+                if expected is not None:
+                    raise SourceError('conflict')
                 raise KeyError(key)
             if expected is not None and self._identity(old) != self._identity(expected):
                 raise SourceError('conflict')
@@ -259,7 +271,7 @@ class FixedSubscriptions:
             candidate = self._allocate(Path(scratch))
             revision = candidate.name
             aggregate, payloads = fixed_sources.prepare(configured, previous, caches,
-                                                        uploads or {}, parsed, refresh)
+                                                        uploads or {}, parsed, refresh, trigger, clock)
             base_bytes = custom if source['yaml_source'] == 'custom' else Path(default_path).read_bytes()
             atomic_write(candidate / 'base.yaml', base_bytes)
             if payloads:
@@ -295,7 +307,7 @@ class FixedSubscriptions:
                         os.fsync(fd)
                     finally:
                         os.close(fd)
-                    now = time.time()
+                    now = clock()
                     entry = dict(source, sources=configured, id=key, name=name.strip(),
                                  prefix=normalize_prefix(prefix or name), revision=revision,
                                  token=old['token'] if old else self._new_token(data),
@@ -321,7 +333,7 @@ class FixedSubscriptions:
                 self._collect(home, revision)
                 return copy.deepcopy(entry)
 
-    def source_action(self, key, action, default_path, identifier=None):
+    def source_action(self, key, action, default_path, identifier=None, clock=None):
         entry = self.get(key)
         if not entry:
             raise KeyError(key)
@@ -346,7 +358,39 @@ class FixedSubscriptions:
         parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
             aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
         return self.save(key, entry['name'], entry['prefix'], source, parsed, default_path,
-                         sources=sources, refresh=refresh, expected=entry)
+                         sources=sources, refresh=refresh, expected=entry, trigger='manual', clock=clock)
+
+    def refresh_sources(self, entry, identifiers, default_path, trigger='auto', clock=None):
+        """Regenerate one subscription once for a selected set of due sources."""
+        available = {s['id'] for s in entry['sources'] if s['type'] == 'remote_url' and s['enabled']}
+        if not identifiers or not set(identifiers) <= available:
+            raise StateError(STATE_ERROR)
+        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups')}
+        parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
+            aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
+        return self.save(entry['id'], entry['name'], entry['prefix'], source, parsed, default_path,
+                         sources=entry['sources'][1:], refresh=set(identifiers), expected=entry,
+                         trigger=trigger, clock=clock)
+
+    def record_refresh_error(self, snapshot, identifiers, code, clock=None):
+        """A failed candidate may update retry metadata only while its snapshot is current.
+
+        Never annotate a newer user revision with stale outcomes. Keep the selected
+        payload/output/configuration unchanged when an auto transaction fails.
+        """
+        clock = clock or time.time
+        with self._locked():
+            data = self._read()
+            entry = data['subscriptions'].get(snapshot['id'])
+            if self._identity(entry) != self._identity(snapshot):
+                return False
+            for item in entry['sources']:
+                if item['id'] in identifiers and item['type'] == 'remote_url':
+                    item['using_cache'] = item['last_success_at'] is not None
+                    refresh_schedule.record(item, 'auto', 'error', clock(), code)
+            entry['updated_at'] = clock()
+            self._commit(data)
+            return True
 
     def _collect(self, home, keep=None):
         # No history feature. Unreferenced revisions from a crash are also removed

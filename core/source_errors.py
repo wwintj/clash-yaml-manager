@@ -11,6 +11,7 @@ MESSAGES = {
     'duplicate': 'Duplicate node name', 'config': 'Invalid source configuration',
     'upload': 'Select a node source file',
     'conflict': 'Subscription changed while refreshing. Please retry.',
+    'generation': 'Source aggregation or YAML generation failed',
 }
 
 

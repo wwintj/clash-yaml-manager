@@ -5,7 +5,7 @@ import re
 import time
 import uuid
 
-from core import source_fetch, source_parser
+from core import source_fetch, source_parser, refresh_schedule
 from core.source_errors import SourceError, valid_code
 
 ID = re.compile(r'[0-9a-f]{32}\Z')
@@ -17,7 +17,7 @@ def manual(identifier=None, node_count=0):
                 last_error=None, using_cache=False, warnings=[])
 
 
-def valid(sources):
+def valid(sources, schedules=True):
     if not isinstance(sources, list) or not sources or len(sources) > 64:
         return False
     ids, names = set(), set()
@@ -47,6 +47,8 @@ def valid(sources):
                 return False
             if item['type'] == 'remote_url':
                 source_fetch.validate_url(item['url'])
+                if schedules and not refresh_schedule.valid(item):
+                    return False
     except (KeyError, TypeError, ValueError):
         return False
     return True
@@ -75,19 +77,23 @@ def configure(existing, requested):
             raise SourceError('config')
         if item['type'] == 'remote_url':
             item['url'] = fields.get('url')
+            if not previous:
+                item.update(refresh_schedule.defaults())
+            refresh_schedule.configure(item, fields)
         result.append(item)
     if not valid(result):
         raise SourceError('config')
     return result
 
 
-def prepare(sources, previous, caches, uploads, manual_result, refresh):
+def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger='save', clock=None):
     """Pure candidate metadata/payloads; no writes and no registry lock here.
 
     uploads is keyed by the submitted external row index (transport only, never
     a persistent id/path). refresh=None means Save: fetch every enabled remote.
     """
     old = {item['id']: item for item in previous}
+    clock = clock or time.time
     payloads, results = {}, []
     for index, item in enumerate(sources):
         if item['type'] == 'manual':
@@ -105,7 +111,7 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh):
                 raise SourceError('upload')
             # Replacements are validated even when disabled: never store invalid uploads.
             parsed = source_parser.parse(payload, item['format'])
-            item.update(last_attempt_at=time.time(), last_success_at=time.time(), last_error=None,
+            item.update(last_attempt_at=clock(), last_success_at=clock(), last_error=None,
                         using_cache=False, node_count=len(parsed['nodes']), warnings=parsed['warnings'])
         else:
             payload = cached
@@ -114,18 +120,22 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh):
                 if changed and before:
                     raise SourceError('config')
             elif refresh is None or item['id'] in refresh or changed:
-                item['last_attempt_at'] = time.time()
+                result, error_code = 'success', None
                 try:
                     payload = source_fetch.fetch(item['url'])
                     parsed = source_parser.parse(payload, item['format'])
                 except SourceError as error:
                     if cached is None or changed:
+                        error.source_id = item['id']
                         raise
                     payload = cached
                     parsed = source_parser.parse(cached, item['format'])
                     item.update(last_error=error.code, using_cache=True)
+                    result, error_code = 'cached', error.code
                 else:
-                    item.update(last_success_at=time.time(), last_error=None, using_cache=False)
+                    item.update(last_error=None, using_cache=False)
+                item['node_count'] = len(parsed['nodes'])
+                refresh_schedule.record(item, trigger, result, clock(), error_code)
             if item['enabled'] and parsed is None:
                 if payload is None:
                     raise SourceError('empty')

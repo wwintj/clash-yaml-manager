@@ -2,6 +2,7 @@
 import fcntl
 import json
 import os
+import stat
 from pathlib import Path
 import tempfile
 from contextlib import contextmanager
@@ -9,6 +10,10 @@ from contextlib import contextmanager
 
 class StateError(RuntimeError):
     """Safe to display: never include file contents or underlying exceptions."""
+
+
+class LockBusyError(RuntimeError):
+    """A nonblocking shared lock is already held."""
 
 
 def private_directory(directory):
@@ -21,12 +26,18 @@ def private_directory(directory):
 
 
 @contextmanager
-def file_lock(path):
+def file_lock(path, blocking=True, strict=False):
     """Lock a separate inode: replacing the data file must not replace its lock."""
-    fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
     try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or strict and info.st_mode & 0o077:
+            raise StateError('状态锁无效。')
         os.fchmod(fd, 0o600)
-        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB))
+        except BlockingIOError:
+            raise LockBusyError('State lock already held.') from None
         yield
     finally:
         os.close(fd)
