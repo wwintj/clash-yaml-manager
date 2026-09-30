@@ -8,7 +8,8 @@ from unittest.mock import patch
 
 @contextmanager
 def external_source_server():
-    from core import source_fetch, node_probe, mihomo_probe
+    from core import source_fetch, node_probe, mihomo_probe, geoip
+    from types import SimpleNamespace
     from core.mihomo_manager import ManagedMihomo
     state = {'mode':'initial', 'health':'success', 'proxy_engine':'not-installed', 'proxy_result':'success'}
     class Handler(BaseHTTPRequestHandler):
@@ -73,8 +74,15 @@ def external_source_server():
             results[node['fingerprint']]=dict(kind=kind,latency_ms=38 if kind=='success' else None,
                 error={'success':None,'failure':'proxy_failed','unsupported':'unsupported_config'}[kind])
         return results
+    class SyntheticGeoIPReader:
+        def __init__(self, payload):
+            if payload not in (b'SYNTHETIC:SG',b'SYNTHETIC:TW'): raise ValueError('PRIVATE invalid test database')
+            self.code=payload.decode().split(':')[1]
+        def metadata(self):return SimpleNamespace(database_type='Synthetic-Country',ip_version=6)
+        def get(self,address):return {'country':{'iso_code':self.code}}
+        def close(self):pass
     try:
-        with patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
+        with patch.object(geoip,'open_reader',SyntheticGeoIPReader), patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
             yield dict(EXTERNAL_TEST_URL=f'http://external-source.test:{server.server_port}/sub?token=PRIVATE',
                        EXTERNAL_TEST_CONTROL=f'http://127.0.0.1:{server.server_port}/')
     finally:

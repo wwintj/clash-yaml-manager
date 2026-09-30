@@ -23,7 +23,7 @@ from werkzeug.serving import make_server
 
 def main():
     arguments = argparse.ArgumentParser()
-    arguments.add_argument('--suite', choices=('all', 'preview', 'fixed', 'external', 'health', 'proxy', 'policy', 'health_policy'), default='all')
+    arguments.add_argument('--suite', choices=('all', 'preview', 'fixed', 'external', 'health', 'proxy', 'policy', 'health_policy', 'geoip'), default='all')
     suite = arguments.parse_args().suite
     root = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory(prefix='clash-preview-browser-') as temporary:
@@ -47,7 +47,7 @@ def main():
         worker.start()
         try:
             with external_source_server() as fixture_env:
-                for script in ('test_preview_layout.cjs', 'test_fixed_browser.cjs', 'test_external_browser.cjs', 'test_health_browser.cjs', 'test_proxy_browser.cjs', 'test_policy_browser.cjs', 'test_health_policy_browser.cjs'):
+                for script in ('test_preview_layout.cjs', 'test_fixed_browser.cjs', 'test_external_browser.cjs', 'test_health_browser.cjs', 'test_proxy_browser.cjs', 'test_policy_browser.cjs', 'test_health_policy_browser.cjs', 'test_geoip_browser.cjs'):
                     if suite != 'all' and script != ('test_preview_layout.cjs' if suite=='preview' else f'test_{suite}_browser.cjs'):
                         continue
                     subprocess.run(['node', str(root / 'tests' / script)], check=True,
