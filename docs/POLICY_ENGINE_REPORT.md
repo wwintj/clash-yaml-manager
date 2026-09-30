@@ -91,3 +91,8 @@ remain; generic Mihomo schema and nested-group cycle validation are not added.
 Preserve means existing generation compatibility, including base custom behavior;
 it is not a new engine validator. Future health-aware exclusion/freshness/minimum
 candidate/fail-open rules remain separate and are not implemented.
+
+Historical phase boundary: the evidence above was captured before optional health
+eligibility. Current main uses Fixed v5 and adds that layer separately; see
+[HEALTH_AWARE_POLICY_REPORT.md](HEALTH_AWARE_POLICY_REPORT.md). This does not change
+the historical Policy real-VPS NOT RUN or health due-job PENDING status.

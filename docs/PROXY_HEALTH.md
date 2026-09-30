@@ -151,7 +151,8 @@ is **FIXED IN CONTROLLED TESTS**, with the tim amd64 path now covered by
 expected CPU Level is v2 and Build amd64-v2; if verified v2 cannot execute, the
 helper should select v1. Run the operator sequence above and confirm actual
 detector output, hash and `-v`, then recheck real VMess, real VLESS and bad UUID.
-Fixed URL and YAML must remain unchanged throughout.
+Fixed URL and YAML must remain unchanged throughout this engine-only acceptance
+(with Health-aware Policy Off).
 
 ## Probe lifecycle and pinned controller behavior
 
@@ -231,8 +232,11 @@ resets the count immediately. Config validation failure is **UNSUPPORTED**
 without incrementing failure count. Engine/process/controller failure is a
 job-level **ENGINE ERROR**: it preserves the entire prior result set and does
 not penalize nodes. Endpoint and Proxy columns can independently show any
-combination. No state triggers node removal, policy switching, URL-Test groups,
-Fallback, Load Balance, ranking or a background schedule.
+combination. Checks never delete top-level nodes or rank them. With
+[Health-aware Policy](HEALTH_AWARE_POLICY.md) Off, observations do not affect YAML.
+When explicitly enabled, successful checks trigger separate cache-only candidate
+reconciliation; reconciliation failure does not turn the health job into a failure.
+Automatic probe scheduling still requires explicit Automatic mode.
 
 Only one VPS-wide proxy check runs at a time through a nonblocking file lock;
 a second returns a safe busy message. Results accumulate in memory and commit

@@ -98,7 +98,7 @@ NOT RUN.** No actual latency, failover or traffic distribution is claimed.
 
 ## Persistence, refresh and atomicity
 
-Fixed registry **v4** stores authoritative `policy_config` with this exact schema:
+Fixed registry **v5** stores authoritative `policy_config` with this exact schema:
 
 ```json
 {
@@ -118,7 +118,8 @@ reading does not write the registry, regenerate YAML or rotate tokens/revisions.
 Existing schedules, caches, current YAML and URL remain intact. Older v1/v2
 source schedules retain their established Off migration. Existing public access
 statistics may still be written without promoting the legacy registry schema.
-A legitimate management/scheduler mutation writes v4.
+A legitimate management/scheduler mutation writes v5, including Health-aware Off
+for v1–v4 subscriptions. See [HEALTH_AWARE_POLICY.md](HEALTH_AWARE_POLICY.md).
 
 Save, source enable/disable/delete, manual Refresh/Refresh All and Automatic
 Source Refresh use the same saved policy and shared generator. Refresh replaces
@@ -137,10 +138,10 @@ node draft remains separate. Fixed forms restore policy from server state.
 
 ## Health separation and limitations
 
-**Health observations do not automatically remove nodes in this version.**
+**With Health-aware Policy Off, observations do not remove candidates.**
 Policy core has no network/file I/O, health JSON reads, probes, health latency
-ranking or exclusion. Fallback order is generated order even if its first node
-has an Unhealthy server observation. No permanent Mihomo process is introduced.
+ranking or exclusion. Fallback order remains generated order; optional Fixed eligibility can remove
+fresh confirmed Proxy Unhealthy candidates without ranking the retained nodes. No permanent Mihomo process is introduced.
 Automatic Source Refresh still fetches providers through its established path;
 that is separate from the pure policy transformation.
 
@@ -149,8 +150,10 @@ results through existing revision guards, for Manual and Automatic alike.
 Unchanged node connection fingerprints preserve existing observations. Policy
 save itself never rewrites health modes, intervals, due times or failure counts;
 existing concurrent revision-conflict retry bookkeeping remains applicable.
-Health-aware exclusion/freshness/minimum-candidate/fail-open/scoring rules belong
-to a later phase and are not implemented here.
+Optional exclusion, freshness and per-group fail-open rules now live in a separate
+[health eligibility layer](HEALTH_AWARE_POLICY.md), after pure policy application
+and before final YAML checks. Temporary Generate has no health dependency;
+scoring and ranking remain outside this MVP.
 
 Existing final structure/reference and removed-rule-target checks remain active.
 This phase does not add generic Mihomo schema or proxy-group cycle validation;

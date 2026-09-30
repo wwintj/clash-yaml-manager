@@ -53,18 +53,25 @@ Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理�
 
 **Unreleased / main**：amd64 引擎依所有可見 CPU 的 Linux flags 交集，選擇固定的 GOAMD64 v1/v2/v3 資產；完整性校驗通過後若 `-v` 無法執行，才逐級嘗試較低版本。CPU 型號不參與判斷；arm64 資產不變。既有通用 amd64 安裝按 v3 識別，CPU 降級時顯示 INCOMPATIBLE，可透過 SSH `mihomoctl.sh update` 重新選擇。tim VPS 的 amd64-v2 與真實 VMess/VLESS 手動代理驗收已由 operator 明確回報 PASS；未宣稱 Codex 獨立重現。
 
-預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。檢查不移除節點、不更改 YAML/策略或固定 URL，也不觸發自動策略切換；只有明確啟用 Automatic 才會排程健康檢查。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
+預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。預設不改動 YAML；只有另外啟用下述 Health-aware Policy 才會保守排除自動組候選，頂層節點及固定 URL 保留。只有明確啟用 Automatic 才會排程健康檢查。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
 
 ## Policy Engine（Unreleased / main）
 
 Generate YAML 和 Fixed create/edit 可分別設定 Country / Selected Special Groups 的 **Preserve、Select、URL-Test、Fallback、Load-Balance**。預設 Preserve / Preserve 保留 YAML 既有組行為；一般組與手動切換不會自動改型。
 自動策略候選僅含本次生成、屬於該組的真實 proxy nodes，排除 DIRECT 和巢狀組；Load-Balance 限 round-robin。客戶端測試 URL 可用 HTTP/HTTPS 與本地位址，伺服器不抓取。
-Fixed registry v4 保存策略；v1/v2/v3 仅读取時補 Preserve，不改 URL、revision 或 current YAML。來源刷新重用保存的策略；Health 仍僅觀測，不刪除或排序候選。臨時 Generate 使用原有 /t，沒有額外持久化 Policy 狀態。
+Fixed registry v5 保存策略及可選健康排除設定；v1/v2/v3 仅读取時補 Preserve，v1–v4 補 Health-aware Off，不改 URL、revision 或 current YAML。來源刷新重用保存的策略；預設不依健康結果排除，也不排序候選。臨時 Generate 使用原有 /t，沒有額外持久化 Policy 狀態。
 範圍、精確 Mihomo v1.19.31 語法、數值限制與 VPS 步驟見 [Policy Engine](docs/POLICY_ENGINE.md)，受控驗證見 [Policy 報告](docs/POLICY_ENGINE_REPORT.md)。**真機 Policy / client 驗收 NOT RUN**。
+
+## Health-aware Policy（Unreleased / main）
+
+僅 Fixed create/edit 提供 **Off（預設） / Exclude confirmed unhealthy nodes**。只排除 Full Proxy 連續失敗至少 3 次且仍新鮮的 UNHEALTHY；Endpoint 不参与。Freshness 支援 1h / 6h / 24h / **48h（預設）** / 7d，Minimum candidates 為 1–16，預設 **2**。
+僅受管理的 URL-Test / Fallback / Load-Balance 候選會改變；Preserve / Select、一般組、頂層 proxies 與手動切換保留。Suspect、Unknown、Unsupported、缺少或過期觀察均保留；每組候選不足時恢復整組原候選，不排序、不評分。
+成功手動／自動 Proxy 檢查後重生成；既有 health timer 每輪另選最多 3 個訂閱檢查過期結果，加上最多 1 次 Proxy 完成回調。只用已提交的 base YAML、手動節點與持久快取，不取來源或再次探測；相同輸出不新增 revision 或更新 Updated。
+Health 狀態損壞、不可讀或忙碌時保留原候選且不重置資料。設定、鎖順序、失敗恢復及真機步驟見 [Health-aware Policy](docs/HEALTH_AWARE_POLICY.md)，受控驗收見 [報告](docs/HEALTH_AWARE_POLICY_REPORT.md)。**真機 Health-aware Policy NOT RUN**；原有 due Health 驗收仍 PENDING，Policy VPS 驗收仍 NOT RUN。
 
 ## Automatic Health（Unreleased / main）
 
-Endpoint 與 Full Proxy Health 可各自選擇 **Off / Manual / Automatic**，預設仍為 Off，既有 Manual 不會自動啟用排程。Automatic 支援 15 分鐘至 24 小時的七檔間隔，仍保留手動 Check Now。獨立 `clash-yaml-manager-health.timer` 掃描到期工作，每輪最多 4 個 Endpoint 訂閱及 1 個 Proxy 訂閱；來源刷新 timer 保持獨立。檢查只讀已保存 YAML，不刷新來源、不移除節點、不修改策略、Fixed URL 或 YAML。調度錯誤使用獨立退避，Mihomo 不可用時保留節點觀察。
+Endpoint 與 Full Proxy Health 可各自選擇 **Off / Manual / Automatic**，預設仍為 Off，既有 Manual 不會自動啟用排程。Automatic 支援 15 分鐘至 24 小時的七檔間隔，仍保留手動 Check Now。獨立 `clash-yaml-manager-health.timer` 掃描到期工作，每輪最多 4 個 Endpoint 訂閱及 1 個 Proxy 訂閱；來源刷新 timer 保持獨立。檢查只讀已保存 YAML，不刷新來源；啟用 Health-aware Policy 時，成功 Proxy 結果提交後才以快取重生成自動组候選，Fixed URL 保持不變。調度錯誤使用獨立退避，Mihomo 不可用時保留節點觀察。
 
 架構、狀態遷移及 VPS 指令見 [Automatic Health](docs/AUTOMATIC_HEALTH.md)，受控 Gate 見 [驗收報告](docs/AUTOMATIC_HEALTH_REPORT.md)。**自動 Health 真機驗收 PENDING / NOT FULLY CLOSED**：operator 已回報 timer 安裝、enabled、active(waiting)，實際觸發一次並退出 0，但當次 endpoint=0 / proxy=0；tim 上 systemd-analyze verify PASS、Mihomo COMPATIBLE、healthz 200。仍缺實際到期 Endpoint 與 Proxy 作業的 timer 觸發證據；空掃描或手動 oneshot 不算完整驗收。VERSION / Latest Stable 仍為 **1.1.1 / v1.1.1**。
 

@@ -22,8 +22,8 @@ state/fixed_subscriptions/<internal-id>/<revision>/current.yaml
 state/fixed_subscriptions/<internal-id>/<revision>/base.yaml  (default or custom snapshot)
 ```
 
-The version-4 registry (with in-memory v1/v2/v3 migration and Preserve policy defaults) contains subscription UUID4 ids, name, prefix, token, status,
-source type, batch/auxiliary nodes, preview overrides, existing policy options,
+The version-5 registry (with in-memory v1–v4 migration, earlier Preserve defaults and Health-aware Off) contains subscription UUID4 ids, name, prefix, token, status,
+source type, batch/auxiliary nodes, preview overrides, existing policy options, optional health policy and safe reconciliation audit,
 node/group/rule counts, UTC timestamps and SHA256 retired-token tombstones.
 Directories are 0700 and files 0600. A custom base is persisted separately from
 uploads; leaving the edit upload empty reuses it. Default-source subscriptions snapshot
@@ -39,7 +39,7 @@ the candidate and its source configuration together. This indirection avoids a w
 where replacing a single `current.yaml` before metadata would expose mismatched state.
 
 Network and generation work runs outside the registry lock. Commit reacquires the lock
-and rejects changes to the snapshotted management identity (excluding Last Access).
+and rejects changes to the snapshotted management identity (excluding Last Access and audit-only reconciliation metadata).
 Until that commit, the old configuration and YAML remain selected. Candidate-generation,
 base/current replacement and metadata-write failures are covered by failure injection,
 including an error after metadata replacement. If a registry write reports an error,
@@ -108,3 +108,11 @@ Deferred: Duplicate, detail tabs, refresh schedules,
 node health/latency checks, advanced policies, rule editors, databases and history.
 
 Policy configuration, exact migration and refresh semantics are described in [POLICY_ENGINE.md](POLICY_ENGINE.md).
+
+## Optional health-aware candidates
+
+[Health-aware Policy](HEALTH_AWARE_POLICY.md) adds conservative Full Proxy exclusions
+only to configured managed automatic groups. It is Off by default. Health-only
+reconciliation uses the committed base and all enabled cached sources; it never
+reloads the built-in template. Identical YAML advances only safe audit metadata,
+leaving revision and Updated unchanged.

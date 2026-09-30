@@ -1,8 +1,10 @@
 # Automatic Health Scheduler MVP (Unreleased / main)
 
 VERSION stays **1.1.1**; Latest Stable stays **v1.1.1**. Automatic health is
-opt-in and observational. Endpoint and Full Proxy results are separate; no job
-changes committed `current.yaml`, nodes, groups, policies, Fixed tokens or URLs.
+opt-in. Endpoint and Full Proxy results are separate. With Health-aware Policy
+Off, checks remain observational; separately enabled [health-aware eligibility](HEALTH_AWARE_POLICY.md)
+can update managed automatic candidates after committed Proxy results, preserving
+top-level nodes, policy configuration, Fixed tokens and URLs.
 Health reads saved YAML only: it never fetches providers, refreshes sources,
 aggregates subscriptions or reads browser drafts.
 
@@ -30,7 +32,9 @@ Endpoint and Proxy into a score, rank nodes or select a best node.
 ## Independent state and migration
 
 `state/node_health.json` and `state/proxy_health.json` remain separate; the Fixed
-health scheduling does not require a registry schema change; Policy Engine separately adds Fixed v4 (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). Both health files use schema **v2**, with per-entry
+health scheduling does not change its auxiliary schema. Fixed now uses v5 for
+optional policy eligibility (see [HEALTH_AWARE_POLICY.md](HEALTH_AWARE_POLICY.md)).
+Both health files use schema **v2**, with per-entry
 mode, `interval_seconds`, `next_check_at`, `scheduler_failures`, `last_trigger`,
 `last_job_result`, `check_revision`, existing `last_check_at` and node observations.
 Proxy also retains global/custom probe settings.
@@ -199,9 +203,19 @@ curl -i http://127.0.0.1:8899/healthz
 
 Confirm journal evidence of both due jobs with safe internal IDs/results,
 `last_trigger=auto`, advanced next-check times, healthy real nodes, unchanged
-Fixed URL/YAML, working public `/s`, no leftover Mihomo process/config directory,
+Fixed URL/YAML with Health-aware Policy Off, working public `/s`, no leftover Mihomo process/config directory,
 healthz 200 and no credentials in the journal. Check raw private health metadata
 locally if needed; it should agree with the UI. Preserve the two timer units as
 separate responsibilities. Merely `systemctl start ...health.service` does not
-satisfy timer-triggered acceptance. Notifications, node exclusion, policy/group
-rewriting, ranking, permanent engine and general Settings remain out of scope.
+satisfy timer-triggered acceptance. Optional candidate exclusion is documented
+separately in [HEALTH_AWARE_POLICY.md](HEALTH_AWARE_POLICY.md). Notifications,
+ranking, permanent engine and general Settings remain out of scope.
+
+## Periodic policy freshness
+
+The existing `auto_health` singleton also reconciles at most three active,
+health-policy-enabled automatic-policy subscriptions per scan, oldest audit time
+then internal ID first. This runs before probes so stale candidates can recover
+without any new probe. A successful due Proxy job can add one reactive attempt
+(maximum four attempts per scan). No new timer/service is introduced. Reconcile
+errors are separate from health-job results and scheduler backoff.
