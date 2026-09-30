@@ -15,13 +15,19 @@ Suspect/Unhealthy/recovery, stable Fixed URL/YAML and continued application heal
 Codex did not independently reproduce that VPS run. Reality, real arm64,
 latencies, endpoints and node counts were not supplied or inferred.
 
-All Automatic Health results here are **controlled automated tests** in private
+The implementation tests below are **controlled automated tests** in private
 temporary directories, with command, DNS, engine/process/controller doubles.
 They do not touch the developer machine's real /opt, systemd or system accounts.
 The browser fixtures do not run an application background scheduler.
-**REAL TIMER-TRIGGERED VPS HEALTH: NOT RUN.** A manual oneshot start alone does
-not close that acceptance; a due Endpoint and Proxy job must be observed after
-an actual timer trigger. Exact commands and expected evidence are in
+**REAL TIMER-TRIGGERED VPS HEALTH: PENDING / NOT FULLY CLOSED.**
+Operator evidence supplied with the Policy Engine phase: the real tim health
+timer is installed, enabled and active (waiting); it triggered auto_health once,
+the service exited 0, and that invocation reported **endpoint=0 proxy=0**.
+The operator also reported real tim systemd-analyze verify PASS, managed Mihomo
+COMPATIBLE and healthz HTTP 200. Codex did not independently reproduce this run.
+This closes timer wiring/empty-scan evidence only. Real timer-triggered **due
+Endpoint and due Proxy jobs** have not been supplied. A manual oneshot start or
+an empty scan does not close that outstanding acceptance. Exact commands and expected evidence are in
 [AUTOMATIC_HEALTH.md](AUTOMATIC_HEALTH.md#tim-vps-acceptance-a-real-timer-run-is-required).
 
 ## Controlled functional gates
@@ -72,7 +78,7 @@ an actual timer trigger. Exact commands and expected evidence are in
 | New tag / Release | NO / NO |
 
 The unit tests validate structure and mocked deployment activation; they are
-not a claim that a real systemd timer fired. Persisted due timestamps supply
+not evidence of real due health jobs. The separate operator report above confirms one empty timer-triggered scan. Persisted due timestamps supply
 restart catch-up; Persistent=true alone does not add catch-up to a monotonic timer.
 Job limits, older work, jitter and long probes can delay actual execution.
 If an auxiliary file cannot safely be read/written, it is left intact and its

@@ -30,7 +30,7 @@ Endpoint and Proxy into a score, rank nodes or select a best node.
 ## Independent state and migration
 
 `state/node_health.json` and `state/proxy_health.json` remain separate; the Fixed
-registry schema is unchanged. Both health files use schema **v2**, with per-entry
+health scheduling does not require a registry schema change; Policy Engine separately adds Fixed v4 (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). Both health files use schema **v2**, with per-entry
 mode, `interval_seconds`, `next_check_at`, `scheduler_failures`, `last_trigger`,
 `last_job_result`, `check_revision`, existing `last_check_at` and node observations.
 Proxy also retains global/custom probe settings.
@@ -147,9 +147,13 @@ permissions before relying on retry metadata.
 
 The preceding manual proxy/amd64-v2 acceptance is
 **OPERATOR-ATTESTED REAL VPS ACCEPTANCE**, recorded in
-[PROXY_HEALTH_REPORT.md](PROXY_HEALTH_REPORT.md). Automatic timer-triggered health
-is **NOT RUN on a real VPS** by this implementation. Controlled tests are not
-real scheduled VMess/VLESS evidence.
+[PROXY_HEALTH_REPORT.md](PROXY_HEALTH_REPORT.md). Automatic real health acceptance remains **PENDING / NOT FULLY CLOSED**.
+The operator reports a real installed/enabled/active(waiting) health timer, one
+actual auto_health timer trigger that exited 0 with **endpoint=0 proxy=0**, real
+tim systemd-analyze verify PASS, managed engine COMPATIBLE and healthz 200.
+Codex did not independently reproduce that run. Actual timer-triggered **due
+Endpoint and due Proxy jobs** have not been supplied. Controlled tests and an
+empty scan do not establish real scheduled VMess/VLESS checks.
 
 Deploy explicit main and inspect the actual units:
 
