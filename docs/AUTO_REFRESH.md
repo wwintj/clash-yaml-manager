@@ -102,14 +102,14 @@ environment, cookies, authorization or Referer is forwarded. History contains on
 contain counts, internal subscription IDs and results; no source URLs, query tokens,
 node URIs, credential UUIDs, response bodies or Fixed bearer tokens are included.
 
-## Registry v3 migration
+## Registry v4 migration (Policy Engine)
 
-Versions 1 and 2 normalize in memory. Existing v1 manual sources remain intact; v2
+Versions 1, 2 and 3 normalize in memory with Preserve / Preserve policy defaults (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). Existing v1 manual sources remain intact; v2
 remote sources receive Off, null next time, zero failures, null trigger and empty
 history. Reading, upgrading or scanning an all-Off registry makes no network
 request and performs no migration write. Public access-statistics writes preserve
 the original disk schema. A successful management mutation or required scheduler
-mutation writes v3 atomically. Migration preserves token/prefix/URL, source IDs,
+mutation writes v4 atomically. Existing v3 refresh schedules remain unchanged. Migration preserves token/prefix/URL, source IDs,
 revision and exact YAML/payload bytes. Corruption is never repaired by resetting
 the registry. Scheduled fields use UTC epoch seconds and an injected core clock;
 clock rollback safely postpones future work.
@@ -146,7 +146,7 @@ also stop the oneshot before taking a consistent backup or replacing state/code.
 
 For rollback, stop timer, oneshot and web first; restore backup deployment files,
 venv, `.env`, defaults and matching units. Remove newly added refresh units if the
-backup predates this feature. v3 state is not readable by old v1/v2 code: returning
+backup predates this feature. v4 state is not readable by old v1/v2/v3 code: returning
 to that code requires restoring its matching private state backup, which also
 restores authentication/subscriptions to that backup time. Check password versions,
 tokens and revisions together before restarting. Never expose backup credentials.

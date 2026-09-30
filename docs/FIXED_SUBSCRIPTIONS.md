@@ -22,7 +22,7 @@ state/fixed_subscriptions/<internal-id>/<revision>/current.yaml
 state/fixed_subscriptions/<internal-id>/<revision>/base.yaml  (default or custom snapshot)
 ```
 
-The version-3 registry (with in-memory v1/v2 migration) contains subscription UUID4 ids, name, prefix, token, status,
+The version-4 registry (with in-memory v1/v2/v3 migration and Preserve policy defaults) contains subscription UUID4 ids, name, prefix, token, status,
 source type, batch/auxiliary nodes, preview overrides, existing policy options,
 node/group/rule counts, UTC timestamps and SHA256 retired-token tombstones.
 Directories are 0700 and files 0600. A custom base is persisted separately from
@@ -106,3 +106,5 @@ reuse, Copy, confirmations, failed-save preservation and draft separation.
 
 Deferred: Duplicate, detail tabs, refresh schedules,
 node health/latency checks, advanced policies, rule editors, databases and history.
+
+Policy configuration, exact migration and refresh semantics are described in [POLICY_ENGINE.md](POLICY_ENGINE.md).

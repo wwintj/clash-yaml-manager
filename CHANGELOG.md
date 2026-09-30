@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add opt-in Country and selected Special group policies for Generate and Fixed Subscriptions: Preserve (default), Select, URL-Test, Fallback and round-robin Load-Balance with validated client test settings.
 - Add opt-in Automatic Endpoint and Full Proxy Health checks with seven intervals, independent scheduling metadata and a bounded dedicated systemd health timer; retain manual checks in Automatic mode.
 - Add optional, exactly pinned Mihomo v1.19.31 management for Linux amd64/arm64 and manual end-to-end HTTPS proxy checks of committed Fixed Subscription VMess/VLESS nodes, with global and per-subscription probe settings and independent Proxy/Endpoint observations.
 - Add manual, Off-by-default TCP endpoint reachability checks for committed Fixed Subscription VMess/VLESS nodes, with connect latency and Unknown/Healthy/Suspect/Unhealthy observations in private auxiliary state.
@@ -12,6 +13,7 @@
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
 ### Changed
+- Store authoritative policies in Fixed registry v4, read v1/v2/v3 as Preserve without rewriting revisions, and reapply policies on manual/automatic source refresh while preserving public URLs and health observations.
 - Read health schema v1 as v2 in memory without changing existing Off/Manual modes; separate scheduler backoff from node observations and preserve newer settings/results during busy or revision races.
 - Select explicit pinned Mihomo amd64 v1/v2/v3 builds from the intersection of Linux-exposed CPU capabilities, with verified execution-only fallback and legacy generic v3 metadata recognition; preserve the arm64 asset and ordinary update behavior.
 - Keep managed Mihomo binaries and metadata across ordinary project updates; leave proxy checks Off after upgrades and never alter Fixed YAML, URL, groups or policy based on health results.
@@ -20,6 +22,7 @@
 - Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
 
 ### Security
+- Restrict automatic policy candidates to generated nodes assigned to each managed group, exclude DIRECT/nested/provider expansion, reject invalid policy fields safely and keep policy generation free of network probes and health filtering.
 - Verify pinned archive and executable hashes, architecture and exact version before installing a root-owned binary; run probes in private short-lived directories through a secret-protected localhost controller with bounded batches, concurrency and process cleanup.
 - Restrict probe targets to public HTTPS with all locally resolved addresses safe, store only opaque health metadata and sanitized errors, and reject stale revisions or concurrent checks without penalizing nodes.
 - Validate every resolved node address before pinned numeric TCP connection, block private/mixed DNS answers, bound probes to three seconds, sixteen concurrent workers and 256 nodes, and keep endpoints, credentials and fingerprints out of logs and health UI.

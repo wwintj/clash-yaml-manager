@@ -111,7 +111,7 @@ manual input. Source list order is persistent. Array indices are used only to
 associate multipart uploads with this submitted form, never as stored identifiers.
 
 ```text
-state/fixed_subscriptions.json                           # version 3 (v1/v2 readable)
+state/fixed_subscriptions.json                           # version 4 (v1/v2/v3 readable; Policy Engine)
 state/fixed_subscriptions.lock
 state/fixed_subscriptions/<subscription-id>/<revision>/
   base.yaml                                             # default OR custom snapshot
@@ -128,9 +128,9 @@ Version 1 is strictly validated and normalized in memory into one Manual source.
 Its existing subscription UUID is reused as the scoped manual source id so reads
 are deterministic without writing. Manual batch, auxiliary rows, overrides,
 prefix, token, current revision and public bytes are unchanged. Public access-stat
-writes preserve the original v1/v2 schema. A successful management mutation atomically
-writes version 3 under the process-shared lock. The automatic worker also writes
-v3 when a due refresh requires mutation, while all-Off scans leave v1/v2 untouched.
+writes preserve the original v1/v2/v3 schema. A successful management mutation atomically
+writes version 4 under the process-shared lock, retaining authoritative policy settings (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). The automatic worker also writes
+v4 when a due refresh requires mutation, while all-Off scans leave v1/v2/v3 untouched.
 See [Automatic Refresh](AUTO_REFRESH.md) for remote scheduling fields. A failed migration never resets
 state; corruption fails closed. No deletion of the old registry is required.
 
