@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add Off-by-default Telegram notification settings with private credentials, masked status, explicit saved-credential Test and Remove actions; batch automatic source, Endpoint/Proxy and scheduler incident/recovery transitions after committed work and lock release.
 - Add an optional SSH/root-only Nginx HTTPS deployment assistant with Certbot HTTP-01 Webroot, staged activation, verified local TLS health, private transaction backups, conservative drift/ownership checks, disable and known-backup recovery.
 - Expand authenticated Settings into Overview, GeoIP, Health and read-only Runtime sections with modular server-rendered partials, local aggregate status and isolated auxiliary failures.
 - Add Off-by-default offline GeoIP fallback for Unknown countries in Generate, Preview and Fixed sources, using only public literal IPv4/IPv6 and administrator-supplied MMDB data with Manual/Name priority preserved.
@@ -30,6 +31,7 @@
 - Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
 
 ### Security
+- Keep notification credentials in strict private v1 state, serialize multiworker saves and reject stale delivery writeback after configuration changes; sanitize aggregate alerts and bound direct verified Telegram HTTPS delivery without environment proxies, redirects, response logging or retries.
 - Keep Settings GET local-only without DNS, probes or subprocesses; sanitize Runtime/status presentation, retain authentication/CSRF/no-store/no-referrer and never edit deployment configuration from Web.
 - Keep GeoIP local-only with no DNS or network calls, reject unsafe database objects/permissions and fail open to Unknown on unavailable state or lookup errors; retain country-independent health fingerprints.
 - Restrict automatic policy candidates to generated nodes assigned to each managed group, exclude DIRECT/nested/provider expansion, reject invalid policy fields safely and keep the pure policy core free of health reads and network probes; apply optional health eligibility in a separate layer before final reference validation.

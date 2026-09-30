@@ -249,6 +249,19 @@ clashyaml 執行，綁定 127.0.0.1；Nginx 使用 Certbot Webroot HTTPS，覆�
 Web 部署按鈕。完整流程、私有備份、回滾和限制見 [HTTPS 文件](docs/HTTPS.md)
 及 [受控驗收報告](docs/HTTPS_REPORT.md)。**REAL HTTPS VPS: NOT RUN**。
 
+## 可選 Telegram 通知（main 開發版）
+
+Settings → Notifications 提供預設關閉的 Telegram 通知。保存 `<BOT_TOKEN>` 和
+數字 `<CHAT_ID>` 後，可明確發送測試通知；保存本身不連網。憑據只存在私有
+0600 通知狀態，頁面不回填 Token，目的地以遮罩顯示。
+
+自動來源刷新、Endpoint / Full Proxy Health 和 scheduler 故障只在事故／恢復
+邊界通知，每次掃描至多一則；訊息只含清理後的訂閱名稱和彙總數量。
+Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動重送。
+啟用後會把這些資料傳到 Telegram。設定、隱私、備份及限制見
+[Notifications 文件](docs/NOTIFICATIONS.md) 和 [受控驗收報告](docs/NOTIFICATIONS_REPORT.md)。
+**REAL TELEGRAM NOTIFICATION: NOT RUN**。
+
 ## 功能說明
 
 - 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。
