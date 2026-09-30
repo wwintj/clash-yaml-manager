@@ -46,7 +46,7 @@ def test_legacy_registry_read_migration_does_not_write_or_regenerate(store,base,
     assert store.resolve(store.slug(entry))==original_files['current.yaml']
     raw=json.loads(store.path.read_bytes())
     assert raw['version']==version and 'policy_config' not in raw['subscriptions'][key]
-    store.action(key,'disable');assert json.loads(store.path.read_bytes())['version']==4
+    store.action(key,'disable');assert json.loads(store.path.read_bytes())['version']==5
     assert store.get(key)['policy_config']==policy.defaults()
 
 

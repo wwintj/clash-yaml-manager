@@ -147,3 +147,14 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger=
         if item['enabled']:
             results.append(parsed)
     return source_parser.combine(results), payloads
+
+
+def aggregate_cached(sources, caches, manual_result):
+    """Exact existing source aggregation, without fetch or source metadata changes."""
+    results = [manual_result]
+    for item in sources[1:]:
+        if not item['enabled']: continue
+        payload = caches.get(item['id'])
+        if payload is None: raise SourceError('empty')
+        results.append(source_parser.parse(payload,item['format']))
+    return source_parser.combine(results), copy.deepcopy(caches)

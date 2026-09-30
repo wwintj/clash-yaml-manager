@@ -51,6 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
     proxyScope.addEventListener('change', show);
     show();
   }
+  const healthPolicyMode = document.querySelector('[name=health_policy_mode]');
+  if (healthPolicyMode) {
+    const sync = () => document.querySelectorAll('[data-health-policy-warning]').forEach(warning => {
+      warning.hidden = healthPolicyMode.value !== 'exclude-unhealthy';
+    });
+    healthPolicyMode.addEventListener('change', sync); sync();
+  }
   const form = document.querySelector('form[data-fixed]');
   if (!form) return;
   const external = document.getElementById('external-sources');

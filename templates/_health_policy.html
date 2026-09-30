@@ -1,0 +1,40 @@
+<section class="terminal-panel mb-4" aria-label="Health-aware Policy"><div class="panel-inner">
+  <h2 class="panel-title">Health-aware Policy</h2>
+  <p class="form-text">Only fresh Full Proxy Health = UNHEALTHY (3+ failures) is excluded. SUSPECT / UNKNOWN / UNSUPPORTED / stale results remain. Endpoint Health is not used for exclusion.</p>
+  <p class="form-text">If too few candidates remain, each group fails open and keeps its original nodes. Top-level proxies and manual Select remain available. Preserve/Select policies have nothing to filter.</p>
+  {% set mode = health_policy_fields.health_policy_mode %}
+  <label class="form-label" for="health-policy-mode">Mode</label>
+  <select class="form-select terminal-select" name="health_policy_mode" id="health-policy-mode">
+    {% if mode not in ['off','exclude-unhealthy'] %}<option value="{{ mode }}" selected>Invalid mode</option>{% endif %}
+    <option value="off" {% if mode == 'off' %}selected{% endif %}>Off</option>
+    <option value="exclude-unhealthy" {% if mode == 'exclude-unhealthy' %}selected{% endif %}>Exclude confirmed unhealthy nodes</option>
+  </select>
+  <div class="row g-3 mt-1">
+    <div class="col-md-6"><label class="form-label" for="health-policy-age">Freshness</label>
+      <select class="form-select terminal-select" name="health_policy_max_age_seconds" id="health-policy-age">
+        {% set age = health_policy_fields.health_policy_max_age_seconds %}
+        {% if age not in ['3600','21600','86400','172800','604800'] %}<option value="{{ age }}" selected>Invalid freshness</option>{% endif %}
+        {% for seconds,label in health_policy_ages %}<option value="{{ seconds }}" {% if seconds|string == age %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-6"><label class="form-label" for="health-policy-min">Minimum candidates</label>
+      <input class="form-control terminal-input" type="number" name="health_policy_min_candidates" id="health-policy-min" min="1" max="16" required value="{{ health_policy_fields.health_policy_min_candidates }}">
+    </div>
+  </div>
+  {% if not proxy_health or proxy_health.get('mode','off') == 'off' or proxy_health.get('unavailable') %}
+  <p class="form-text mt-3" data-health-policy-warning {% if mode != 'exclude-unhealthy' %}hidden{% endif %}>No new Proxy Health observations will be produced while Proxy Health is Off or unavailable; existing observations will eventually become stale and fail open.</p>
+  {% endif %}
+  {% if proxy_health and proxy_health.engine.status != 'COMPATIBLE' %}
+  <p class="form-text mt-3" data-health-policy-warning {% if mode != 'exclude-unhealthy' %}hidden{% endif %}>Mihomo engine unavailable: no new proxy observations can be produced. Saving this subscription remains available.</p>
+  {% endif %}
+  {% if entry %}
+    {% set audit = entry.health_policy_audit %}
+    <div class="mt-3" aria-label="Health-aware Policy Summary">
+      <p class="form-text">Saved filtering: <span data-health-policy-saved>{{ 'Off' if entry.health_policy.mode == 'off' else 'Active' }}</span> · freshness {{ entry.health_policy.max_age_seconds // 3600 }}h · minimum {{ entry.health_policy.min_candidates }}</p>
+      <p class="form-text">Last reconciliation: <span data-health-policy-time>{{ entry.health_policy_time_display }}</span> · result <span data-health-policy-result>{{ audit.result }}</span> · YAML {{ 'updated' if audit.output_changed else 'unchanged' }}</p>
+      <p class="form-text">Groups filtered: <span data-health-policy-filtered>{{ audit.groups_filtered }}</span> · Candidates excluded: <span data-health-policy-excluded>{{ audit.candidates_excluded }}</span> · Groups fail-open: <span data-health-policy-fail-open>{{ audit.groups_fail_open }}</span></p>
+      {% if audit.result == 'unavailable' %}<p class="form-text">Proxy Health state unavailable; all original candidates are retained. The health state was not reset.</p>{% endif %}
+      {% if audit.result == 'error' %}<p class="form-text">Policy reconciliation failed; previous YAML remains selected. Committed proxy observations remain saved.</p>{% endif %}
+    </div>
+  {% endif %}
+</div></section>

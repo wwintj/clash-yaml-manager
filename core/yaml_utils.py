@@ -391,6 +391,7 @@ def process_yaml_config(
     countries: List[Dict[str, str]],
     special_groups: Optional[List[str]] = None,
     policy_config: Optional[Dict[str, Any]] = None,
+    group_transform=None,
 ) -> Dict[str, Any]:
     """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
     result: Dict[str, Any] = {
@@ -487,6 +488,8 @@ def process_yaml_config(
         new_node_names = [node["name"] for node in new_nodes]
         fill_empty_proxy_groups(data, new_node_names)
         policy_engine.apply(data, new_nodes, countries, special_groups, policy)
+        if group_transform is not None:
+            group_transform(data)
         validate_input_structure(data)
         if {node['name'] for node in new_nodes} & {g['name'] for g in data['proxy-groups']}:
             raise ConfigValidationError('新节点名称与策略组冲突。')

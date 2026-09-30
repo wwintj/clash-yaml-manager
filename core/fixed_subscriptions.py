@@ -4,7 +4,7 @@ The registry selects the current revision. Readers hold the same process-shared 
 until bytes have been read, so no response depends on a path after unlocking.
 """
 import copy
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import hashlib
 import hmac
 import logging
@@ -21,7 +21,7 @@ import time
 import uuid
 from urllib.parse import unquote
 
-from core import generator, fixed_sources, refresh_schedule, policy_engine
+from core import generator, fixed_sources, refresh_schedule, policy_engine, health_policy
 from core.source_errors import SourceError
 from core.state import StateError, atomic_write, file_lock, private_directory, read_json, write_json
 
@@ -132,7 +132,7 @@ class FixedSubscriptions:
             if not condition:
                 raise ValueError
         try:
-            require(type(data['version']) is int and data['version'] in (1, 2, 3, 4))
+            require(type(data['version']) is int and data['version'] in (1, 2, 3, 4, 5))
             require(isinstance(data['subscriptions'], dict) and isinstance(data['retired_tokens'], list))
             require(all(isinstance(t, str) and re.fullmatch('[0-9a-f]{64}', t) for t in data['retired_tokens']))
             used = set(data['retired_tokens'])
@@ -154,6 +154,12 @@ class FixedSubscriptions:
                     entry['policy_config'] = policy_engine.defaults()
                 else:
                     entry['policy_config'] = policy_engine.normalize(entry['policy_config'])
+                if data['version'] < 5:
+                    entry['health_policy'] = health_policy.defaults()
+                    entry['health_policy_audit'] = health_policy.audit_defaults()
+                else:
+                    entry['health_policy'] = health_policy.normalize(entry['health_policy'])
+                    require(health_policy.valid_audit(entry['health_policy_audit']))
                 digest = token_hash(entry['token'])
                 require(digest not in used)
                 used.add(digest)
@@ -170,7 +176,7 @@ class FixedSubscriptions:
     def _commit(self, data, migrate=True):
         data = copy.deepcopy(data)
         if migrate:
-            data['version'] = 4
+            data['version'] = 5
         elif data['version'] == 1:
             for entry in data['subscriptions'].values():
                 entry.pop('sources', None)
@@ -182,6 +188,10 @@ class FixedSubscriptions:
         if not migrate and data['version'] < 4:
             for entry in data['subscriptions'].values():
                 entry.pop('policy_config', None)
+        if not migrate and data['version'] < 5:
+            for entry in data['subscriptions'].values():
+                entry.pop('health_policy', None)
+                entry.pop('health_policy_audit', None)
         # atomic_write may report a directory-fsync error after os.replace. Restore
         # the old registry in that case before exposing an unsuccessful mutation.
         previous = self.path.read_bytes() if self.path.exists() else None
@@ -240,15 +250,17 @@ class FixedSubscriptions:
     @staticmethod
     def _identity(entry):
         # Public access statistics may advance while fetching; management must not.
-        return {k: v for k, v in entry.items() if k != 'last_access_at'} if entry else None
+        return {k: v for k, v in entry.items() if k not in ('last_access_at', 'health_policy_audit')} if entry else None
 
     def save(self, key, name, prefix, source, parsed, default_path, custom=None,
-             sources=None, uploads=None, refresh=None, expected=None, trigger='save', clock=None):
+             sources=None, uploads=None, refresh=None, expected=None, trigger='save', clock=None,
+             _cached=False, _health=None):
         clock = clock or time.time
         source = copy.deepcopy(source)
         if not isinstance(source, dict):
             raise GenerationError('请检查订阅名称和配置。')
         source['policy_config'] = policy_engine.normalize(source.get('policy_config', policy_engine.defaults()))
+        source['health_policy'] = health_policy.normalize(source.get('health_policy', health_policy.defaults()))
         if not isinstance(name, str) or not 0 < len(name.strip()) <= 128 or not valid_source(source):
             raise GenerationError('请检查订阅名称和配置。')
         if parsed['errors']:
@@ -264,16 +276,20 @@ class FixedSubscriptions:
                 raise KeyError(key)
             if expected is not None and self._identity(old) != self._identity(expected):
                 raise SourceError('conflict')
-            if old:
-                self._content(old, 'current.yaml')
+            old_content = self._content(old, 'current.yaml') if old else None
+            if _cached:
+                if not old: raise KeyError(key)
+                base_snapshot = self._content(old, 'base.yaml')
             previous = old['sources'] if old else [fixed_sources.manual()]
-            configured = fixed_sources.configure(previous, sources)
+            configured = copy.deepcopy(previous) if _cached else fixed_sources.configure(previous, sources)
             caches = {item['id']: self._payload(old, item['id']) for item in previous
                       if item['type'] != 'manual' and item['last_success_at'] is not None}
             if source['yaml_source'] == 'custom' and custom is None:
                 if not old or old['yaml_source'] != 'custom':
                     raise GenerationError('请选择 Custom YAML。')
                 custom = self._content(old, 'base.yaml')
+        enabled = source['health_policy']['mode']=='exclude-unhealthy'
+        health = _health if enabled else None
         if custom is not None and len(custom) > 50 * 1024 * 1024:
             raise GenerationError('上传文件过大，最大支持 50MB。')
         # Staging outside subscription homes prevents GC/delete from touching an
@@ -281,9 +297,21 @@ class FixedSubscriptions:
         with tempfile.TemporaryDirectory(prefix='.fixed-candidate-', dir=self.state) as scratch:
             candidate = self._allocate(Path(scratch))
             revision = candidate.name
-            aggregate, payloads = fixed_sources.prepare(configured, previous, caches,
-                                                        uploads or {}, parsed, refresh, trigger, clock)
-            base_bytes = custom if source['yaml_source'] == 'custom' else Path(default_path).read_bytes()
+            if _cached:
+                aggregate, payloads = fixed_sources.aggregate_cached(configured,caches,parsed)
+            else:
+                aggregate, payloads = fixed_sources.prepare(configured, previous, caches,
+                                                            uploads or {}, parsed, refresh, trigger, clock)
+            base_bytes = (base_snapshot if _cached else custom if source['yaml_source'] == 'custom'
+                          else Path(default_path).read_bytes())
+            # Capture after provider work. One observation/time snapshot for this generation.
+            if enabled and _health is None: health = health_policy.snapshot(self,key)
+            at = clock()
+            audit = health_policy.audit_defaults()
+            def transform(data):
+                nonlocal audit
+                audit = health_policy.apply(data,aggregate['nodes'],aggregate['countries'],
+                    source['special_groups'],source['policy_config'],source['health_policy'],health,at)
             atomic_write(candidate / 'base.yaml', base_bytes)
             if payloads:
                 source_root = private_directory(candidate / 'sources')
@@ -297,50 +325,57 @@ class FixedSubscriptions:
                     os.close(fd)
             out = private_directory(Path(scratch) / 'output')
             backups = private_directory(Path(scratch) / 'backup')
-            result = generator.generate(candidate / 'base.yaml', out, backups, aggregate, source['special_groups'], source['policy_config'])
+            result = generator.generate(candidate / 'base.yaml', out, backups, aggregate, source['special_groups'], source['policy_config'], transform if enabled else None)
             if not result['success']:
                 raise GenerationError('生成失败，请检查节点、YAML 结构及策略组引用。旧订阅保持不变。')
-            atomic_write(candidate / 'current.yaml', Path(result['output_path']).read_bytes())
+            content = Path(result['output_path']).read_bytes()
+            atomic_write(candidate / 'current.yaml', content)
+            audit = health_policy.finish(audit, content != old_content)
             with self._locked():
                 data = self._read()
                 current = data['subscriptions'].get(key) if key else None
                 if self._identity(current) != self._identity(old):
                     raise SourceError('conflict')
-                home = self._directories(key) if old else self._allocate(self.directory, data['subscriptions'])
-                key = home.name
-                selected = home / revision
-                if selected.exists() or selected.is_symlink():
-                    raise StateError(STATE_ERROR)  # Never replace an existing revision, even on a UUID collision.
-                try:
-                    os.rename(candidate, selected)
-                    fd = os.open(home, os.O_RDONLY)
+                with health_policy.guard(self,key,health) if enabled and old else nullcontext():
+                    if _cached and content == old_content:
+                        current['health_policy_audit'] = audit
+                        self._commit(data)
+                        return copy.deepcopy(current)
+                    home = self._directories(key) if old else self._allocate(self.directory, data['subscriptions'])
+                    key = home.name
+                    selected = home / revision
+                    if selected.exists() or selected.is_symlink():
+                        raise StateError(STATE_ERROR)  # Never replace an existing revision, even on a UUID collision.
                     try:
-                        os.fsync(fd)
-                    finally:
-                        os.close(fd)
-                    now = clock()
-                    entry = dict(source, sources=configured, id=key, name=name.strip(),
-                                 prefix=normalize_prefix(prefix or name), revision=revision,
-                                 token=old['token'] if old else self._new_token(data),
-                                 status=old['status'] if old else 'active',
-                                 created_at=old['created_at'] if old else now, updated_at=now,
-                                 last_access_at=current['last_access_at'] if current else None,
-                                 node_count=result['new_node_count'], group_count=result['group_count'],
-                                 rule_count=result['rule_count'])
-                    data['subscriptions'][key] = entry
-                    self._commit(data)
-                except BaseException:
-                    referenced = True
-                    try:
-                        referenced = self._read()['subscriptions'].get(key, {}).get('revision') == revision
-                    except (StateError, OSError):
-                        pass
-                    if not referenced:
-                        if selected.exists():
-                            shutil.rmtree(selected)
-                        if not old:
-                            home.rmdir()
-                    raise
+                        os.rename(candidate, selected)
+                        fd = os.open(home, os.O_RDONLY)
+                        try:
+                            os.fsync(fd)
+                        finally:
+                            os.close(fd)
+                        now = clock()
+                        entry = dict(source, health_policy_audit=audit, sources=configured, id=key, name=name.strip(),
+                                     prefix=normalize_prefix(prefix or name), revision=revision,
+                                     token=old['token'] if old else self._new_token(data),
+                                     status=old['status'] if old else 'active',
+                                     created_at=old['created_at'] if old else now, updated_at=now,
+                                     last_access_at=current['last_access_at'] if current else None,
+                                     node_count=result['new_node_count'], group_count=result['group_count'],
+                                     rule_count=result['rule_count'])
+                        data['subscriptions'][key] = entry
+                        self._commit(data)
+                    except BaseException:
+                        referenced = True
+                        try:
+                            referenced = self._read()['subscriptions'].get(key, {}).get('revision') == revision
+                        except (StateError, OSError):
+                            pass
+                        if not referenced:
+                            if selected.exists():
+                                shutil.rmtree(selected)
+                            if not old:
+                                home.rmdir()
+                        raise
                 self._collect(home, revision)
                 return copy.deepcopy(entry)
 
@@ -365,7 +400,7 @@ class FixedSubscriptions:
                 refresh = {identifier}
         else:
             raise SourceError('config')
-        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config')}
+        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config', 'health_policy')}
         parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
             aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
         return self.save(key, entry['name'], entry['prefix'], source, parsed, default_path,
@@ -376,12 +411,54 @@ class FixedSubscriptions:
         available = {s['id'] for s in entry['sources'] if s['type'] == 'remote_url' and s['enabled']}
         if not identifiers or not set(identifiers) <= available:
             raise StateError(STATE_ERROR)
-        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config')}
+        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config', 'health_policy')}
         parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
             aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
         return self.save(entry['id'], entry['name'], entry['prefix'], source, parsed, default_path,
                          sources=entry['sources'][1:], refresh=set(identifiers), expected=entry,
                          trigger=trigger, clock=clock)
+
+    def reconcile_health_policy(self, key, *, clock=None, automatic=False):
+        clock = clock or time.time
+        expected, health = None, None
+        try:
+            expected = self.get(key)
+            if (not expected or not health_policy.applicable(expected)
+                    or automatic and expected['status']!='active'):
+                return 'off'
+            health = health_policy.snapshot(self,key)
+            source = {k:expected[k] for k in ('yaml_source','batch_nodes','aux_nodes',
+                'node_overrides','special_groups','policy_config','health_policy')}
+            parsed = generator.parse_form_nodes(dict(batch_nodes=expected['batch_nodes'],
+                aux_nodes=json.dumps(expected['aux_nodes']),node_overrides=json.dumps(expected['node_overrides'])))
+            result = self.save(key,expected['name'],expected['prefix'],source,parsed,None,
+                expected=expected,clock=clock,_cached=True,_health=health)
+            audit = result['health_policy_audit']
+            logging.getLogger(__name__).info(
+                'Health policy subscription=%s result=%s filtered=%d excluded=%d fail_open=%d',
+                key,audit['result'],audit['groups_filtered'],audit['candidates_excluded'],audit['groups_fail_open'])
+            return audit['result']
+        except SourceError as error:
+            if error.code == 'conflict':
+                logging.getLogger(__name__).info('Health policy subscription=%s result=conflict',key)
+                return 'error'
+        except Exception:
+            pass
+        # Successful observations are never rolled back. Error metadata only, while current.
+        if expected is not None:
+            try:
+                with self._locked():
+                    data=self._read(); current=data['subscriptions'].get(key)
+                    if self._identity(current)==self._identity(expected):
+                        with health_policy.guard(self,key,health) if health else nullcontext():
+                            audit=health_policy.audit_defaults()
+                            audit.update(last_reconciled_at=clock(),result='error')
+                            current['health_policy_audit']=audit
+                            self._commit(data)
+            except Exception:
+                pass
+        logging.getLogger(__name__).warning('Health policy subscription=%s result=error; previous YAML retained.',key)
+        return 'error'
 
     def record_refresh_error(self, snapshot, identifiers, code, clock=None):
         """A failed candidate may update retry metadata only while its snapshot is current.

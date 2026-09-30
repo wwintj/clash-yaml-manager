@@ -1,4 +1,4 @@
-"""Auxiliary full-proxy observations; never changes a Fixed revision."""
+"""Auxiliary proxy observations; opt-in policy reconciliation follows a committed check."""
 import copy
 import ipaddress
 import json
@@ -323,7 +323,13 @@ class ProxyHealth(health_schedule.ScheduledHealth):
                     raise ProxyHealthError('not_due')
             started = True
             try:
-                return self._check(key,snapshot,payload,expected_entry,expected_global,trigger)
+                counts = self._check(key,snapshot,payload,expected_entry,expected_global,trigger)
+                # _check has committed observations and released all locks.
+                try:
+                    self.fixed.reconcile_health_policy(key,clock=self.clock,automatic=trigger=='auto')
+                except Exception:
+                    LOGGER.warning('Health policy subscription=%s result=error; proxy observations saved.',key)
+                return counts
             except KeyError:
                 raise ProxyHealthError('engine') from None
         except LockBusyError:

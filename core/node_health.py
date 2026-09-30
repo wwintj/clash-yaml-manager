@@ -1,7 +1,6 @@
 """Private auxiliary reachability observations; Fixed output remains authoritative."""
 import copy
 from concurrent.futures import ThreadPoolExecutor
-import hashlib
 import json
 import logging
 import math
@@ -13,6 +12,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from core import health_schedule, node_probe, source_parser
+from core.node_identity import fingerprint
 from core.refresh_schedule import timestamp
 from core.source_errors import SourceError
 from core.state import StateError, atomic_write, file_lock, read_private_bytes, write_json
@@ -44,13 +44,6 @@ class HealthError(RuntimeError):
     def __init__(self, code):
         self.code = code if code in MESSAGES else 'unavailable'
         super().__init__(MESSAGES[self.code])
-
-
-def fingerprint(config):
-    plain = source_parser._plain(config)
-    encoded = json.dumps({k:v for k,v in plain.items() if k != 'name'},
-                         sort_keys=True, separators=(',', ':'), ensure_ascii=True, allow_nan=False)
-    return hashlib.sha256(encoded.encode()).hexdigest()
 
 
 def extract(payload, include_config=False):

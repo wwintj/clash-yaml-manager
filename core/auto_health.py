@@ -5,7 +5,7 @@ from pathlib import Path
 import signal
 import time
 
-from core import health_schedule
+from core import health_schedule, health_policy
 from core.fixed_subscriptions import FixedSubscriptions
 from core.node_health import HealthError, NodeHealth
 from core.proxy_health import ProxyHealth, ProxyHealthError
@@ -13,6 +13,8 @@ from core.state import LockBusyError, StateError, file_lock
 
 MAX_ENDPOINT_JOBS = 4
 MAX_PROXY_JOBS = 1
+# Three periodic attempts plus at most one reactive proxy completion per scan.
+MAX_POLICY_RECONCILES = 3
 LOGGER = logging.getLogger(__name__)
 
 
@@ -21,6 +23,13 @@ def select_work(entries, schedules, now, limit):
     return [key for _,key in sorted((entry['next_check_at'],key)
             for key,entry in schedules.items()
             if key in active and health_schedule.due(entry,now))[:limit]]
+
+
+def select_policy_work(entries, limit):
+    return [entry['id'] for entry in sorted(
+        (entry for entry in entries if entry['status']=='active' and health_policy.applicable(entry)),
+        key=lambda entry:(entry['health_policy_audit']['last_reconciled_at']
+                          if entry['health_policy_audit']['last_reconciled_at'] is not None else -1,entry['id']))[:limit]]
 
 
 def run_once(store, *, endpoint=None, proxy=None, clock=None):
@@ -38,6 +47,12 @@ def run_once(store, *, endpoint=None, proxy=None, clock=None):
                     LOGGER.error('Automatic %s health state unavailable.',kind)
                     keys = []
                 work.append((kind,observer,keys))
+            policy_keys = select_policy_work(entries,MAX_POLICY_RECONCILES)
+            for key in policy_keys:
+                try:
+                    store.reconcile_health_policy(key,clock=clock,automatic=True)
+                except Exception:
+                    LOGGER.warning('Health policy subscription=%s result=error.',key)
             LOGGER.info('Automatic health started endpoint=%d proxy=%d',len(work[0][2]),len(work[1][2]))
             for kind,observer,keys in work:
                 for key in keys:

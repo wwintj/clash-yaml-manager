@@ -9,6 +9,7 @@
     {% if saved_custom %}<p class="form-text">Current custom YAML: saved. Leave the upload empty to keep it.</p>{% endif %}
     {% set fixed_editor = true %}
     {% include '_generator_fields.html' %}
+    {% include '_health_policy.html' %}
     <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal">{{ 'Save Changes' if entry else 'Create Fixed Subscription' }}</button>
     <a href="{{ url_for('fixed.index') }}" class="btn btn-outline-terminal btn-terminal">Back to list</a>
   </form>
