@@ -1,7 +1,8 @@
-# Fixed Subscriptions: External Sources (unreleased main)
+# Fixed Subscriptions: External Sources
 
-Stable and VERSION remain **v1.1.1**. Use explicit `--channel main` to test this
-feature. It creates no tag or Release. Base YAML remains Default / Custom and is
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+
+Before Stable publication, use explicit `--channel main` to test this feature. Base YAML remains Default / Custom and is
 separate from the ordered Node Sources used to replace its proxies.
 
 ## Using sources
@@ -33,8 +34,8 @@ remote; Refresh All fetches enabled remotes. Other sources use their saved conte
 Refresh buttons operate on **saved settings**; save form edits first. Public fixed
 URLs never fetch or parse sources. Remote sources now support a separate systemd
 timer with Off by default; see [Automatic Refresh](AUTO_REFRESH.md) for v3 migration,
-scheduling, history and operations. No web refresh thread, node health check, new
-protocol, advanced policy or duplicate-subscription action is added.
+scheduling, history and operations. The source worker does not perform health probes. Independent Health and Policy
+controls are documented in their own modules; no refresh thread or duplicate action is added.
 
 Status shows Never fetched, Ready, Cached, Error or Disabled, imported node count,
 last successful refresh in UTC, and sanitized warnings. Refresh buttons show
@@ -111,7 +112,7 @@ manual input. Source list order is persistent. Array indices are used only to
 associate multipart uploads with this submitted form, never as stored identifiers.
 
 ```text
-state/fixed_subscriptions.json                           # version 4 (v1/v2/v3 readable; Policy Engine)
+state/fixed_subscriptions.json                           # version 6 (v1–v5 readable in memory)
 state/fixed_subscriptions.lock
 state/fixed_subscriptions/<subscription-id>/<revision>/
   base.yaml                                             # default OR custom snapshot
@@ -128,9 +129,9 @@ Version 1 is strictly validated and normalized in memory into one Manual source.
 Its existing subscription UUID is reused as the scoped manual source id so reads
 are deterministic without writing. Manual batch, auxiliary rows, overrides,
 prefix, token, current revision and public bytes are unchanged. Public access-stat
-writes preserve the original v1/v2/v3 schema. A successful management mutation atomically
-writes version 4 under the process-shared lock, retaining authoritative policy settings (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). The automatic worker also writes
-v4 when a due refresh requires mutation, while all-Off scans leave v1/v2/v3 untouched.
+writes preserve the original v1–v5 schema. A successful management mutation atomically
+writes version 6 under the process-shared lock, retaining authoritative policy settings (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). The automatic worker also writes
+v6 when a due refresh requires mutation, while all-Off scans leave v1–v5 untouched.
 See [Automatic Refresh](AUTO_REFRESH.md) for remote scheduling fields. A failed migration never resets
 state; corruption fails closed. No deletion of the old registry is required.
 

@@ -44,6 +44,10 @@ Unreleased heading for future development, and uses only that version's body as 
 Allowed categories are Added, Changed, Fixed, Security and Deployment; empty categories are omitted
 when preparing notes. README changes are confined to RELEASE/INSTALL/UPDATE marker pairs.
 
+For a feature-freeze audit, use `python3 scripts/release.py minor --dry-run` only
+after committing/pushing a clean main. A passing audit does not authorize publication;
+VERSION, tags and Releases remain unchanged until an explicit release instruction.
+
 ## Preflight and dry-run
 
 Required checks before mutation:
@@ -55,7 +59,9 @@ Required checks before mutation:
 3. GitHub repository write access, fixed default branch main, complete README markers and
    reviewed Unreleased notes.
 4. Full pytest (including 10,410-rule round trip), Python compilation in memory, pip check,
-   bash -n for six entrypoints and the helper, generated bootstrap synchronization, diff check,
+   bash -n for exactly eight shell files (`install.sh`, `remote-install.sh`,
+   `update.sh`, `remote-update.sh`, `uninstall.sh`, `httpsctl.sh`, `mihomoctl.sh`,
+   `scripts/deploy-common.sh`), generated bootstrap synchronization, diff check,
    removed-email exclusion and a fixed byte checksum for the default YAML.
 5. ShellCheck when present; otherwise print unavailable. ShellCheck is not a runtime dependency.
 
@@ -79,7 +85,7 @@ Formal execution performs the same preflight again and rechecks remote conflicts
 ## GitHub Actions
 
 `.github/workflows/release.yml` triggers on pushes of `v*` tags. It checks out full tag history,
-sets up Python, installs test dependencies, runs the same validation, verifies annotated
+sets up Python 3.12, installs `requirements-dev.txt`, runs the same validation, verifies annotated
 tag == HEAD and VERSION == tag without v, then publishes. It uses only the built-in
 `${{ github.token }}` through GH_TOKEN with `contents: write`; no repository PAT secret is needed.
 

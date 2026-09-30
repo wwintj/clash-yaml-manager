@@ -1,8 +1,9 @@
-# Fixed Subscriptions — Automatic Refresh (main development)
+# Fixed Subscriptions — Automatic Refresh
 
-VERSION and Latest Stable remain **1.1.1 / v1.1.1**. This feature is available only
-from explicit `--channel main`; no new tag or Release is created. Node health,
-latency checks, protocol additions and advanced policy scheduling are deferred.
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+
+Before Stable publication, use explicit `--channel main` to test. This source worker does not perform health or policy probing; independent
+opt-in health scheduling and policy generation are documented separately.
 
 ## Management
 
@@ -102,21 +103,23 @@ environment, cookies, authorization or Referer is forwarded. History contains on
 contain counts, internal subscription IDs and results; no source URLs, query tokens,
 node URIs, credential UUIDs, response bodies or Fixed bearer tokens are included.
 
-## Registry v4 migration (Policy Engine)
+## Registry v6 migration
 
 Versions 1, 2 and 3 normalize in memory with Preserve / Preserve policy defaults (see [POLICY_ENGINE.md](POLICY_ENGINE.md)). Existing v1 manual sources remain intact; v2
 remote sources receive Off, null next time, zero failures, null trigger and empty
 history. Reading, upgrading or scanning an all-Off registry makes no network
 request and performs no migration write. Public access-statistics writes preserve
 the original disk schema. A successful management mutation or required scheduler
-mutation writes v4 atomically. Existing v3 refresh schedules remain unchanged. Migration preserves token/prefix/URL, source IDs,
+mutation writes v6 atomically, including Health-aware and GeoIP defaults from
+[Fixed Subscriptions](FIXED_SUBSCRIPTIONS.md). Existing v3 refresh schedules remain unchanged. Migration preserves token/prefix/URL, source IDs,
 revision and exact YAML/payload bytes. Corruption is never repaired by resetting
 the registry. Scheduled fields use UTC epoch seconds and an injected core clock;
 clock rollback safely postpones future work.
 
 ## Deployment and operations
 
-Install writes all three units, reloads systemd, enables the web service, enables
+The source scheduler writes its service/timer pair beside the app unit (the health
+scheduler has its own additional pair). Install reloads systemd, enables the web service, enables
 and starts the timer, restarts the web service and checks web readiness. Update
 backs up deployment files and all existing units, then stops the timer and oneshot
 before stopping web, backing up state, migrating credentials or copying code. A

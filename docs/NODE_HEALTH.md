@@ -1,11 +1,12 @@
-# Node Health: Endpoint Reachability (main development)
+# Node Health: Endpoint Reachability
+
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 **This is endpoint reachability, not end-to-end proxy validation.** The result
 answers only whether this VPS can open a TCP connection to the saved node's
 `server:port`. It does not authenticate VMess/VLESS, negotiate TLS/WebSocket/Reality,
 forward traffic, measure throughput or prove that an internet destination works.
-VERSION and Latest Stable remain **1.1.1 / v1.1.1**; this feature is on explicit
-`--channel main` only.
+Before Stable publication, use explicit `--channel main` to test.
 
 ## Use and meaning
 
@@ -34,7 +35,7 @@ scheduled checks; the Automatic Refresh timer does not run health checks.
 ## Private state and identity
 
 `state/node_health.json` (0600) and `state/node_health.lock` (0600) are independent
-of the authoritative v3 Fixed registry and selected YAML revision. Health has its
+of the authoritative v6 Fixed registry and selected YAML revision. Health has its
 own schema version 2 (read-compatible with v1) and stores scheduling metadata,
 per-subscription mode, Last Check and at most 256
 per-node records. Records are keyed by SHA256 of canonical, plain supported proxy
@@ -56,7 +57,7 @@ corruption fail closed for the health section without resetting state. Public
 by their original Fixed/web behavior. The auxiliary JSON read is capped at 128 MiB;
 duplicate keys and nonfinite JSON numbers are rejected before schema validation.
 
-Mode changes and Check Now never write the Fixed registry, create a Fixed revision,
+Endpoint mode changes and Check Now never write the Fixed registry, create a Fixed revision,
 rewrite `current.yaml`, change its token, or fetch a remote provider. Regenerate
 Link keeps health by node identity. When source removal changes the generated
 revision, old fingerprints are hidden; a successful Check Now retains only current
@@ -110,9 +111,10 @@ Fixed output/URL unchanged. Registry corruption remains an authoritative Fixed
 error; auxiliary corruption or unsafe permissions are a health-only unavailable
 state. Health read/write paths never run from public Fixed or `/healthz` requests.
 
-Full protocol authentication, actual forwarding/egress testing, health-based
-exclusion, scheduling, scoring, ranking and fastest-node selection are deferred.
-There is no new systemd unit, third-party binary, container or external API.
+Endpoint remains TCP-only. Optional Full Proxy validation, Automatic Health and
+Health-aware Policy are separate owners; see [Proxy Health](PROXY_HEALTH.md),
+[Automatic Health](AUTOMATIC_HEALTH.md) and [Health-aware Policy](HEALTH_AWARE_POLICY.md).
+Endpoint itself does not execute Mihomo, score/rank nodes or select a fastest node.
 
 Operator update uses the existing explicit main channel:
 

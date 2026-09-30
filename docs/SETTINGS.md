@@ -1,8 +1,10 @@
-# Settings Framework MVP (Unreleased main)
+# Settings Framework MVP
+
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 `/settings` is an authenticated server-rendered workspace with anchor navigation:
-[Overview](../README.md), GeoIP (`/settings#geoip`), Health (`/settings#health`) and
-Runtime (`/settings#runtime`). The page uses Flask/Jinja partials, existing terminal
+[Overview](../README.md), GeoIP (`/settings#geoip`), Health (`/settings#health`),
+Runtime (`/settings#runtime`) and Notifications (`/settings#notifications`). The page uses Flask/Jinja partials, existing terminal
 styles and normal HTML forms; core navigation and actions do not require JavaScript.
 No new frontend/Python dependency, generic settings registry or systemd unit is added.
 
@@ -16,6 +18,7 @@ Settings is a view/orchestration layer. Each feature retains its existing author
 | Global Full Proxy probe defaults/observations/schedules | `ProxyHealth`, `state/proxy_health.json` |
 | Fixed sources, policies and country detection | `FixedSubscriptions`, `state/fixed_subscriptions.json` and revision files |
 | Endpoint observations/schedules | `NodeHealth`, `state/node_health.json` |
+| Telegram preferences/credentials/delivery | `Notifications`, `state/notifications.json` |
 | Authentication | `AuthStore`, `state/auth.json` |
 | Effective runtime/deployment configuration | process environment / `.env`, installation metadata and deployment files |
 
@@ -29,7 +32,9 @@ small presentation/coercion helpers; it does not import `app.py`, read environme
 files, persist settings or invoke network/system tools. Feature-specific partials
 live in `templates/settings/`. Add a future section by composing its own safe
 view model and authoritative feature API, rather than building a plugin engine.
-Notifications, HTTPS/Nginx/certificates and general maintenance controls are outside MVP.
+Notifications composes its separate private authority; see [Notifications](NOTIFICATIONS.md).
+Runtime projects safe optional HTTPS metadata. Privileged HTTPS/certificate and general
+maintenance commands remain SSH-only; no Web deployment workflow is added.
 
 ## Overview and best-effort reads
 

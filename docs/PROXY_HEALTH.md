@@ -1,7 +1,8 @@
-# Full Proxy Validation MVP (main development)
+# Full Proxy Validation MVP
 
-This feature is on the explicit `--channel main` development build. VERSION is
-**1.1.1** and Latest Stable remains **v1.1.1**. It checks whether a saved
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+
+Before its Stable publication, test with explicit `--channel main`. It checks whether a saved
 VMess/VLESS proxy can carry Mihomo's HTTPS URL probe to one configured target,
 including the proxy protocol's authentication and transport path. It is not a
 throughput benchmark, general website guarantee, exit-IP check, ranking or
@@ -283,7 +284,7 @@ and hashed; the macOS development host did not execute them. See
 [PROXY_HEALTH_REPORT.md](PROXY_HEALTH_REPORT.md) for the controlled gates and
 operator evidence boundary.
 
-## Global defaults UI (Settings Framework, Unreleased main)
+## Global defaults UI (Settings Framework)
 
 Edit global HTTPS URL/status/timeout under **Settings → Health**. Fixed edit now
 shows a summary and link; custom per-subscription targets/modes/intervals remain

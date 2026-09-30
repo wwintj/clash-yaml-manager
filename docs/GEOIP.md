@@ -1,6 +1,8 @@
-# GeoIP Country Assist MVP (Unreleased / main)
+# GeoIP Country Assist MVP
 
-VERSION **1.1.1**, Latest Stable **v1.1.1**. No new tag or Release. Deploy this
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+
+Before Stable publication, deploy this
 feature only with explicit `--channel main`; stable installation/update behavior
 is unchanged. This is optional offline country assistance, **Off by default**.
 

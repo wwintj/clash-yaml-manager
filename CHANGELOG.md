@@ -3,50 +3,40 @@
 ## Unreleased
 
 ### Added
-- Add Off-by-default Telegram notification settings with private credentials, masked status, explicit saved-credential Test and Remove actions; batch automatic source, Endpoint/Proxy and scheduler incident/recovery transitions after committed work and lock release.
-- Add an optional SSH/root-only Nginx HTTPS deployment assistant with Certbot HTTP-01 Webroot, staged activation, verified local TLS health, private transaction backups, conservative drift/ownership checks, disable and known-backup recovery.
-- Expand authenticated Settings into Overview, GeoIP, Health and read-only Runtime sections with modular server-rendered partials, local aggregate status and isolated auxiliary failures.
-- Add Off-by-default offline GeoIP fallback for Unknown countries in Generate, Preview and Fixed sources, using only public literal IPv4/IPv6 and administrator-supplied MMDB data with Manual/Name priority preserved.
-- Add authenticated System Settings for private MMDB status, bounded upload/replace and removal, with CSRF and transactional rollback; no automatic dataset download or bulk regeneration.
-- Add Off-by-default Health-aware Policy for Fixed managed automatic groups, with fresh confirmed Full Proxy Unhealthy exclusion, five freshness windows, per-group minimum candidates and fail-open summaries.
-- Add opt-in Country and selected Special group policies for Generate and Fixed Subscriptions: Preserve (default), Select, URL-Test, Fallback and round-robin Load-Balance with validated client test settings.
-- Add opt-in Automatic Endpoint and Full Proxy Health checks with seven intervals, independent scheduling metadata and a bounded dedicated systemd health timer; retain manual checks in Automatic mode.
-- Add optional, exactly pinned Mihomo v1.19.31 management for Linux amd64/arm64 and manual end-to-end HTTPS proxy checks of committed Fixed Subscription VMess/VLESS nodes, with global and per-subscription probe settings and independent Proxy/Endpoint observations.
-- Add manual, Off-by-default TCP endpoint reachability checks for committed Fixed Subscription VMess/VLESS nodes, with connect latency and Unknown/Healthy/Suspect/Unhealthy observations in private auxiliary state.
-- Schedule each remote Fixed Subscription source through a separate systemd timer with seven intervals, Off by default, fixed failure backoff and bounded refresh history; keep public URLs and last-good data available during provider failures.
-- Merge ordered manual, remote URL and persistent uploaded sources in Fixed Subscriptions; import VMess/VLESS from Clash/Mihomo YAML, raw URI lists and Base64 lists with manual refresh, source controls and last-good cache status.
-- Add authenticated Fixed Subscriptions management with persistent source configuration and custom base YAML, stable readable bearer URLs, edit, copy, disable/enable, confirmed link regeneration and deletion.
-- Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
+- Add persistent Fixed Subscriptions with custom/default base YAML, stable bearer URLs, source editing and explicit enable, disable, regenerate and delete controls.
+- Merge ordered Manual, Remote URL and Uploaded sources; import VMess/VLESS from Clash YAML, raw and Base64 lists with last-good cache and manual refresh.
+- Add Off-by-default automatic source refresh with seven intervals, bounded history, failure backoff and an independent systemd worker.
+- Add independent Off/Manual/Automatic Endpoint TCP and Full Proxy HTTPS observations, failure thresholds, per-subscription settings and a bounded health scheduler.
+- Add optional SSH-managed Mihomo v1.19.31 for Linux amd64/arm64; select verified amd64 v1/v2/v3 artifacts from CPU capabilities with execution-only fallback.
+- Add Country and selected Special group policies: Preserve (default), Select, URL-Test, Fallback and round-robin Load-Balance.
+- Add Off-by-default Health-aware Policy for fresh confirmed Proxy Unhealthy candidates, with per-group minimums and fail-open behavior.
+- Add Off-by-default offline GeoIP Country Assist with administrator-supplied MMDB, public literal IP lookup and Manual/Name priority.
+- Add modular authenticated Settings for Overview, GeoIP, global Health defaults, read-only Runtime and Notifications.
+- Add an optional SSH/root Nginx HTTPS assistant with Certbot Webroot, private transactions, ownership/drift checks, disable and rollback.
+- Add Off-by-default Telegram alerts for automatic incident/recovery transitions, with masked private credentials and explicit test/removal actions.
 
 ### Changed
-- Show credential-free managed HTTPS metadata and validated application bind scope in authenticated read-only Settings Runtime.
-- Centralize global Full Proxy probe defaults in Settings Health, retaining the Fixed compatibility route and per-subscription controls; reuse existing validation, persistence and reset semantics.
-- Reconcile enabled Fixed policies after committed Proxy checks and through the existing bounded health scan; reuse committed base YAML and source caches without network work, skip identical YAML revisions and preserve successful observations when reconciliation fails.
-- Store policies, optional health settings and country detection in Fixed registry v6; read v1–v5 without rewriting revisions, preserve earlier defaults and keep GeoIP Off. Preserve settings during source refresh and cached health reconciliation.
-- Read health schema v1 as v2 in memory without changing existing Off/Manual modes; separate scheduler backoff from node observations and preserve newer settings/results during busy or revision races.
-- Select explicit pinned Mihomo amd64 v1/v2/v3 builds from the intersection of Linux-exposed CPU capabilities, with verified execution-only fallback and legacy generic v3 metadata recognition; preserve the arm64 asset and ordinary update behavior.
-- Keep managed Mihomo binaries and metadata across ordinary project updates; leave proxy checks Off after upgrades and keep health filtering Off unless explicitly configured and preserve Fixed URLs and top-level nodes.
-- Keep unhealthy nodes in top-level YAML and manual groups, and in all groups with health filtering Off; preserve health on name-only edits, reset identity when connection configuration changes, and discard probe results when the Fixed revision changes during a check.
-- Normalize fixed registry v1/v2 to v3 in memory with existing schedules Off; persist on successful management or required scheduler mutations while preserving URLs, manual settings and complete revision files.
-- Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
+- Read supported Fixed v1–v5 as v6 defaults in memory and Health v1 as v2 without read-time schema promotion, URL rotation or automatic opt-in.
+- Preserve Fixed policies, country mode, caches and top-level nodes across refresh and health reconciliation; keep name-independent health identities and discard stale results.
+- Reconcile enabled policies after committed Proxy observations and bounded periodic scans; unchanged YAML does not create a revision.
+- Centralize global Proxy defaults in Settings while retaining the Fixed compatibility route and per-subscription overrides.
+- Align current manuals, backup/rollback guidance and release validation documentation with the integrated feature set; retain historical acceptance evidence.
+
+### Fixed
+- Reject FIFO, directory and symlink JSON state before reading so corrupt local objects cannot block authentication, temporary access or update preflight; fail closed on broken login-limiter state links without rewriting them.
 
 ### Security
-- Keep notification credentials in strict private v1 state, serialize multiworker saves and reject stale delivery writeback after configuration changes; sanitize aggregate alerts and bound direct verified Telegram HTTPS delivery without environment proxies, redirects, response logging or retries.
-- Keep Settings GET local-only without DNS, probes or subprocesses; sanitize Runtime/status presentation, retain authentication/CSRF/no-store/no-referrer and never edit deployment configuration from Web.
-- Keep GeoIP local-only with no DNS or network calls, reject unsafe database objects/permissions and fail open to Unknown on unavailable state or lookup errors; retain country-independent health fingerprints.
-- Restrict automatic policy candidates to generated nodes assigned to each managed group, exclude DIRECT/nested/provider expansion, reject invalid policy fields safely and keep the pure policy core free of health reads and network probes; apply optional health eligibility in a separate layer before final reference validation.
-- Verify pinned archive and executable hashes, architecture and exact version before installing a root-owned binary; run probes in private short-lived directories through a secret-protected localhost controller with bounded batches, concurrency and process cleanup.
-- Restrict probe targets to public HTTPS with all locally resolved addresses safe, store only opaque health metadata and sanitized errors, and reject stale revisions or concurrent checks without penalizing nodes.
-- Validate every resolved node address before pinned numeric TCP connection, block private/mixed DNS answers, bound probes to three seconds, sixteen concurrent workers and 256 nodes, and keep endpoints, credentials and fingerprints out of logs and health UI.
-- Bound automatic work, use a nonblocking shared worker lock, reject stale candidates and keep refresh history/journal free of source credentials and raw exceptions.
-- Validate each remote URL/DNS/redirect, pin connections to approved public IPs, verify HTTPS hostnames/system CAs, ignore proxy environment settings, and bound DNS/connect/read time and payload size; keep remote credentials out of errors and browser storage.
-- Commit fixed configuration and generated YAML together through private candidate files and an atomic registry pointer under a shared file lock; preserve the previous subscription on failed saves.
-- Use 128-bit random tokens, permanent token-hash tombstones, constant-time authorization, private state permissions, strict schema/path checks and fixed-URL access-log redaction.
+- Commit Fixed revisions/cache/config through a private atomic registry pointer; use 128-bit bearers, permanent token-hash tombstones, constant-time authorization and Fixed access-log redaction.
+- Validate source URLs, every DNS answer and redirect, pin numeric public addresses, verify TLS and bound time/body sizes without environment proxies; keep provider/node secrets out of operational errors and history.
+- Keep network/probe work outside authoritative locks, reject optimistic conflicts and bound Endpoint/Proxy jobs with private temporary configs, secret-protected loopback controllers and process cleanup.
+- Restrict managed automatic groups to their generated nodes; optional health filtering preserves top-level/manual nodes and fails open when observations or candidates are insufficient.
+- Redact temporary, legacy and signed subscription request logs alongside Fixed bearers; disable inherited access logs in newly generated managed Nginx server blocks. Existing integrations retain their configuration until reviewed over SSH.
+- Keep Settings GET local-only, GeoIP offline and notification state strictly private; sanitize alerts, bound direct verified Telegram delivery and isolate delivery failures/configuration races without a queue or retries.
 
 ### Deployment
-- Validate APP_BIND_HOST (public or loopback only), preserve direct HTTP defaults, retain managed HTTPS metadata/binding during ordinary update, and detach only verified project Nginx integration during uninstall while keeping certificate data.
-- Manage separate health oneshot/timer units on install, update and uninstall, preserve health state, stop writers before backup, and recover the health unit pair and prior timer flags on setup failure.
-- Install and enable refresh oneshot/timer units, back up all existing units on upgrade, stop refresh writers before state backup/code replacement, and remove units on uninstall while preserving retained state.
+- Preserve independent state, managed Mihomo artifacts, operator defaults and HTTPS configuration through ordinary updates; absent optional features remain Off, with no automatic Mihomo/GeoIP/Telegram/Certbot work.
+- Manage separate source and health unit pairs, stop writers before state backup and recover previous health units/timer flags on setup failure.
+- Validate public/loopback APP_BIND_HOST, retain direct HTTP defaults and detach only verified project Nginx integration on uninstall while preserving certificates and unrelated users/files.
 
 ## v1.1.1 - 2026-09-28
 

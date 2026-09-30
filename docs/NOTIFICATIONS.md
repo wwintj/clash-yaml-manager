@@ -1,4 +1,6 @@
-# Notifications MVP (main development)
+# Notifications MVP
+
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 Telegram is the only provider in this MVP. Notifications are **Off by default**.
 An ordinary installation or update makes no Telegram request, prompts for no
@@ -145,7 +147,5 @@ artifacts. Ordinary updates keep the configured provider preference; installatio
 with missing notification state remain Off.
 
 SMTP/Gmail, Discord, Slack, Webhooks, Pushover, Gotify, provider plugins, alerting
-for policy reconciliation and proxy routing are future scope. VERSION remains
-**1.1.1**, Stable remains **v1.1.1**; this phase is main development with no new Tag
-or Release. Controlled evidence is in [NOTIFICATIONS_REPORT.md](NOTIFICATIONS_REPORT.md).
+for policy reconciliation and proxy routing are future scope. Controlled evidence is in [NOTIFICATIONS_REPORT.md](NOTIFICATIONS_REPORT.md).
 **REAL TELEGRAM NOTIFICATION: NOT RUN**.

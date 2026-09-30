@@ -137,6 +137,7 @@ commit, so it cannot retain a stale remote build identity.
 - stable → older stable: original `--allow-downgrade` requirement remains.
 
 Version comparison is a release-boundary guard, not proof of state-schema compatibility.
+In particular, v1.2 state is not promised to run on v1.1.1; there is no reverse migration.
 Before returning to an older stable, preserve coordinated code/VERSION/INSTALLATION.json
 and runtime backups. Current upgrade/uninstall backups include build identity; historical
 stable scripts may not know to back it up. Restoring code should restore its corresponding

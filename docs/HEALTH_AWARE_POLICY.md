@@ -1,6 +1,8 @@
-# Health-aware Policy Integration MVP (Unreleased / main)
+# Health-aware Policy Integration MVP
 
-VERSION **1.1.1**, Latest Stable **v1.1.1**. No tag or Release for this phase.
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+
+Before Stable publication, use explicit `--channel main` for testing.
 Use only explicit `--channel main` for development deployments. The Flask/Python
 architecture, default template, pinned Mihomo, dependencies and unit files remain.
 

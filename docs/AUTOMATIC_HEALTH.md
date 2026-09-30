@@ -1,6 +1,8 @@
-# Automatic Health Scheduler MVP (Unreleased / main)
+# Automatic Health Scheduler MVP
 
-VERSION stays **1.1.1**; Latest Stable stays **v1.1.1**. Automatic health is
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+
+Automatic health is
 opt-in. Endpoint and Full Proxy results are separate. With Health-aware Policy
 Off, checks remain observational; separately enabled [health-aware eligibility](HEALTH_AWARE_POLICY.md)
 can update managed automatic candidates after committed Proxy results, preserving

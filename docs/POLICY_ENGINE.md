@@ -1,9 +1,11 @@
-# Policy Engine MVP (Unreleased / main)
+# Policy Engine MVP
+
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 Policy Engine controls the type of generated Mihomo proxy groups in both
 Generate YAML and Fixed Subscriptions. It is opt-in: **Preserve / Preserve**
 is the default, and retains the existing YAML generator's behavior.
-VERSION remains **1.1.1**, Latest Stable **v1.1.1**. No release is created by this phase.
+Before Stable publication, use explicit `--channel main` for testing.
 
 ## Managed scope and candidates
 

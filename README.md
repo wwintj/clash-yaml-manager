@@ -12,81 +12,27 @@ main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable
 
 正式版本以頁首 Latest Stable 為準；功能驗收過程與限制見 [開發報告](docs/V1_1_DEVELOPMENT.md)。
 
-## Fixed Subscriptions — available on main development channel
+## 功能與文件
 
-登入後可從 **Fixed Subscriptions** 建立固定訂閱，保存節點、Policy Options 及 Default / Custom YAML。
-一般 Save Changes 更新內容但保持 URL；修改 URL Prefix、Regenerate Link 或 Delete 才會讓舊地址失效。
-Disable 暫停匿名讀取，Enable 恢復原地址。固定地址使用 `/s/<prefix>-fs_<secret>`，直到手動刪除，不受 24 小時臨時輸出清理影響。
+新增功能納入下一次 Stable 的發布範圍；發布前請用明確的 `--channel main` 測試，發布後由普通 Stable 安裝／升級取得。正式可用範圍以 Latest Stable 的 Release Notes 為準。當前受控驗收與延後的真機項目見 [Final Audit](docs/FINAL_AUDIT_REPORT.md)。
 
-這是尚未發布的 main 功能，Latest Stable 仍為 **v1.1.1**。測試 VPS 使用下方 `--channel main` 命令。
-Custom Base YAML 與生成結果保存在私有 `state/`，編輯時不必重新上傳；瀏覽器的 Generate 草稿仍獨立。
-Node Sources 支援 **Manual、Remote URL、Uploaded source**，可以合併多個來源；Base YAML 仍獨立選擇 Default / Custom。
-外部來源接受 Clash/Mihomo YAML、Raw VMess/VLESS URI list、Base64 URI list，僅匯入 VMess / VLESS。
-Save 或手動 Refresh 更新遠端資料，抓取失敗可使用未變更來源的 last-good cache，固定 URL 保持不變。
+| 功能 | 行為與文件 |
+| --- | --- |
+| Generate / Preview | 替換 VMess/VLESS 節點、可編輯國家／名稱預覽、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
+| [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md) | 保存 Default / Custom YAML 與節點；一般保存保持 `/s/<prefix>-fs_<secret>`，不受臨時清理影響 |
+| [External Sources](docs/EXTERNAL_SOURCES.md) | 合併 Manual、Remote URL、Uploaded；Clash YAML / Raw / Base64，last-good cache |
+| [Automatic Refresh](docs/AUTO_REFRESH.md) | Remote Source 預設 Off，七檔間隔、獨立 timer、失敗退避及有限歷史 |
+| [Endpoint Health](docs/NODE_HEALTH.md) | 預設 Off；Manual / Automatic TCP reachability，三次失敗為 Unhealthy，保留 YAML 節點 |
+| [Full Proxy Health](docs/PROXY_HEALTH.md) | 預設 Off；SSH 管理的 Mihomo v1.19.31 執行 HTTPS probe；amd64 v1/v2/v3 依 CPU 能力選擇，另支援 arm64 |
+| [Automatic Health](docs/AUTOMATIC_HEALTH.md) | 獨立健康 timer，每輪最多 4 個 Endpoint、1 個 Proxy 作業；不刷新來源 |
+| [Policy Engine](docs/POLICY_ENGINE.md) | Country / Selected Special Groups：Preserve（預設）、Select、URL-Test、Fallback、round-robin Load-Balance |
+| [Health-aware Policy](docs/HEALTH_AWARE_POLICY.md) | 預設 Off；僅保守排除新鮮且三次失敗的 Proxy 候選，候選不足時 fail-open；頂層節點保留 |
+| [GeoIP](docs/GEOIP.md) | 預設 Off；Manual → Name → GeoIP → Unknown，操作員提供離線 MMDB，只查公共字面 IP，無 DNS／下載 |
+| [Settings](docs/SETTINGS.md) | 登入後的 Overview / GeoIP / Health / Runtime / Notifications；GET 只讀本地狀態，不執行探測或系統命令 |
+| [HTTPS assistant](docs/HTTPS.md) | 可選 SSH/root Nginx + Certbot Webroot；普通安裝保持 HTTP，管理模式 Gunicorn 僅綁 loopback |
+| [Telegram Notifications](docs/NOTIFICATIONS.md) | 預設 Off；自動掃描事故／恢復邊界每輪最多一則清理後彙總，無持久佇列或自動重送 |
 
-### Automatic Refresh — main development
-
-每個 Remote Source 可設定 Auto Refresh：**Off（預設）**、15m、30m、1h、3h、6h、12h、24h。
-由獨立 systemd timer 約每五分鐘檢查到期來源；Gunicorn 不承擔排程。
-成功會重新計算 Next Refresh；失敗保留 last-good cache，按 5m → 15m → 30m → 1h → 2h → 6h 退避重試。
-頁面顯示 UTC 刷新時間、連續失敗次數及最近五筆歷史（最多保存二十筆）。Manual / Uploaded 不自動刷新；自動刷新排程不執行節點健康檢查。
-
-```bash
-systemctl status clash-yaml-manager-refresh.timer --no-pager -l
-systemctl list-timers clash-yaml-manager-refresh.timer
-journalctl -u clash-yaml-manager-refresh.service -n 50 --no-pager
-```
-
-儲存及固定 URL 見 [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md)；來源格式、SSRF 與快取見 [External Sources](docs/EXTERNAL_SOURCES.md)；排程、來源狀態遷移、退避、並發及運維見 [Automatic Refresh](docs/AUTO_REFRESH.md)。
-
-### Node Health / Endpoint Reachability — main development
-
-Fixed Subscription 的健康檢查預設 **Off**；可在 Edit 頁面切換為 **Manual** 或 **Automatic**，再按 **Check Now**。
-它只測試 VPS 能否與當前已保存 YAML 中的 VMess/VLESS 節點 `server:port` 建立 TCP 連接，並顯示連線耗時。
-連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy；之後成功立即恢復 Healthy。Unhealthy 節點**仍保留**在 YAML 及所有代理群組中。
-此檢查**不驗證**代理認證或端到端轉發，也不測試 TLS、WebSocket 或 Reality 協議；Automatic 模式使用下述獨立健康排程。
-私網和非全球可路由地址會被封鎖，結果存入獨立私有狀態，不改動 Fixed URL 或 revision。架構、限制及安全細節見 [Node Health](docs/NODE_HEALTH.md)。
-
-### Full Proxy Validation — main development
-
-Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理的 **Mihomo v1.19.31** 對目前已保存的 VMess/VLESS 節點執行端到端 HTTPS URL probe。預設 **Off**；管理員在 Edit 頁面改為 **Manual** 或 **Automatic** 後可按 **Check Proxies Now**。普通安裝或更新不會安裝、更新或啟動 Mihomo；須在 VPS 透過 SSH 執行 `sudo bash /opt/clash-yaml-manager/mihomoctl.sh install`，Web 只顯示引擎狀態。
-
-**Unreleased / main**：amd64 引擎依所有可見 CPU 的 Linux flags 交集，選擇固定的 GOAMD64 v1/v2/v3 資產；完整性校驗通過後若 `-v` 無法執行，才逐級嘗試較低版本。CPU 型號不參與判斷；arm64 資產不變。既有通用 amd64 安裝按 v3 識別，CPU 降級時顯示 INCOMPATIBLE，可透過 SSH `mihomoctl.sh update` 重新選擇。tim VPS 的 amd64-v2 與真實 VMess/VLESS 手動代理驗收已由 operator 明確回報 PASS；未宣稱 Codex 獨立重現。
-
-預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。預設不改動 YAML；只有另外啟用下述 Health-aware Policy 才會保守排除自動組候選，頂層節點及固定 URL 保留。只有明確啟用 Automatic 才會排程健康檢查。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
-
-## Settings Workspace（Unreleased / main）
-
-登入後的 **Settings** 提供 Overview / GeoIP / Health / Runtime 四個模組。GeoIP 資料庫管理保留原有私有交易；全域 Full Proxy Probe Defaults 統一移到 **Settings → Health**，Fixed Edit 保留摘要、管理連結及每個訂閱自己的模式、自訂目標與間隔。既有 Fixed 全域保存路由仍相容，驗證及保存繼續由 ProxyHealth 負責。
-
-Overview 只讀本地版本、build、狀態及 Fixed 數量；Runtime 只顯示經篩選的有效配置，原始 URL／環境內容、秘密與 token 不顯示。**GET Settings 無 DNS、網路、探測或 subprocess**；Mihomo 顯示僅校驗本地檔案／metadata，不證明二進位能執行。部署配置仍經 `.env` + SSH 重啟管理，Web 不修改環境或 systemd，也不安裝 Mihomo。詳見 [Settings](docs/SETTINGS.md) 與 [受控驗收](docs/SETTINGS_REPORT.md)。
-
-## GeoIP Country Assist（Unreleased / main）
-
-Generate / Fixed 的 Country Detection 新增 **Off（預設） / Literal public IP only**。優先序為 **Manual → Name Detection → GeoIP → Unknown**，只對名稱未識別國家的公共字面 IPv4/IPv6 查詢；不解析域名、不發出 GeoIP 網路請求，也不覆蓋手動國家。
-管理員可在登入後的 **Settings → GeoIP Database** 上傳或移除自己的 Country-capable `.mmdb`（最大 32 MiB）。專案不附帶或下載任何 GeoIP 地理資料庫；缺失、損壞或不可讀時繼續生成，未識別節點仍為 Unknown。
-Fixed v6 保存 GeoIP 模式，來源刷新及 Health-aware 重生成保留設定。替換／移除資料庫不立即改动既有 YAML、URL 或 Health，下次正常重生成才使用新資料。臨時 Generate 不保存 GeoIP 選擇到草稿或 /t 狀態。
-依賴、離線限制、私有儲存及備份見 [GeoIP](docs/GEOIP.md)，受控驗收見 [報告](docs/GEOIP_REPORT.md)。**真實 GeoIP VPS 驗收 NOT RUN**；原有 Health due 作業 PENDING、Policy / Health-aware VPS NOT RUN 保持不變。
-
-## Policy Engine（Unreleased / main）
-
-Generate YAML 和 Fixed create/edit 可分別設定 Country / Selected Special Groups 的 **Preserve、Select、URL-Test、Fallback、Load-Balance**。預設 Preserve / Preserve 保留 YAML 既有組行為；一般組與手動切換不會自動改型。
-自動策略候選僅含本次生成、屬於該組的真實 proxy nodes，排除 DIRECT 和巢狀組；Load-Balance 限 round-robin。客戶端測試 URL 可用 HTTP/HTTPS 與本地位址，伺服器不抓取。
-Fixed registry v6 保存策略、可選健康排除及 GeoIP 模式；v1/v2/v3 仅读取時補 Preserve，v1–v4 補 Health-aware Off，v1–v5 補 GeoIP Off，不改 URL、revision 或 current YAML。來源刷新重用保存的策略；預設不依健康結果排除，也不排序候選。臨時 Generate 使用原有 /t，沒有額外持久化 Policy 狀態。
-範圍、精確 Mihomo v1.19.31 語法、數值限制與 VPS 步驟見 [Policy Engine](docs/POLICY_ENGINE.md)，受控驗證見 [Policy 報告](docs/POLICY_ENGINE_REPORT.md)。**真機 Policy / client 驗收 NOT RUN**。
-
-## Health-aware Policy（Unreleased / main）
-
-僅 Fixed create/edit 提供 **Off（預設） / Exclude confirmed unhealthy nodes**。只排除 Full Proxy 連續失敗至少 3 次且仍新鮮的 UNHEALTHY；Endpoint 不参与。Freshness 支援 1h / 6h / 24h / **48h（預設）** / 7d，Minimum candidates 為 1–16，預設 **2**。
-僅受管理的 URL-Test / Fallback / Load-Balance 候選會改變；Preserve / Select、一般組、頂層 proxies 與手動切換保留。Suspect、Unknown、Unsupported、缺少或過期觀察均保留；每組候選不足時恢復整組原候選，不排序、不評分。
-成功手動／自動 Proxy 檢查後重生成；既有 health timer 每輪另選最多 3 個訂閱檢查過期結果，加上最多 1 次 Proxy 完成回調。只用已提交的 base YAML、手動節點與持久快取，不取來源或再次探測；相同輸出不新增 revision 或更新 Updated。
-Health 狀態損壞、不可讀或忙碌時保留原候選且不重置資料。設定、鎖順序、失敗恢復及真機步驟見 [Health-aware Policy](docs/HEALTH_AWARE_POLICY.md)，受控驗收見 [報告](docs/HEALTH_AWARE_POLICY_REPORT.md)。**真機 Health-aware Policy NOT RUN**；原有 due Health 驗收仍 PENDING，Policy VPS 驗收仍 NOT RUN。
-
-## Automatic Health（Unreleased / main）
-
-Endpoint 與 Full Proxy Health 可各自選擇 **Off / Manual / Automatic**，預設仍為 Off，既有 Manual 不會自動啟用排程。Automatic 支援 15 分鐘至 24 小時的七檔間隔，仍保留手動 Check Now。獨立 `clash-yaml-manager-health.timer` 掃描到期工作，每輪最多 4 個 Endpoint 訂閱及 1 個 Proxy 訂閱；來源刷新 timer 保持獨立。檢查只讀已保存 YAML，不刷新來源；啟用 Health-aware Policy 時，成功 Proxy 結果提交後才以快取重生成自動组候選，Fixed URL 保持不變。調度錯誤使用獨立退避，Mihomo 不可用時保留節點觀察。
-
-架構、狀態遷移及 VPS 指令見 [Automatic Health](docs/AUTOMATIC_HEALTH.md)，受控 Gate 見 [驗收報告](docs/AUTOMATIC_HEALTH_REPORT.md)。**自動 Health 真機驗收 PENDING / NOT FULLY CLOSED**：operator 已回報 timer 安裝、enabled、active(waiting)，實際觸發一次並退出 0，但當次 endpoint=0 / proxy=0；tim 上 systemd-analyze verify PASS、Mihomo COMPATIBLE、healthz 200。仍缺實際到期 Endpoint 與 Proxy 作業的 timer 觸發證據；空掃描或手動 oneshot 不算完整驗收。VERSION / Latest Stable 仍為 **1.1.1 / v1.1.1**。
+Fixed 舊 registry v1–v5 只在內存補新功能預設，合法修改才寫 v6；既有 Health v1 讀作 v2，Off / Manual 不會變成 Automatic。更新保留 token、已提交 YAML、來源快取與獨立狀態。普通安裝不下載 Mihomo、GeoIP 資料庫或申請憑證，也不聯絡 Telegram。
 
 ## 一鍵安裝
 
@@ -221,13 +167,13 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-main 支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。仍只支援 VMess / VLESS。
+節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。仍只支援 VMess / VLESS。
 
 點 **Parse Nodes** 查看 Name、Country、Protocol、Ready / Warning / Error 和來源。修改輸入後顯示 Changes not parsed yet。Preview 可修改 Country / Name，修改立即保存；Apply edit 或 Parse Nodes 更新預覽。手工國家優先，重排未修改的輸入不會丟掉手工修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
 
-支援完整 249 個 ISO 國家/地區，使用同一份[離線資料](docs/COUNTRY_DATA.md)。Auxiliary 和 Preview 的搜尋欄支援 ISO、English、中文和別名，常用國家置頂；例如 tai 找 Taiwan / Thailand，美 找美國，JP 找日本。判斷只依據旗幟、保守的名稱/代碼和城市別名，沒有 DNS 或 GeoIP。衝突或不明名稱為 **🌐 Unknown**，Warning 仍可 Generate，加入 **🌐 其他节点**。只為本次存在的國家建立策略組，保留來源 YAML 既有組。
+支援完整 249 個 ISO 國家/地區，使用同一份[離線資料](docs/COUNTRY_DATA.md)。Auxiliary 和 Preview 的搜尋欄支援 ISO、English、中文和別名，常用國家置頂；例如 tai 找 Taiwan / Thailand，美 找美國，JP 找日本。預設只依據旗幟、保守的名稱/代碼和城市別名，不使用 DNS。明確啟用 GeoIP 後，名稱未識別的公共字面 IP 可使用操作員提供的離線 MMDB；手動國家及名稱判斷仍優先。衝突或不明名稱為 **🌐 Unknown**，Warning 仍可 Generate，加入 **🌐 其他节点**。只為本次存在的國家建立策略組，保留來源 YAML 既有組。
 
-## 草稿（main 開發版）
+## 草稿
 
 Batch、全部 Auxiliary rows、Policy Options、YAML source 和 Preview 手工修正自動存到同一瀏覽器、同一網站 origin 的 localStorage，保留最後保存後 30 天。提交前同步保存；刷新、退出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。成功生成不清空；**Clear Draft** 需確認。
 
@@ -237,7 +183,7 @@ Batch、全部 Auxiliary rows、Policy Options、YAML source 和 Preview 手工�
 
 ---
 
-## 可選 HTTPS / Nginx（main 開發版）
+## 可選 HTTPS / Nginx
 
 普通安裝及升級保持 HTTP，不會自動安裝 Nginx / Certbot 或申請憑證。可在
 Debian/Ubuntu VPS 以 SSH/root 執行 `sudo bash /opt/clash-yaml-manager/httpsctl.sh setup --domain example.com --email admin@example.com`。
@@ -249,7 +195,7 @@ clashyaml 執行，綁定 127.0.0.1；Nginx 使用 Certbot Webroot HTTPS，覆�
 Web 部署按鈕。完整流程、私有備份、回滾和限制見 [HTTPS 文件](docs/HTTPS.md)
 及 [受控驗收報告](docs/HTTPS_REPORT.md)。**REAL HTTPS VPS: NOT RUN**。
 
-## 可選 Telegram 通知（main 開發版）
+## 可選 Telegram 通知
 
 Settings → Notifications 提供預設關閉的 Telegram 通知。保存 `<BOT_TOKEN>` 和
 數字 `<CHAT_ID>` 後，可明確發送測試通知；保存本身不連網。憑據只存在私有
@@ -271,7 +217,7 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。
-- main 新 Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示 Expires（UTC）、Download YAML / Copy Temporary Link / Clear Draft。舊 `/s/` 仍相容。
+- Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示 Expires（UTC）、Download YAML / Copy Temporary Link / Clear Draft。舊 `/s/` 仍相容。
 - 產生 YAML 時顯示處理提示。
 - 內建瀏覽器 favicon，訪問面板時瀏覽器標籤頁會顯示圖示。
 - 盡量保留原設定裡的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自訂欄位。
@@ -284,27 +230,30 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 
 ```text
 clash-yaml-manager/
+├── VERSION / CHANGELOG.md / requirements*.txt
 ├── app.py
-├── requirements.txt
-├── install.sh
-├── update.sh
-├── remote-update.sh
-├── uninstall.sh
+├── install.sh / update.sh / uninstall.sh
+├── remote-install.sh / remote-update.sh
+├── mihomoctl.sh / mihomo-manifest.json / httpsctl.sh
 ├── core/
-│   ├── parser.py
-│   ├── yaml_utils.py
-│   ├── security.py / state.py
-│   ├── envfile.py / migrate.py
-│   ├── rate_limit.py
-│   └── subscriptions.py
-├── scripts/
-│   └── deploy-common.sh
-├── defaults/
-│   └── default.yaml
-├── static/
-│   └── favicon.svg
-└── templates/
-    └── index.html
+│   ├── parser.py / generator.py / yaml_utils.py / countries.py
+│   ├── security.py / rate_limit.py / subscriptions.py / temporary_links.py
+│   ├── state.py / envfile.py / migrate.py / install_info.py / version.py
+│   ├── fixed_subscriptions.py / fixed_sources.py / fixed_views.py
+│   ├── source_fetch.py / source_parser.py / source_errors.py
+│   ├── auto_refresh.py / refresh_schedule.py
+│   ├── node_health.py / node_probe.py / node_identity.py
+│   ├── proxy_health.py / mihomo_manager.py / mihomo_probe.py
+│   ├── auto_health.py / health_schedule.py / health_policy.py / policy_engine.py
+│   ├── geoip.py / geoip_store.py / settings_views.py / settings_status.py
+│   ├── https_manager.py / https_metadata.py / deployment_config.py
+│   └── notifications.py / notification_events.py / telegram.py / retention.py
+├── scripts/                 # release.py, remote_lifecycle.py, build_bootstraps.py, deploy-common.sh
+├── defaults/default.yaml
+├── static/                  # favicon、Generate / Fixed / Policy JS 與 CSS
+├── templates/               # Generate、Fixed、Settings 及功能 partials
+├── tests/
+└── docs/
 ```
 
 執行後會自動建立：
@@ -323,7 +272,9 @@ state/
 
 - 密碼只要求非空，不強制長度或複雜度；請自行選擇合適密碼。
 - 不建議長期把管理面板直接暴露在公網。
-- 推薦透過 Nginx HTTPS、Tailscale、WireGuard 或 SSH 隧道訪問。
+- 推薦透過可選 Nginx HTTPS、Tailscale、WireGuard 或 SSH 隧道訪問。管理模式綁定 Gunicorn 到 loopback，僅在單層可信代理後啟用轉發標頭信任。
+- `/s/`、`/t/` 及簽名下載 URL 都是持有者憑據；Fixed 表單有意顯示自己的 URL 和來源設定。不要分享面板內容、來源 URL 或包含節點的 YAML。
+- 啟用 Telegram 後會傳送清理後的訂閱名稱與彙總至 Telegram；憑據及私有備份仍需保密。GeoIP 資料庫由操作員提供；Mihomo 只經 SSH 管理。可選功能預設 Off。
 - 如果啟用 HTTPS，可以在 `/opt/clash-yaml-manager/.env` 中設定：
 
 ```text
@@ -341,7 +292,7 @@ BACKUP_RETENTION_DAYS=7
 
 升級保留原 `.env`：如果舊安裝是直接 HTTP，卻已有 `DOWNLOAD_URL_SCHEME=https`，請手動改為空值或 `http` 並重啟服務。固定 `SECRET_KEY` 必須在所有 worker 間一致，且不能隨意更換，否則既有簽名訂閱和 session 會失效。
 
-POST 表單與解析 API 使用 Flask-WTF CSRF 保護；表單過期請重新整理以恢復草稿。登出只接受 POST。session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；main 登入 session 為 30 天滑動有效，每次活動延長有效期。HTTPS 部署需設定 `COOKIE_SECURE=true`。
+POST 表單與解析 API 使用 Flask-WTF CSRF 保護；表單過期請重新整理以恢復草稿。登出只接受 POST。session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；登入 session 為 30 天滑動有效，每次活動延長有效期。HTTPS 部署需設定 `COOKIE_SECURE=true`。
 
 新安裝只將 Werkzeug PBKDF2-SHA256（1,000,000 次）密碼雜湊存入 `state/auth.json`，不將明文或 Base64 密碼寫入 `.env`。所有 worker 每次認證都讀取共享檔案，修改密碼後立即生效，無需重啟；其他瀏覽器的舊 session 在下一次請求時失效。runtime 不修改 `.env`。只更新程式而略過升級腳本時，可以從舊環境憑據初始化 state，但仍需管理員完成 `.env` 清理。
 
@@ -351,7 +302,7 @@ systemd 使用專用 `clashyaml:clashyaml`，無登入 shell。程式、預設 Y
 
 新輸出檔名為 `tim_YYYYMMDD_N_<128-bit nonce>.yaml`，V2 短鏈使用 128-bit HMAC。刪除後再生成會得到新隨機 identity，原地址不會因序號重設而讀到新輸出。歷史 8/12 hex 簽名只相容舊檔名，新檔不接受弱 token；完整 64 hex 下載 token 仍可使用。訂閱地址屬於持有者憑據，請勿公開；改管理密碼不撤銷訂閱地址，刪除對應輸出可以撤銷。詳細設計與驗收限制見 [Phase 2](docs/PHASE2.md)。
 
-main 預設上傳保留 **1 小時**、輸出 **24 小時**、備份 **7 天**。啟動/請求可觸發 cleanup，跨 worker 鎖與 `state/.last_cleanup` 保證預設每小時最多掃描一次；沒有背景 daemon，無請求時實體檔案留到下次觸發。`/t/` 獨立檢查到期時間，檔案尚未刪除也回傳 404。上傳刪除不影響已生成輸出。Logs 獨立，state/auth.json 等狀態不進入檔案清理。
+預設上傳保留 **1 小時**、輸出 **24 小時**、備份 **7 天**。啟動/請求可觸發 cleanup，跨 worker 鎖與 `state/.last_cleanup` 保證預設每小時最多掃描一次；沒有背景 daemon，無請求時實體檔案留到下次觸發。`/t/` 獨立檢查到期時間，檔案尚未刪除也回傳 404。上傳刪除不影響已生成輸出。Logs 獨立，state/auth.json 等狀態不進入檔案清理。
 
 HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS`，cleanup 回退 `CLEANUP_INTERVAL_DAYS`。升級保留舊 `.env` 的值；要改成新預設，加入上方三個 HOURS 設定並重啟。無效或非正值回退安全預設，不因歷史配置格式而啟動失敗。備份獨立使用 `BACKUP_RETENTION_DAYS`（或優先 `BACKUP_RETENTION_HOURS`），預設 7 天。
 
@@ -367,10 +318,10 @@ HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS
 
 失敗時不要重新執行安裝。依照輸出的備份目錄手動回滾：
 
-1. 停止 `clash-yaml-manager`。
+1. 先停止 refresh / health timer 和 oneshot，再停止 `clash-yaml-manager`，避免備份或恢復時仍有寫入。
 2. 恢復備份中的應用程式檔案和目錄；將目前 `venv` 移到另一個保留目錄，再把備份 `venv` 放回原安裝路徑。
 3. 核對備份 `.env` 和 `defaults/default.yaml`；回到舊版 root 服務時必須恢復含舊憑據的備份 `.env`。回到支援 state 的版本時，優先保留最新 state；恢復舊 state 會回復舊密碼版本，可能讓舊 session 再次有效。
-4. 將備份的 `clash-yaml-manager.service` 恢復到 `/etc/systemd/system/`；執行 `systemctl daemon-reload` 和 `systemctl restart clash-yaml-manager`。
+4. 核對並恢復備份中的 app、refresh 和 health 共五個 unit（旧版本沒有的新增 unit 須移除）；執行 `systemctl daemon-reload` 和 `systemctl restart clash-yaml-manager`。
 5. 檢查 `systemctl status`、日誌和原本訪問地址。保留 `uploads/outputs/backups/logs/state`，不用刪除它們。若舊 root 服務寫入過資料，往後再次升級要重新修復 runtime 所有權。升級備份可能包含舊明文/Base64 密碼，僅供 root 復原，確認穩定後按自己的保留政策處理。完整步驟見 [Phase 2 遷移](docs/PHASE2.md#e-migration)。
 
 ## Development / Testing
@@ -410,7 +361,7 @@ curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remo
 curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh | sudo bash -s -- --channel stable --allow-downgrade
 ```
 
-降級許可不代表舊程式理解新 state，先保留協調一致的備份。不要刪除 INSTALLATION.json 來繞過檢查。沒有元信息的歷史安裝沿用 VERSION；直接從本機源码執行 install/update 則標為 `-local`，不冒用上一次 main commit。完整規則見 [部署文件](docs/RELEASE.md)。
+降級許可不代表舊程式理解新 state；不宣稱 v1.2 狀態可安全供 v1.1.1 使用，須保留舊程式及匹配的協調備份，沒有反向遷移。不要刪除 INSTALLATION.json 來繞過檢查。沒有元信息的歷史安裝沿用 VERSION；直接從本機源码執行 install/update 則標為 `-local`，不冒用上一次 main commit。完整規則見 [部署文件](docs/RELEASE.md)。
 
 ## 開發驗證
 
@@ -418,15 +369,15 @@ curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remo
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m pytest -q
-.venv/bin/python -m compileall -q app.py core tests
-for script in install.sh update.sh remote-install.sh remote-update.sh uninstall.sh scripts/deploy-common.sh; do
+.venv/bin/python -m compileall -q app.py core scripts tests
+for script in install.sh remote-install.sh update.sh remote-update.sh uninstall.sh httpsctl.sh mihomoctl.sh scripts/deploy-common.sh; do
   bash -n "$script"
 done
 ```
 
-Node 可用時 pytest 也會執行草稿與搜尋 JS 測試（可單獨 `node tests/test_draft.js`）。如有 shellcheck，另執行 `shellcheck install.sh update.sh remote-install.sh remote-update.sh uninstall.sh scripts/deploy-common.sh`。測試使用臨時資料，包含真實 YAML 全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用 systemctl/curl/pip 替身，不能取代 Ubuntu systemd 驗收。
+Node 可用時 pytest 也會執行草稿與搜尋 JS 測試（可單獨 `node tests/test_draft.js`）。如有 shellcheck，另執行 `shellcheck install.sh remote-install.sh update.sh remote-update.sh uninstall.sh httpsctl.sh mihomoctl.sh scripts/deploy-common.sh`。測試使用臨時資料，包含真實 YAML 全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用 systemctl/curl/pip 替身，不能取代 Ubuntu systemd 驗收。
 
-處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。main 已有節點 Parse Preview；Merge、完整 YAML 差異預覽和新協議尚未實作。
+處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。已有節點 Parse Preview；Merge、完整 YAML 差異預覽和新協議尚未實作。
 
 ---
 

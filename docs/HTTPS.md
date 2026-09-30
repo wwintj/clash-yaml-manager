@@ -1,7 +1,9 @@
-# HTTPS / Nginx Deployment Assistant (Unreleased main)
+# HTTPS / Nginx Deployment Assistant
+
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 HTTPS is optional. Ordinary install/update stays HTTP and never installs Nginx,
-Certbot or requests a certificate. VERSION and Latest Stable remain **1.1.1**.
+Certbot or requests a certificate.
 This feature is available on development main until a future stable release.
 
 The topology is browser → Nginx on TCP 80/443 → Gunicorn on
@@ -77,6 +79,21 @@ TLS uses 1.2/1.3 and system defaults. HSTS and HTTP/2 are not enabled by this MV
 HSTS is sticky and should be a separately reviewed manual hardening decision.
 Uploads allow 50 MiB; proxy read/send timeout is 300 seconds, matching Gunicorn,
 with a 10-second connect timeout. Flask security headers remain unchanged.
+
+## Request log privacy
+
+Newly rendered project HTTP and TLS server blocks set `access_log off`, so
+subscription URLs and Referer aliases are not retained by inherited access logging.
+Application filters also redact all `/s/`, `/t/`, `/sub/` and `/download/` request
+records. Ordinary update preserves existing managed Nginx configuration: an older
+integration keeps its old logging policy. An operator must review it over SSH;
+a reviewed disable/setup cycle renders the current configuration. This audit does
+not rewrite deployed integration or invalidate its ownership hashes automatically.
+
+Nginx error logs and any additional reverse proxy/CDN/firewall logs remain separate
+operator-controlled surfaces; diagnostics may contain request URLs. Protect them
+as credentials and review their logging policy before sharing. Disabling access
+logs is not proof that every infrastructure log is free of secrets.
 
 ## Certificate issuance and renewal
 

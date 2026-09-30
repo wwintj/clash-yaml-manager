@@ -1,4 +1,6 @@
-# Fixed Subscriptions (unreleased main)
+# Fixed Subscriptions
+
+Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 External node sources extend this MVP; see [External Sources](EXTERNAL_SOURCES.md)
 for formats, SSRF, cache, migration and refresh behavior.
@@ -75,7 +77,7 @@ failed form validation re-renders the submitted fields without persisting reject
 After CSRF recovery the previously saved server configuration remains available.
 
 Tokens remain in private state and authenticated UI only. Application, Werkzeug and
-Gunicorn request logs redact fixed URLs. A separately configured reverse proxy has its
+Gunicorn request logs redact Fixed, temporary, legacy and signed subscription URLs. A separately configured reverse proxy has its
 own logging policy and should omit/redact bearer subscription paths. No token is written
 to `.env`, installation metadata or documentation. Filesystem traversal and symlinks are
 rejected. Custom base upload extensions and the existing 50MB request limit remain unchanged.
@@ -104,8 +106,8 @@ auth/CSRF, fixed/V2/legacy/temporary route coexistence and upgrade preservation.
 and Fixed CRUD at desktop size, with mobile list overflow/action checks, custom-base
 reuse, Copy, confirmations, failed-save preservation and draft separation.
 
-Deferred: Duplicate, detail tabs, refresh schedules,
-node health/latency checks, advanced policies, rule editors, databases and history.
+Optional source refresh, Endpoint/Proxy Health, policies and offline GeoIP are
+documented separately. Deferred: Duplicate, detail tabs, rule editors and revision history.
 
 Policy configuration, exact migration and refresh semantics are described in [POLICY_ENGINE.md](POLICY_ENGINE.md).
 
