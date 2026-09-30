@@ -41,6 +41,10 @@ class FixedBearerFilter(logging.Filter):
         # retaining an encoded alias of the bearer in another request field.
         if re.search(r'/s/[^\s?"<>]*-fs_', unquote(message)):
             message = 'Fixed subscription request [fixed-redacted].'
+        elif re.search(r'/(?:s|t|sub|download)/', unquote(message)):
+            # Temporary and legacy/signed subscription URLs are credentials too.
+            # Suppress the entire record, including query and Referer aliases.
+            message = 'Subscription request [credential-redacted].'
         record.msg = message
         record.args = ()
         return True

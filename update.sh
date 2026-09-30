@@ -41,13 +41,13 @@ done
 # Validate Python syntax and existing environment before changing deployed files.
 APP_PORT="$(python3 - "${CURRENT_DIR}" "${INSTALL_DIR}/.env" <<'PY'
 import base64
-import json
 import pathlib
 import sys
 try:
     source = pathlib.Path(sys.argv[1])
     sys.path.insert(0, str(source))
     from core.envfile import values as env_values
+    from core.state import read_json
     from core.deployment_config import bind_host
     from core.version import read_version
     read_version(source / "VERSION")
@@ -63,8 +63,8 @@ try:
     assert values.get('SECRET_KEY')
     state_path = env_path.parent / 'state/auth.json'
     assert state_path.is_file() or any(values.get(k) for k in ('APP_PASSWORD_HASH', 'APP_PASSWORD_B64', 'APP_PASSWORD'))
-    if state_path.exists():
-        state = json.loads(state_path.read_text())
+    if state_path.exists() or state_path.is_symlink():
+        state = read_json(state_path)
         assert state.get('password_hash') and state.get('auth_version')
     elif not values.get('APP_PASSWORD_HASH') and values.get('APP_PASSWORD_B64'):
         assert base64.b64decode(values['APP_PASSWORD_B64'], validate=True).decode('utf-8')

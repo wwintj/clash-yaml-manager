@@ -196,3 +196,20 @@ def test_actions_flattened_local_tag_checks_remote_annotation(clean_repository, 
         with pytest.raises(r.ReleaseError, match='annotated tag'):
             r.publish_tag('v1.0.0', root)
     assert git('cat-file', '-t', 'v1.0.0') == 'commit'  # no local ref rewrite
+
+
+def test_release_validation_covers_all_deployment_entrypoints(monkeypatch):
+    expected = ('install.sh', 'remote-install.sh', 'update.sh', 'remote-update.sh',
+                'uninstall.sh', 'httpsctl.sh', 'mihomoctl.sh', 'scripts/deploy-common.sh')
+    assert r.SHELL_SCRIPTS == expected
+    calls = []
+    monkeypatch.setattr(r, 'run', lambda args, *a, **kw: calls.append(args) or '')
+    monkeypatch.setattr(r.shutil, 'which', lambda name: '/test/shellcheck' if name == 'shellcheck' else None)
+    r.validate(ROOT)
+    assert [call for call in calls if call[:2] == ['bash', '-n']] == [
+        ['bash', '-n', script] for script in expected]
+    assert ['shellcheck', *expected] in calls
+    assert any(call[1:] == ['scripts/build_bootstraps.py', '--check'] for call in calls)
+    assert any(call[1:] == ['-m', 'pip', 'check'] for call in calls)
+    assert any(call[1:] == ['-m', 'pytest', '-q', '-p', 'no:cacheprovider'] for call in calls)
+    assert calls[-1] == ['git', 'diff', '--check']

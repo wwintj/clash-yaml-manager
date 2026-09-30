@@ -117,6 +117,7 @@ def nginx_config(paths, host, port, *, tls):
 server {{
     listen 80;
     server_name {host};
+    access_log off;
     if ($host != {host}) {{ return 404; }}
     client_max_body_size 50m;
     location ^~ /.well-known/acme-challenge/ {{
@@ -131,6 +132,7 @@ server {{
     return http + f'''server {{
     listen 443 ssl;
     server_name {host};
+    access_log off;
     if ($host != {host}) {{ return 404; }}
     ssl_certificate {paths.certificates}/live/{host}/fullchain.pem;
     ssl_certificate_key {paths.certificates}/live/{host}/privkey.pem;

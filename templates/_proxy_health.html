@@ -1,7 +1,7 @@
 <section id="proxy-health" class="terminal-panel mt-4"><div class="panel-inner">
   <h3 class="panel-title mb-3">FULL PROXY VALIDATION</h3>
   <p class="helper-text">End-to-end proxy probe through Mihomo. Tests the selected proxy against the configured HTTPS target. A healthy result applies only to that probe target.</p>
-  <p class="form-text">Manual or opt-in Automatic. Proxy results are independent of TCP endpoint results and never remove nodes or change the generated YAML.</p>
+  <p class="form-text">Manual or opt-in Automatic. Proxy results are independent of TCP endpoint results and preserve top-level nodes. Enabled Health-aware Policy may regenerate managed group candidates after a committed check.</p>
   {% if proxy_notice %}<p class="health-notice" role="status">{{ proxy_notice }}</p>{% endif %}
   <div class="proxy-engine-card mb-4">
     <h4 class="panel-title">PROXY PROBE ENGINE</h4>

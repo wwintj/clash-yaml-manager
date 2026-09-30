@@ -67,10 +67,16 @@ def write_json(path, value):
 
 
 def read_json(path):
+    """Read regular JSON state without following links or waiting on a FIFO.
+
+    Keep legacy permission handling with the store/deployment owner; this shared
+    reader must not repair or rewrite an existing file merely to inspect it.
+    """
     try:
-        if Path(path).is_symlink():
-            raise ValueError
-        with open(path, encoding='utf-8') as source:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, encoding='utf-8') as source:
+            if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+                raise ValueError
             return json.load(source)
     except (OSError, ValueError, TypeError):
         raise StateError('状态文件不可读取或已损坏，请检查权限并从备份恢复。') from None

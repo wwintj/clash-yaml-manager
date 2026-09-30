@@ -28,7 +28,7 @@ class LoginLimiter:
             return 'unknown'
 
     def _load(self, now):
-        if not self.path.exists():
+        if not self.path.exists() and not self.path.is_symlink():
             return {}
         state = read_json(self.path)
         if not isinstance(state, dict) or state.get('version') != 1 or not isinstance(state.get('ips'), dict):
