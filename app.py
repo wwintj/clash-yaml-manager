@@ -21,7 +21,7 @@ from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG
 from core.fixed_views import blueprint as fixed_blueprint
 from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
-from core import policy_engine, geoip, yaml_diff
+from core import policy_engine, geoip, yaml_diff, node_update
 from core.geoip_store import GeoIPStore
 from core.notifications import Notifications
 from core.settings_views import blueprint as settings_blueprint
@@ -294,6 +294,7 @@ def get_base_context() -> Dict[str, Any]:
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
         "policy_fields": policy_engine.form_values(policy_engine.defaults()),
         "country_geoip": "off",
+        "node_update_mode": "replace",
         "geoip_status": settings_status.geoip_status(geoip_store) if session.get("logged_in") else {"status": "Not installed"},
     }
 
@@ -510,10 +511,11 @@ def generation_special_groups():
 def preview_yaml_diff():
     try:
         yaml_diff.check_form_size(request.form)
+        mode = node_update.parse_form(request.form)
         policy = policy_engine.parse_form(request.form)
         file = selected_yaml_file()
         parsed = parse_form_nodes(readonly=True)
-    except (GenerateInputError, yaml_diff.PreviewValidationError, policy_engine.PolicyError) as error:
+    except (GenerateInputError, yaml_diff.PreviewValidationError, policy_engine.PolicyError, node_update.ModeError) as error:
         return jsonify(ok=False, error=str(error)), 400
     except ValueError as error:
         # Existing country/form parsers intentionally raise these fixed messages.
@@ -535,7 +537,7 @@ def preview_yaml_diff():
                 source = yaml_diff.read_source(stream)
         else:
             source = yaml_diff.read_source(file.stream)
-        result = yaml_diff.preview(source, parsed, generation_special_groups(), policy)
+        result = yaml_diff.preview(source, parsed, generation_special_groups(), policy, node_update_mode=mode)
         response = jsonify(ok=True, **result)
         if len(response.get_data()) > yaml_diff.MAX_RESPONSE_BYTES:
             raise yaml_diff.PreviewLimitError(yaml_diff.TOO_LARGE)
@@ -552,16 +554,21 @@ def process_config():
     context = get_base_context()
     cleanup_old_files()
 
-    def generation_error():
+    def generation_error(*, force_400=False):
         context['country_geoip'] = request.form.get('country_geoip', 'off')[:64]
+        context['node_update_mode'] = 'merge' if request.form.get('node_update_mode') == 'merge' else 'replace'
         # Redisplay policies in this response only; no new persisted temp state.
-        if 'country_geoip' in request.form or any(key.startswith('policy_') for key in request.form):
+        if force_400 or 'country_geoip' in request.form or any(key.startswith('policy_') for key in request.form):
             context['policy_fields'] = policy_engine.submitted_values(request.form)
             return render_template('index.html', **context), 400
         return redirect_to_index(context)
 
     try:
+        mode = node_update.parse_form(request.form)
         policy = policy_engine.parse_form(request.form)
+    except node_update.ModeError as error:
+        context['error_messages'].append(str(error))
+        return generation_error(force_400=True)
     except policy_engine.PolicyError as error:
         context['error_messages'].append(str(error))
         return generation_error()
@@ -607,7 +614,7 @@ def process_config():
 
     special_groups = generation_special_groups()
 
-    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups, policy)
+    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups, policy, node_update_mode=mode)
 
     if not yaml_result["success"]:
         context["error_messages"].extend(yaml_result["errors"])

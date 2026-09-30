@@ -16,6 +16,7 @@
           typeof draft.batch !== 'string' || !Array.isArray(draft.rows) ||
           !draft.rows.every(r => r && ['country', 'name', 'link'].every(k => typeof r[k] === 'string')) ||
           !Array.isArray(draft.policies)) throw Error('invalid');
+      draft.node_update_mode = draft.node_update_mode === 'merge' ? 'merge' : 'replace';
       return draft;
     } catch (_) { storage.removeItem(KEY); return null; }
   }
@@ -31,6 +32,7 @@
     const template = rows.firstElementChild.cloneNode(true);
     const batch = document.getElementById('batch_nodes');
     const source = document.getElementById('yaml-source');
+    const updateMode = document.getElementById('node-update-mode');
     const file = form.querySelector('[name=yaml_file]');
     const status = document.getElementById('draft-status');
     const hint = document.getElementById('source-hint');
@@ -42,7 +44,7 @@
       hint.textContent = source.value === 'custom' && !file.files.length ? 'Custom YAML needs to be selected again.' : '';
     }
     function snapshot() {
-      return {batch: batch.value, source: source.value,
+      return {batch: batch.value, source: source.value, node_update_mode: updateMode.value,
         rows: [...rows.children].map(row => ({country: row.querySelector('.aux-country').value,
           name: row.querySelector('.aux-name').value, link: row.querySelector('.aux-link').value})),
         policies: policies.filter(p => p.checked).map(p => p.value), overrides: root.nodeOverrides};
@@ -58,6 +60,7 @@
       if (draft) {
         batch.value = draft.batch;
         source.value = draft.source === 'custom' ? 'custom' : 'default';
+        updateMode.value = draft.node_update_mode;
         rows.replaceChildren();
         (draft.rows.length ? draft.rows : [{country:'', name:'', link:''}]).forEach(value => {
           const row = template.cloneNode(true);
@@ -85,6 +88,7 @@
       clearTimeout(timer); timer = null;
       try { clear(localStorage); } catch (_) { /* Form reset still works. */ }
       form.reset(); policies.forEach(p => { p.checked = false; });
+      updateMode.value = 'replace';
       rows.replaceChildren(template.cloneNode(true)); root.nodeOverrides = {};
       syncSource(); document.dispatchEvent(new Event('draft-cleared'));
       status.textContent = 'Draft cleared';

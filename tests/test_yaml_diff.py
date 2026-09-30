@@ -57,15 +57,17 @@ def apply_diff(source, diff):
 
 
 @pytest.mark.parametrize('source',['custom','default'])
+@pytest.mark.parametrize('mode',['replace','merge'])
 @pytest.mark.parametrize('kind',['preserve','select','url-test','fallback','load-balance'])
 @pytest.mark.parametrize('manual',[False,True])
 @pytest.mark.parametrize('geo',['off','literal-ip'])
-def test_exact_preview_response_matches_subsequent_generate(web,logged_in,readers,source,kind,manual,geo):
+def test_exact_preview_response_matches_subsequent_generate(web,logged_in,readers,source,mode,kind,manual,geo):
     web.geoip_store.upload('country.mmdb',io.BytesIO(b'SYNTHETIC:SG'))
     batch='Opaque|'+LINK.replace('example.com','8.8.8.8')
     key=generator.parse_form_nodes({'batch_nodes':batch})['preview'][0]['key']
     edits={key:{'name':'Edited Ω','country':'TW'}} if manual else {}
     values=fields(source,kind,edits,geo,batch)
+    values['node_update_mode']=mode
     values['special_groups']=web.DEFAULT_SPECIAL_GROUPS[:2]
     response=post(logged_in,ROUTE,body(values))
     assert response.status_code==200,response.json
@@ -148,7 +150,8 @@ def snapshot(web):
     return result
 
 
-def test_100_previews_no_business_mutation_cleanup_network_or_commands(web,logged_in,readers,monkeypatch,caplog):
+@pytest.mark.parametrize('mode',['replace','merge'])
+def test_100_previews_no_business_mutation_cleanup_network_or_commands(web,logged_in,readers,monkeypatch,caplog,mode):
     csrf=token(logged_in)
     web.geoip_store.upload('country.mmdb',io.BytesIO(b'SYNTHETIC:SG'))
     web.geoip_store.lock.unlink() # Read-only lookup cannot recreate even a missing lock.
@@ -165,6 +168,7 @@ def test_100_previews_no_business_mutation_cleanup_network_or_commands(web,logge
     caplog.clear()
     for i in range(100):
         values=fields(geo='literal-ip',batch='Opaque|'+LINK.replace('example.com','8.8.8.8'))
+        values['node_update_mode']=mode
         values['csrf_token']=csrf
         response=logged_in.post(ROUTE,data=body(values))
         assert response.status_code==200,response.json
@@ -176,12 +180,14 @@ def test_100_previews_no_business_mutation_cleanup_network_or_commands(web,logge
         if path.is_file():assert b'<script>' not in path.read_bytes() and LINK.encode() not in path.read_bytes()
 
 
-def test_parallel_preview_requests_isolated(web,logged_in):
+@pytest.mark.parametrize('mode',['replace','merge'])
+def test_parallel_preview_requests_isolated(web,logged_in,mode):
     csrf=token(logged_in);cookie=logged_in.get_cookie('session').value;before=snapshot(web)
     def one(index):
         with web.app.test_client() as client:
             client.set_cookie('session',cookie)
             values=fields(batch=f'US|Unique-{index}-END|'+LINK);values['csrf_token']=csrf
+            values['node_update_mode']=mode
             response=client.post(ROUTE,data=body(values))
             assert response.status_code==200
             return response.json['diff']

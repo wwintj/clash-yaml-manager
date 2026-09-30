@@ -1,0 +1,41 @@
+# Merge preservation fixture: synthetic source proxies, never live credentials.
+dns: {enable: true, nameserver: ["1.1.1.1"]} # retained dns comment
+proxy-providers: {airport: {type: file, path: './synthetic-provider.yaml'}}
+rule-providers: {domains: {type: file, behavior: domain, path: './synthetic-rules.yaml'}}
+x-connection: &connection {server: 'old.example', port: 443}
+proxies:
+  # old node sequence comment
+  - &old_a
+    name: "old-a" # old node name comment
+    type: trojan
+    <<: *connection
+    password: 'TEST_ONLY_NOT_A_CREDENTIAL'
+    x-vendor: {ordered: ['first', 'second'], enabled: true}
+  - {name: 'old-b', type: ss, server: old.example, port: 8443, cipher: aes-128-gcm, password: TEST_ONLY}
+  - {name: old-c, type: hysteria2, server: old.example, port: 443, password: TEST_ONLY}
+  - {name: old-d, type: wireguard, server: old.example, port: 51820, x-extra: retained}
+  - {name: old-e, type: vendor-proxy, x-opaque: {unknown: 'quoted Ω'}}
+  - {name: old-f, type: vless, server: old.example, port: 443, uuid: TEST_ONLY}
+proxy-groups:
+  # original manual topology
+  - name: Manual # group name comment
+    type: select
+    proxies:
+      - "old-a" # retained reference comment
+      - old-b
+  - {name: '🚀 节点选择', type: select, proxies: [old-a, Manual]}
+  - {name: '🚀 手动切换', type: select, proxies: [old-b]}
+  - {name: '🐟 漏网之鱼', type: select, proxies: [old-c, DIRECT]}
+  - {name: media, type: fallback, proxies: [old-b, DIRECT, Manual], url: 'http://client.local/check', interval: 123, lazy: false, icon: kept, x-note: 'retained'}
+  - {name: unselected, type: select, proxies: [old-c]}
+  - {name: '🇺🇸 美国节点', type: url-test, proxies: [old-d, DIRECT], url: 'http://client.local/check', interval: 456, tolerance: 7, lazy: false}
+  - {name: '🇯🇵 日本节点', type: fallback, proxies: [old-e], url: 'http://client.local/check', interval: 789}
+  - {name: provider, type: url-test, proxies: [old-f], use: [airport], filter: JP}
+  - {name: empty-select, type: select, proxies: []}
+  - {name: empty-auto, type: fallback, proxies: []}
+rules:
+  - 'RULE-SET,domains,Manual'
+  - 'MATCH,DIRECT'
+x-private: '<script>alert(1)</script> & Ω'
+x-node-copy: *old_a
+x-custom: {nested: [1, 'quoted', true]}

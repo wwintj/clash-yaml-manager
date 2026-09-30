@@ -8,7 +8,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from core import policy_engine
+from core import policy_engine, node_update
 
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
@@ -279,7 +279,7 @@ def validate_proxy_references(data: Dict[str, Any]) -> List[str]:
 # ==========================================
 # 数据清洗与重组
 # ==========================================
-def normalize_group_names(data: Dict[str, Any]) -> None:
+def normalize_group_names(data: Dict[str, Any], preserved_node_names=()) -> None:
     """修正常见错误策略组名，并同步修正组内引用和 rules 中的策略名。"""
     if "proxy-groups" in data and isinstance(data["proxy-groups"], list):
         for group in data["proxy-groups"]:
@@ -292,7 +292,7 @@ def normalize_group_names(data: Dict[str, Any]) -> None:
 
             if "proxies" in group and isinstance(group["proxies"], list):
                 for i, proxy_name in enumerate(group["proxies"]):
-                    if proxy_name in FLAG_CORRECTIONS:
+                    if proxy_name in FLAG_CORRECTIONS and proxy_name not in preserved_node_names:
                         group["proxies"][i] = FLAG_CORRECTIONS[proxy_name]
 
     if "rules" in data and isinstance(data["rules"], list):
@@ -307,7 +307,7 @@ def normalize_group_names(data: Dict[str, Any]) -> None:
             target_idx = -2 if parts[-1].strip().lower() == "no-resolve" else -1
             target_value = parts[target_idx].strip()
 
-            if target_value in FLAG_CORRECTIONS:
+            if target_value in FLAG_CORRECTIONS and target_value not in preserved_node_names:
                 parts[target_idx] = parts[target_idx].replace(target_value, FLAG_CORRECTIONS[target_value])
                 data["rules"][i] = ",".join(parts)
 
@@ -413,8 +413,8 @@ def fill_empty_proxy_groups(data: Dict[str, Any], new_node_names: List[str]) -> 
 # ==========================================
 # 主入口
 # ==========================================
-def transform_yaml_config(data, new_nodes, countries, special_groups=None, policy_config=None, group_transform=None):
-    """Shared in-memory replacement/validation; no files, state or network work."""
+def transform_yaml_config(data, new_nodes, countries, special_groups=None, policy_config=None, group_transform=None, *, node_update_mode='replace'):
+    """Shared in-memory update/validation; no files, state or network work."""
     result: Dict[str, Any] = {
         "success": False,
         "output_path": "",
@@ -434,6 +434,7 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
     result["new_node_count"] = len(new_nodes)
 
     try:
+        mode = node_update.normalize(node_update_mode)
         policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
         validate_input_structure(data)
 
@@ -442,7 +443,10 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
         if "proxy-groups" not in data or not isinstance(data["proxy-groups"], list):
             data["proxy-groups"] = []
 
-        normalize_group_names(data)
+        # In Merge a proxy can legitimately have a legacy flag-looking name.
+        # Its references/rule targets must not be mistaken for corrected groups.
+        preserved = {p['name'] for p in data['proxies']} if mode == 'merge' else set()
+        normalize_group_names(data, preserved)
         # Normalization can itself introduce a duplicate name.
         validate_input_structure(data)
 
@@ -460,20 +464,27 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
             if isinstance(g, dict) and "name" in g
         }
 
-        for group in data["proxy-groups"]:
-            if not isinstance(group, dict):
-                continue
+        if mode == 'replace':
+            for group in data["proxy-groups"]:
+                if not isinstance(group, dict):
+                    continue
 
-            if "proxies" not in group or not isinstance(group["proxies"], list):
-                group["proxies"] = []
+                if "proxies" not in group or not isinstance(group["proxies"], list):
+                    group["proxies"] = []
 
-            # Remove in-place so retained ruamel sequence comments survive.
-            for index in range(len(group['proxies']) - 1, -1, -1):
-                ref = group['proxies'][index]
-                if ref in old_nodes_set and ref not in group_names and ref not in BUILT_IN_POLICIES:
-                    del group['proxies'][index]
+                # Remove in-place so retained ruamel sequence comments survive.
+                for index in range(len(group['proxies']) - 1, -1, -1):
+                    ref = group['proxies'][index]
+                    if ref in old_nodes_set and ref not in group_names and ref not in BUILT_IN_POLICIES:
+                        del group['proxies'][index]
 
-        data["proxies"] = new_nodes
+            data["proxies"] = new_nodes
+        else:
+            if any(node['name'] in old_nodes_set for node in new_nodes):
+                raise ConfigValidationError('Node name already exists in source YAML.')
+            # Extend the original ruamel sequence: keep every old node object,
+            # its unknown protocol/fields, comments, quotes, aliases and order.
+            data['proxies'].extend(new_nodes)
         if any(node['name'] in group_names | BUILT_IN_POLICIES for node in new_nodes):
             raise ConfigValidationError('新节点名称与策略组或内置策略冲突。')
 
@@ -511,6 +522,8 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
         validate_input_structure(data)
         if {node['name'] for node in new_nodes} & {g['name'] for g in data['proxy-groups']}:
             raise ConfigValidationError('新节点名称与策略组冲突。')
+        if mode == 'merge' and old_nodes_set & {g['name'] for g in data['proxy-groups']}:
+            raise ConfigValidationError('Source node name conflicts with a proxy group.')
         validate_removed_rule_targets(data, old_nodes_set)
 
         validation_errors = validate_proxy_references(data)
@@ -525,7 +538,7 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
         result["data"] = data
         result["success"] = True
 
-    except (ConfigValidationError, policy_engine.PolicyError) as e:
+    except (ConfigValidationError, policy_engine.PolicyError, node_update.ModeError) as e:
         result['errors'].append(str(e))
     except YAMLError:
         result['errors'].append('YAML 格式错误，请检查缩进、引号和重复键。')
@@ -545,6 +558,7 @@ def process_yaml_config(
     special_groups: Optional[List[str]] = None,
     policy_config: Optional[Dict[str, Any]] = None,
     group_transform=None,
+    *, node_update_mode='replace',
 ) -> Dict[str, Any]:
     """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
     result = dict(success=False, output_path="", backup_path="", old_node_count=0,
@@ -555,10 +569,11 @@ def process_yaml_config(
         return result
     result['new_node_count'] = len(new_nodes)
     try:
+        mode = node_update.normalize(node_update_mode)
         policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
         result['backup_path'] = backup_yaml(input_path, backup_dir)
         transformed = transform_yaml_config(load_yaml(input_path), new_nodes, countries,
-                                            special_groups, policy, group_transform)
+                                            special_groups, policy, group_transform, node_update_mode=mode)
         data = transformed.pop('data', None)
         transformed.pop('output_path')
         transformed.pop('backup_path')
@@ -567,7 +582,7 @@ def process_yaml_config(
             result['success'] = False
             result['output_path'] = save_new_output(data, output_dir)
             result['success'] = True
-    except (ConfigValidationError, policy_engine.PolicyError) as error:
+    except (ConfigValidationError, policy_engine.PolicyError, node_update.ModeError) as error:
         result['errors'].append(str(error))
     except YAMLError:
         result['errors'].append('YAML 格式错误，请检查缩进、引号和重复键。')
