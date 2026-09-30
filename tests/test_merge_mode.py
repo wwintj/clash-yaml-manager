@@ -256,7 +256,7 @@ def test_merge_never_deduplicates_by_connection_or_protocol():
     assert result['success'] and len(result['data']['proxies'])==3
 
 
-@pytest.mark.parametrize('protocol',['trojan','ss','hysteria2','wireguard'])
+@pytest.mark.parametrize('protocol',['ss','hysteria2','wireguard'])
 def test_merge_does_not_add_new_input_protocols(web,logged_in,protocol):
     values=fields(batch=f'US|Unsupported|{protocol}://TEST_ONLY@example.com')
     values['node_update_mode']='merge'

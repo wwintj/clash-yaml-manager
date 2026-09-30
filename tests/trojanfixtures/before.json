@@ -1,0 +1,79 @@
+{
+  "start": "8d5ba5f19445fa619efcfba1ca99c5754691a0b3",
+  "mappings": [
+    {
+      "uri": "vmess://eyJhZGQiOiAiZXhhbXBsZS5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAidGVzdC11dWlkIiwgIm5ldCI6ICJ0Y3AifQ==",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vmess",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "test-uuid",
+        "alterId": 0,
+        "cipher": "auto",
+        "udp": true,
+        "skip-cert-verify": false
+      }
+    },
+    {
+      "uri": "vmess://eyJhZGQiOiAiZXhhbXBsZS5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAidGVzdC11dWlkIiwgIm5ldCI6ICJ3cyIsICJ0bHMiOiAidGxzIiwgImhvc3QiOiAiY2RuLmV4YW1wbGUuY29tIiwgInBhdGgiOiAiL3dzIiwgInNuaSI6ICJ0bHMuZXhhbXBsZS5jb20iLCAiZnAiOiAiY2hyb21lIiwgImFscG4iOiAiaDIsaHR0cC8xLjEifQ==",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vmess",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "test-uuid",
+        "alterId": 0,
+        "cipher": "auto",
+        "udp": true,
+        "skip-cert-verify": false,
+        "network": "ws",
+        "tls": true,
+        "servername": "tls.example.com",
+        "client-fingerprint": "chrome",
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "ws-opts": {
+          "path": "/ws",
+          "headers": {
+            "Host": "cdn.example.com"
+          }
+        }
+      }
+    },
+    {
+      "uri": "vless://11111111-1111-4111-8111-111111111111@example.com:443?type=tcp",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vless",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "11111111-1111-4111-8111-111111111111",
+        "udp": true,
+        "skip-cert-verify": false
+      }
+    },
+    {
+      "uri": "vless://11111111-1111-4111-8111-111111111111@example.com:443?type=ws&path=%2Fws%252Fencoded",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vless",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "11111111-1111-4111-8111-111111111111",
+        "udp": true,
+        "skip-cert-verify": false,
+        "network": "ws",
+        "ws-opts": {
+          "path": "/ws%2Fencoded"
+        }
+      }
+    }
+  ],
+  "yaml_sha256": {
+    "replace": "77812738ec3a51c8f160cacedc24dc97a9e9d3eeabc7bb0c2db78cc2dd222fda",
+    "merge": "f9be22dfd2ad1493c524a00d596e02700858af55cc5c1442ec97394828ebab81"
+  }
+}
