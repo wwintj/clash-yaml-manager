@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Make the Settings runtime build-identity regression derive its expected development label from the current VERSION, so release validation remains version-agnostic after a minor-version bump.
+
 ## v1.2.0 - 2026-09-30
 
 ### Added

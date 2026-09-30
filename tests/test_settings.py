@@ -192,7 +192,7 @@ def test_runtime_values_build_identity_and_secret_absence(web, logged_in, monkey
     env_sentinel = 'ENV_CONTENT_SECRET_SENTINEL'
     (root/'.env').write_text('SECRET_KEY='+env_sentinel)
     auth_hash = json.loads((root/'state/auth.json').read_bytes())['password_hash']
-    (root/'INSTALLATION.json').write_text(json.dumps(dict(channel='main',base_version='1.1.1',
+    (root/'INSTALLATION.json').write_text(json.dumps(dict(channel='main',base_version=web.APP_VERSION,
         commit='a'*40,tag=None,installed_at='2026-09-30T00:00:00+00:00',source='github-main')))
     values = dict(APP_PORT=9012,COOKIE_SECURE=True,TRUST_PROXY_HEADERS=True,
         DOWNLOAD_BASE_URL='https://DOWNLOAD_CREDENTIAL_SENTINEL:password@private.example/PRIVATE_BASE_PATH',
@@ -201,7 +201,7 @@ def test_runtime_values_build_identity_and_secret_absence(web, logged_in, monkey
     for name,value in values.items():monkeypatch.setattr(web,name,value)
     before = fixed_bytes(web); response = logged_in.get('/settings'); html = response.get_data(as_text=True)
     for value in ('9012','Enabled','Explicit base URL','Configured','7200 seconds','10800 seconds',
-                  '3600 seconds','604800 seconds','30 days','1.1.1-dev+aaaaaaa','main'):
+                  '3600 seconds','604800 seconds','30 days',f'{web.APP_VERSION}-dev+aaaaaaa','main'):
         assert value in html
     for value in (env_sentinel,auth_hash,entry['token'],web.SECRET_KEY,web.auth_store.path.read_text(),
                   'DOWNLOAD_CREDENTIAL_SENTINEL','private.example','PRIVATE_BASE_PATH'):
