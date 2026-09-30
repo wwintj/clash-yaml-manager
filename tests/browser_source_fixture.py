@@ -63,10 +63,16 @@ def external_source_server():
     def proxy_run(binary, nodes, settings, directory):
         if state['proxy_result']=='engine-error':
             raise mihomo_probe.ProbeEngineError('PRIVATE controller failure')
-        kind={'success':'success','failure':'failure','unsupported':'unsupported'}[state['proxy_result']]
-        return {node['fingerprint']:dict(kind=kind,latency_ms=38 if kind=='success' else None,
-                   error={'success':None,'failure':'proxy_failed','unsupported':'unsupported_config'}[kind])
-                for node in nodes}
+        results = {}
+        for node in nodes:
+            if state['proxy_result'] in ('middle-failure', 'two-failures'):
+                failed = node['config']['server'] in (('8.8.4.4',) if state['proxy_result']=='middle-failure' else ('8.8.4.4','1.1.1.1'))
+                kind = 'failure' if failed else 'success'
+            else:
+                kind={'success':'success','failure':'failure','unsupported':'unsupported'}[state['proxy_result']]
+            results[node['fingerprint']]=dict(kind=kind,latency_ms=38 if kind=='success' else None,
+                error={'success':None,'failure':'proxy_failed','unsupported':'unsupported_config'}[kind])
+        return results
     try:
         with patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
             yield dict(EXTERNAL_TEST_URL=f'http://external-source.test:{server.server_port}/sub?token=PRIVATE',
