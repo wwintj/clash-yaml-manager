@@ -12,16 +12,11 @@
   {% if proxy_health.unavailable %}<p class="source-warning" role="status">{{ proxy_health.unavailable }}</p>
   {% else %}
   {% if proxy_health.mode == 'automatic' and proxy_health.engine.status != 'COMPATIBLE' %}<p class="source-warning" role="status">Automatic proxy checks require a compatible managed engine. Unavailable-engine jobs use scheduler backoff and preserve node observations.</p>{% endif %}
-  <form id="proxy-defaults" method="POST" action="{{ url_for('fixed.proxy_defaults') }}" class="mb-4">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="subscription_id" value="{{ entry.id }}">
-    <h4 class="panel-title">PROXY PROBE DEFAULTS</h4>
-    <div class="proxy-settings-grid">
-      <label>HTTPS Probe URL<input name="global_url" class="form-control terminal-input" type="url" value="{{ proxy_health.global_settings.url }}" required maxlength="2048"></label>
-      <label>Expected HTTP Status<input name="global_expected_status" class="form-control terminal-input" type="number" min="100" max="599" value="{{ proxy_health.global_settings.expected_status }}" required></label>
-      <label>Timeout<select name="global_timeout_ms" class="form-select terminal-select">{% for value in [5000,8000,10000,15000] %}<option value="{{ value }}" {% if proxy_health.global_settings.timeout_ms == value %}selected{% endif %}>{{ value // 1000 }}s</option>{% endfor %}</select></label>
-    </div>
-    <button type="submit" class="btn btn-outline-terminal btn-terminal mt-2">Save Global Defaults</button>
-  </form>
+  <div id="global-proxy-summary" class="proxy-engine-card mb-4">
+    <h4 class="panel-title">GLOBAL PROXY DEFAULTS</h4>
+    <p>Using global defaults: {{ proxy_health.global_settings.url }} · Expected status {{ proxy_health.global_settings.expected_status }} · Timeout {{ proxy_health.global_settings.timeout_ms }} ms</p>
+    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal">Manage Global Defaults in Settings</a>
+  </div>
   <form id="proxy-settings" method="POST" action="{{ url_for('fixed.proxy_action', key=entry.id, operation='settings') }}" class="mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h4 class="panel-title">THIS SUBSCRIPTION</h4>

@@ -1,0 +1,13 @@
+<section id="overview" class="terminal-panel settings-section" aria-label="Settings Overview"><div class="panel-inner">
+  <h3 class="panel-title">Overview</h3>
+  <dl class="settings-metadata">
+    <dt>Application Version / Base VERSION</dt><dd>{{ base_version }}</dd>
+    <dt>Installed Build</dt><dd>{{ app_version }}</dd>
+    <dt>Channel</dt><dd>{{ build_channel }}</dd>
+    <dt>GeoIP status</dt><dd>{{ database.status }}</dd>
+    <dt>Mihomo status (local files)</dt><dd>{{ engine.status }}</dd>
+    <dt>Fixed subscriptions</dt><dd data-fixed-count>{{ fixed_counts.total if fixed_counts else 'Unavailable' }}</dd>
+    <dt>Active / Disabled Fixed</dt><dd>{{ fixed_counts.active if fixed_counts else 'Unavailable' }} / {{ fixed_counts.disabled if fixed_counts else 'Unavailable' }}</dd>
+  </dl>
+  <p class="form-text">Local application state only. This page does not check for releases, probe nodes or inspect real systemd unit status.</p>
+</div></section>

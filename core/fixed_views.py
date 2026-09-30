@@ -10,15 +10,16 @@ from core import generator, health_schedule, refresh_schedule
 from core.fixed_subscriptions import GenerationError
 from core.node_health import NodeHealth, HealthError, PROBE_MESSAGES
 from core.proxy_health import ProxyHealth, ProxyHealthError, DEFAULT_PROBE
+from core.settings_status import probe_fields
 from core.source_errors import SourceError, message
 from core.source_parser import MAX_PAYLOAD
 
 
-def blueprint(store, base_context, login_required, default_yaml, special_groups, public_url):
+def blueprint(store, base_context, login_required, default_yaml, special_groups, public_url, *, proxy_store=None):
     views = Blueprint('fixed', __name__, url_prefix='/fixed-subscriptions')
     health = NodeHealth(store)
     try:
-        proxy_health = ProxyHealth(store)
+        proxy_health = proxy_store or ProxyHealth(store)
     except Exception:
         # The managed engine/manifest is optional; Fixed management stays usable.
         proxy_health = None
@@ -241,14 +242,6 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             session['fixed_error'] = session.pop('health_notice')
         return redirect(url_for('fixed.index'), code=303)
 
-    def probe_fields(prefix):
-        try:
-            return dict(url=request.form[prefix+'url'],
-                        expected_status=int(request.form[prefix+'expected_status']),
-                        timeout_ms=int(request.form[prefix+'timeout_ms']))
-        except (ValueError, KeyError, TypeError):
-            raise ProxyHealthError('settings') from None
-
     @views.route('/proxy-health/defaults', methods=['POST'])
     @login_required
     def proxy_defaults():
@@ -258,7 +251,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         try:
             if proxy_health is None:
                 raise ProxyHealthError('compatible')
-            proxy_health.set_global(probe_fields('global_'))
+            proxy_health.set_global(probe_fields(request.form))
             session['proxy_notice'] = 'Proxy probe defaults saved.'
         except ProxyHealthError as error:
             session['proxy_notice'] = str(error)
@@ -281,7 +274,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                 except ValueError:
                     raise ProxyHealthError('settings') from None
                 proxy_health.settings(key, request.form.get('mode'), scope == 'global',
-                                      probe_fields('custom_') if scope == 'custom' else None,seconds)
+                                      probe_fields(request.form, 'custom_') if scope == 'custom' else None,seconds)
                 session['proxy_notice'] = 'Full proxy validation settings saved.'
             else:
                 proxy_health.check(key)

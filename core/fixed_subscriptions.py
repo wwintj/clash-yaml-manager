@@ -97,9 +97,9 @@ class FixedSubscriptions:
         return path
 
     @contextmanager
-    def _locked(self):
+    def _locked(self, blocking=True):
         self._directories()  # Reject replaced directory symlinks before opening the lock.
-        with file_lock(self.lock, strict=True):
+        with file_lock(self.lock, strict=True, blocking=blocking):
             yield
 
     @staticmethod
@@ -240,6 +240,14 @@ class FixedSubscriptions:
     def list(self):
         with self._locked():
             return copy.deepcopy(list(self._read()['subscriptions'].values()))
+
+    def counts(self):
+        """Read registry totals only; never open subscription YAML or expose identities."""
+        with self._locked(blocking=False):
+            entries = self._read()['subscriptions'].values()
+            total = len(entries)
+            active = sum(entry['status'] == 'active' for entry in entries)
+        return dict(total=total, active=active, disabled=total-active)
 
     def get(self, key):
         with self._locked():

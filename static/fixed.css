@@ -46,3 +46,10 @@
   .proxy-health-table td::before { content: attr(data-label); display: block; color: #a0a0a0; margin-bottom: .3rem; }
 }
 .geoip-metadata dd { overflow-wrap:anywhere; }
+.settings-nav { display:flex; flex-wrap:wrap; gap:.5rem; }
+.settings-section { margin-top:1.5rem; scroll-margin-top:1rem; }
+.settings-metadata { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:.6rem 1rem; }
+.settings-metadata dt, .settings-metadata dd { min-width:0; overflow-wrap:anywhere; margin:0; }
+.settings-probe-form { max-width:960px; }
+.settings-probe-form input, .settings-probe-form select { max-width:100%; min-width:0; }
+@media (max-width:575px) { .settings-metadata { grid-template-columns:minmax(0,1fr); } .settings-metadata dd { margin-bottom:.5rem; } }

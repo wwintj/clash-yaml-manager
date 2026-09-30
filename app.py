@@ -24,6 +24,8 @@ from core.rate_limit import LoginLimiter
 from core import policy_engine, geoip
 from core.geoip_store import GeoIPStore
 from core.settings_views import blueprint as settings_blueprint
+from core import settings_status
+from core.proxy_health import ProxyHealth
 from core.version import read_version
 from core.install_info import read_install_info, display_build
 from core.subscriptions import SubscriptionSigner, safe_filename
@@ -139,6 +141,7 @@ ensure_directories()
 temporary_links = TemporaryLinks(DIR_STATE)
 fixed_subscriptions = FixedSubscriptions(DIR_STATE)
 geoip_store = GeoIPStore(DIR_STATE)
+proxy_health = ProxyHealth(fixed_subscriptions)
 auth_store = AuthStore(DIR_STATE)
 login_limiter = LoginLimiter(
     DIR_STATE,
@@ -266,12 +269,13 @@ def get_base_context() -> Dict[str, Any]:
         install_info = read_install_info(BASE_DIR, APP_VERSION)
         version_label = display_build(APP_VERSION, install_info)
         build_channel = install_info['channel'] if install_info else 'stable'
-    except ValueError:
+    except (ValueError, OSError, TypeError):
         version_label, build_channel = APP_VERSION, 'unknown'
     return {
         "build_channel": build_channel,
         "logged_in": session.get("logged_in", False),
         "app_version": version_label,
+        "base_version": APP_VERSION,
         "error_messages": [],
         "success_message": "",
         "result": None,
@@ -283,7 +287,7 @@ def get_base_context() -> Dict[str, Any]:
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
         "policy_fields": policy_engine.form_values(policy_engine.defaults()),
         "country_geoip": "off",
-        "geoip_status": geoip_store.status() if session.get("logged_in") else {"status": "Not installed"},
+        "geoip_status": settings_status.geoip_status(geoip_store) if session.get("logged_in") else {"status": "Not installed"},
     }
 
 
@@ -683,10 +687,20 @@ def fixed_public_url(slug):
         'short_subscribe_file', slug=slug, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme)
 
 
-app.register_blueprint(settings_blueprint(geoip_store, get_base_context, login_required))
+def settings_runtime():
+    return settings_status.runtime(port=APP_PORT, cookie_secure=COOKIE_SECURE,
+        trust_proxy=TRUST_PROXY_HEADERS, download_base=DOWNLOAD_BASE_URL,
+        download_scheme=DOWNLOAD_URL_SCHEME, upload_retention=UPLOAD_RETENTION_SECONDS,
+        output_retention=OUTPUT_RETENTION_SECONDS, cleanup_interval=CLEANUP_INTERVAL_SECONDS,
+        backup_retention=BACKUP_RETENTION_SECONDS)
+
+
+app.register_blueprint(settings_blueprint(geoip_store, get_base_context, login_required,
+    proxy_health=proxy_health, fixed=fixed_subscriptions, runtime_context=settings_runtime))
 
 app.register_blueprint(fixed_blueprint(fixed_subscriptions, get_base_context, login_required,
-                                      DEFAULT_YAML_PATH, DEFAULT_SPECIAL_GROUPS, fixed_public_url))
+                                      DEFAULT_YAML_PATH, DEFAULT_SPECIAL_GROUPS, fixed_public_url,
+                                      proxy_store=proxy_health))
 
 
 @app.after_request

@@ -226,7 +226,7 @@ class ManagedMihomo:
         except (OSError, subprocess.TimeoutExpired, subprocess.CalledProcessError):
             raise ExecutionError('Mihomo version check failed.') from None
 
-    def status(self):
+    def status(self, *, verify_execution=True):
         details = dict(status='NOT INSTALLED', required=VERSION, installed=None,
                        architecture=self.arch or self.machine, cpu_level=self.cpu_level,
                        build=None, preferred_build=(self.arch + '-' + self.cpu_level
@@ -263,11 +263,18 @@ class ManagedMihomo:
             expected = self._metadata(spec, level)
             if legacy or (self.arch == 'arm64' and 'cpu_level' not in metadata):
                 expected.pop('cpu_level')
+            if not verify_execution and self.binary.stat().st_size > MAX_BINARY_BYTES:
+                return details
             if metadata != expected or sha256_file(self.binary) != spec['binary_sha256']:
                 return details
             details['build'] = self.arch + ('-' + level if level else '')
             if self.arch == 'amd64' and LEVELS.index(level) > LEVELS.index(self.cpu_level):
                 details['status'] = 'INCOMPATIBLE'
+                return details
+            if not verify_execution:
+                # Settings verifies local pins/metadata without executing a binary.
+                # CLI/probe callers retain the full execution check.
+                details['status'] = 'COMPATIBLE'
                 return details
             line = self._run_version(self.binary)
             match = VERSION_LINE.match(line)

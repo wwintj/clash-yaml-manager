@@ -509,7 +509,7 @@
             </div>
 
             {% if error_messages %}
-              <div class="terminal-alert error p-3 mb-4">
+              <div class="terminal-alert error p-3 mb-4" role="alert">
                 <div class="panel-subtitle mb-2">ERROR LOG</div>
                 <ul class="mb-0 ps-3">
                   {% for error in error_messages %}
@@ -520,7 +520,7 @@
             {% endif %}
 
             {% if success_message %}
-              <div class="terminal-alert success p-3 mb-4">
+              <div class="terminal-alert success p-3 mb-4" role="status">
                 <div class="panel-subtitle mb-1">SUCCESS</div>
                 <p class="mb-0">{{ success_message }}</p>
               </div>
@@ -582,7 +582,7 @@
         <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
       </nav>
       {% if error_messages %}
-        <div class="terminal-alert error p-4 mb-4">
+        <div class="terminal-alert error p-4 mb-4" role="alert">
           <div class="panel-subtitle mb-2">ERROR LOG</div>
           <ul class="mb-0 ps-3">
             {% for error in error_messages %}
@@ -593,7 +593,7 @@
       {% endif %}
 
       {% if success_message and not result %}
-        <div class="terminal-alert success p-4 mb-4">
+        <div class="terminal-alert success p-4 mb-4" role="status">
           <div class="panel-subtitle mb-1">SUCCESS</div>
           <p class="mb-0">{{ success_message }}</p>
         </div>
@@ -627,7 +627,7 @@
 
           {% if result %}
             {% if success_message %}
-              <div class="terminal-alert success p-4 mb-4">
+              <div class="terminal-alert success p-4 mb-4" role="status">
                 <div class="panel-subtitle mb-1">Generation Complete</div>
                 <p class="mb-0">{{ success_message }}</p>
               </div>

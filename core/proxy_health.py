@@ -44,7 +44,7 @@ class UnavailableEngine:
     def __init__(self, root):
         self.binary = Path(root) / 'bin/mihomo'
 
-    def status(self):
+    def status(self, *, verify_execution=True):
         return dict(status='BROKEN',required='v1.19.31',installed=None,architecture='unknown')
 
 
@@ -273,6 +273,12 @@ class ProxyHealth(health_schedule.ScheduledHealth):
                 self._commit(data, previous)
         except (OSError, StateError):
             raise ProxyHealthError('unavailable') from None
+
+    def global_settings(self):
+        """Nonblocking local read, without pruning, node parsing or state migration writes."""
+        with self._locked(self.lock, blocking=False):
+            data, _ = self._read()
+            return copy.deepcopy(data['global'])
 
     def settings(self, key, mode, use_global, override=None, interval_seconds=None):
         try:
