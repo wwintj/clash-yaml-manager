@@ -18,7 +18,7 @@ main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable
 
 | 功能 | 行為與文件 |
 | --- | --- |
-| Generate / Preview | 替換 VMess/VLESS 節點、可編輯國家／名稱預覽、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
+| Generate / Preview | 替換 VMess/VLESS 節點、可編輯國家／名稱預覽、[Full YAML Diff Preview](docs/YAML_DIFF_PREVIEW.md)、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
 | [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md) | 保存 Default / Custom YAML 與節點；一般保存保持 `/s/<prefix>-fs_<secret>`，不受臨時清理影響 |
 | [External Sources](docs/EXTERNAL_SOURCES.md) | 合併 Manual、Remote URL、Uploaded；Clash YAML / Raw / Base64，last-good cache |
 | [Automatic Refresh](docs/AUTO_REFRESH.md) | Remote Source 預設 Off，七檔間隔、獨立 timer、失敗退避及有限歷史 |
@@ -168,6 +168,8 @@ HK|GIA|vmess://xxxx
 ```
 
 節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。仍只支援 VMess / VLESS。
+
+Generate 頁新增 **Preview YAML Changes**（尚未發布，使用明確的 `--channel main` 測試）。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不保存 diff 草稿。Custom YAML 需仍選有實際檔案；過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
 點 **Parse Nodes** 查看 Name、Country、Protocol、Ready / Warning / Error 和來源。修改輸入後顯示 Changes not parsed yet。Preview 可修改 Country / Name，修改立即保存；Apply edit 或 Parse Nodes 更新預覽。手工國家優先，重排未修改的輸入不會丟掉手工修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
 
@@ -377,7 +379,7 @@ done
 
 Node 可用時 pytest 也會執行草稿與搜尋 JS 測試（可單獨 `node tests/test_draft.js`）。如有 shellcheck，另執行 `shellcheck install.sh remote-install.sh update.sh remote-update.sh uninstall.sh httpsctl.sh mihomoctl.sh scripts/deploy-common.sh`。測試使用臨時資料，包含真實 YAML 全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用 systemctl/curl/pip 替身，不能取代 Ubuntu systemd 驗收。
 
-處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。已有節點 Parse Preview；Merge、完整 YAML 差異預覽和新協議尚未實作。
+處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。已有節點 Parse Preview；Merge 和新協議尚未實作。
 
 ---
 
