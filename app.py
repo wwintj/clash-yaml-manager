@@ -21,6 +21,7 @@ from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG
 from core.fixed_views import blueprint as fixed_blueprint
 from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
+from core import policy_engine
 from core.version import read_version
 from core.install_info import read_install_info, display_build
 from core.subscriptions import SubscriptionSigner, safe_filename
@@ -277,6 +278,7 @@ def get_base_context() -> Dict[str, Any]:
         "upload_filename": "",
         "country_mapping": parser.get_country_mapping(),
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
+        "policy_fields": policy_engine.form_values(policy_engine.defaults()),
     }
 
 
@@ -472,33 +474,46 @@ def process_config():
     context = get_base_context()
     cleanup_old_files()
 
+    def generation_error():
+        # Redisplay policies in this response only; no new persisted temp state.
+        if any(key.startswith('policy_') for key in request.form):
+            context['policy_fields'] = policy_engine.submitted_values(request.form)
+            return render_template('index.html', **context), 400
+        return redirect_to_index(context)
+
+    try:
+        policy = policy_engine.parse_form(request.form)
+    except policy_engine.PolicyError as error:
+        context['error_messages'].append(str(error))
+        return generation_error()
+
     file = request.files.get("yaml_file")
     use_default_yaml = file is None or file.filename == ""
 
     if request.form.get("yaml_source") == "custom" and use_default_yaml:
         context["error_messages"].append("Custom YAML needs to be selected again.")
-        return redirect_to_index(context)
+        return generation_error()
 
     if not use_default_yaml and not allowed_file(file.filename):
         context["error_messages"].append("不支持的文件格式，仅支持 .yaml 或 .yml 文件。")
-        return redirect_to_index(context)
+        return generation_error()
 
     try:
         parsed_result = parse_form_nodes()
     except ValueError as error:
         context['error_messages'].append(str(error))
-        return redirect_to_index(context)
+        return generation_error()
     if parsed_result['errors']:
         context['error_messages'].extend(parsed_result['errors'])
-        return redirect_to_index(context)
+        return generation_error()
     if not parsed_result['nodes']:
         context['error_messages'].append('没有提供任何有效的新节点信息。')
-        return redirect_to_index(context)
+        return generation_error()
 
     if use_default_yaml:
         if not os.path.exists(DEFAULT_YAML_PATH):
             context["error_messages"].append("未上传 YAML，且默认 YAML 模板不存在。请先放置 defaults/default.yaml。")
-            return redirect_to_index(context)
+            return generation_error()
         upload_filename = ""
         upload_path = DEFAULT_YAML_PATH
     else:
@@ -511,18 +526,18 @@ def process_config():
                 file.save(target)
         except Exception:
             context["error_messages"].append("文件保存失败，请检查磁盘空间和目录权限。")
-            return redirect_to_index(context)
+            return generation_error()
 
         context["upload_filename"] = upload_filename
 
     raw_special_groups = request.form.getlist("special_groups")
     special_groups = [group for group in raw_special_groups if group in DEFAULT_SPECIAL_GROUPS]
 
-    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups)
+    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups, policy)
 
     if not yaml_result["success"]:
         context["error_messages"].extend(yaml_result["errors"])
-        return redirect_to_index(context)
+        return generation_error()
 
     output_filename = os.path.basename(yaml_result["output_path"])
 

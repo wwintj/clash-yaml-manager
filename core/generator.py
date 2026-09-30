@@ -32,7 +32,7 @@ def parse_form_nodes(form):
     return parser.parse_batch_nodes(text, overrides)
 
 
-def generate(input_path, output_dir, backup_dir, parsed, special_groups):
+def generate(input_path, output_dir, backup_dir, parsed, special_groups, policy_config=None):
     return yaml_utils.process_yaml_config(
         input_path=str(input_path), output_dir=str(output_dir), backup_dir=str(backup_dir),
-        new_nodes=parsed["nodes"], countries=parsed["countries"], special_groups=special_groups)
+        new_nodes=parsed["nodes"], countries=parsed["countries"], special_groups=special_groups, policy_config=policy_config)

@@ -1,0 +1,46 @@
+<section class="terminal-panel mb-4" aria-label="Policy Engine"><div class="panel-inner">
+  <h2 class="panel-title">Policy Engine</h2>
+  <p class="helper-text">Preserve 保留 YAML 既有組行為；Select 手動選擇；URL-Test 選擇較低延遲候選；Fallback 依序備援；Load-Balance 分配流量。</p>
+  <p class="form-text">Health observations do not automatically remove nodes in this version. 此處只生成客戶端策略，不執行伺服器健康檢查。</p>
+  <div class="row g-3">
+  {% for scope, label in [('country_groups', 'Country Groups'), ('special_groups', 'Special Groups')] %}
+    {% set prefix = 'policy_' + scope + '_' %}
+    {% set kind = policy_fields[prefix + 'type'] %}
+    {% set automatic = kind in ['url-test', 'fallback', 'load-balance'] %}
+    <div class="col-md-6" data-policy-scope>
+      <label class="form-label" for="{{ prefix }}type">{{ label }}</label>
+      <select class="form-select terminal-select" name="{{ prefix }}type" id="{{ prefix }}type" data-policy-type>
+        {% if kind not in ['preserve', 'select', 'url-test', 'fallback', 'load-balance'] %}<option value="{{ kind }}" selected>Invalid type — select a valid policy</option>{% endif %}
+        {% for value, title in [('preserve','Preserve'), ('select','Select'), ('url-test','URL-Test'), ('fallback','Fallback'), ('load-balance','Load-Balance')] %}
+        <option value="{{ value }}" {% if value == kind %}selected{% endif %}>{{ title }}</option>
+        {% endfor %}
+      </select>
+      <div data-policy-options {% if not automatic %}hidden{% endif %}>
+        <p class="form-text mt-2">Only generated proxy nodes assigned to this managed group become candidates. DIRECT and nested groups are not included. Health observations do not rank or remove candidates.</p>
+        <label class="form-label mt-2" for="{{ prefix }}url">Client test URL</label>
+        <input class="form-control terminal-input" name="{{ prefix }}url" id="{{ prefix }}url" type="url" maxlength="2048" value="{{ policy_fields[prefix + 'url'] }}" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
+        <div class="form-text">HTTP/HTTPS, including client-local targets. The server never fetches this URL.</div>
+        <label class="form-label mt-2" for="{{ prefix }}interval">Interval (seconds)</label>
+        <input class="form-control terminal-input" name="{{ prefix }}interval" id="{{ prefix }}interval" type="number" min="30" max="86400" value="{{ policy_fields[prefix + 'interval'] }}" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
+        <label class="form-label mt-2" for="{{ prefix }}lazy">Lazy testing</label>
+        <select class="form-select terminal-select" name="{{ prefix }}lazy" id="{{ prefix }}lazy" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
+          {% set lazy = policy_fields[prefix + 'lazy'] %}
+          {% if lazy not in ['true', 'false'] %}<option value="{{ lazy }}" selected>Invalid value</option>{% endif %}
+          <option value="true" {% if lazy == 'true' %}selected{% endif %}>True</option><option value="false" {% if lazy == 'false' %}selected{% endif %}>False</option>
+        </select>
+        <div data-policy-only="url-test" {% if kind != 'url-test' %}hidden{% endif %}>
+          <label class="form-label mt-2" for="{{ prefix }}tolerance">Tolerance (ms)</label>
+          <input class="form-control terminal-input" name="{{ prefix }}tolerance" id="{{ prefix }}tolerance" type="number" min="0" max="10000" value="{{ policy_fields[prefix + 'tolerance'] }}" data-policy-option="url-test" {% if kind != 'url-test' %}disabled{% endif %}>
+        </div>
+        <div data-policy-only="load-balance" {% if kind != 'load-balance' %}hidden{% endif %}>
+          <label class="form-label mt-2" for="{{ prefix }}strategy">Strategy</label>
+          <select class="form-select terminal-select" name="{{ prefix }}strategy" id="{{ prefix }}strategy" data-policy-option="load-balance" {% if kind != 'load-balance' %}disabled{% endif %}>
+            {% if policy_fields[prefix + 'strategy'] != 'round-robin' %}<option value="{{ policy_fields[prefix + 'strategy'] }}" selected>Invalid strategy</option>{% endif %}
+            <option value="round-robin" {% if policy_fields[prefix + 'strategy'] == 'round-robin' %}selected{% endif %}>round-robin</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+</div></section>

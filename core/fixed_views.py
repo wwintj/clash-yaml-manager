@@ -2,6 +2,8 @@
 from datetime import datetime, timezone
 import json
 
+from core import policy_engine
+
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from core import generator, health_schedule, refresh_schedule
@@ -119,6 +121,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                                aux_nodes=[], node_overrides={}, special_groups=[])
         external = entry['sources'][1:] if entry else []
         ctx = context()
+        ctx['policy_fields'] = policy_engine.form_values(fields.get('policy_config', policy_engine.defaults()))
         status = 200
         if request.method == 'POST':
             # No rejected body or uploaded file is stored in a cookie/browser draft.
@@ -127,12 +130,14 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                           batch_nodes=request.form.get('batch_nodes', ''), aux_nodes=[],
                           node_overrides={}, special_groups=[g for g in request.form.getlist('special_groups')
                                                            if g in special_groups])
+            ctx['policy_fields'] = policy_engine.submitted_values(request.form)
             try:
                 external = json.loads(request.form.get('sources', json.dumps(external)))
                 if not isinstance(external, list) or len(external) > 63 or any(not isinstance(s, dict) for s in external):
                     raise SourceError('config')
                 fields['aux_nodes'] = json.loads(request.form.get('aux_nodes', '[]'))
                 fields['node_overrides'] = json.loads(request.form.get('node_overrides', '{}'))
+                fields['policy_config'] = policy_engine.parse_form(request.form)
                 parsed = generator.parse_form_nodes(request.form)
                 upload = request.files.get('yaml_file')
                 custom = None
@@ -140,7 +145,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                     if '.' not in upload.filename or upload.filename.rsplit('.', 1)[1].lower() not in ('yaml', 'yml'):
                         raise GenerationError('仅支持 .yaml / .yml 文件。')
                     custom = upload.read(50 * 1024 * 1024 + 1)
-                source = {k: fields[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups')}
+                source = {k: fields[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config')}
                 uploads = {}
                 for index in range(len(external)):
                     upload = request.files.get('source_file_' + str(index))

@@ -7,6 +7,8 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
+from core import policy_engine
+
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
@@ -388,6 +390,7 @@ def process_yaml_config(
     new_nodes: List[Dict[str, Any]],
     countries: List[Dict[str, str]],
     special_groups: Optional[List[str]] = None,
+    policy_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
     result: Dict[str, Any] = {
@@ -409,6 +412,7 @@ def process_yaml_config(
     result["new_node_count"] = len(new_nodes)
 
     try:
+        policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
         result["backup_path"] = backup_yaml(input_path, backup_dir)
 
         data = load_yaml(input_path)
@@ -482,6 +486,7 @@ def process_yaml_config(
 
         new_node_names = [node["name"] for node in new_nodes]
         fill_empty_proxy_groups(data, new_node_names)
+        policy_engine.apply(data, new_nodes, countries, special_groups, policy)
         validate_input_structure(data)
         if {node['name'] for node in new_nodes} & {g['name'] for g in data['proxy-groups']}:
             raise ConfigValidationError('新节点名称与策略组冲突。')
@@ -501,7 +506,7 @@ def process_yaml_config(
         result["output_path"] = output_path
         result["success"] = True
 
-    except ConfigValidationError as e:
+    except (ConfigValidationError, policy_engine.PolicyError) as e:
         result['errors'].append(str(e))
     except YAMLError:
         result['errors'].append('YAML 格式错误，请检查缩进、引号和重复键。')

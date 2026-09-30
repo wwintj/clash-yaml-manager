@@ -1,0 +1,53 @@
+# Policy compatibility fixture
+proxies:
+  - name: TW-A
+    type: vless
+    server: example.com
+    port: 443
+    uuid: 11111111-1111-4111-8111-111111111111
+  - name: TW-B
+    type: vless
+    server: example.com
+    port: 443
+    uuid: 11111111-1111-4111-8111-111111111111
+  - name: US-with-TW-name
+    type: vless
+    server: example.com
+    port: 443
+    uuid: 11111111-1111-4111-8111-111111111111
+  - name: SG-A
+    type: vless
+    server: example.com
+    port: 443
+    uuid: 11111111-1111-4111-8111-111111111111
+proxy-groups:
+  - {name: '🇹🇼 台湾节点', type: url-test, proxies: [DIRECT, TW-A, TW-B], url: 'http://client.local/check', interval: 123, tolerance: 75, lazy: false, icon: kept}
+  - {name: '🇺🇸 美国节点', type: fallback, proxies: [DIRECT, US-with-TW-name], url: 'https://example.com/check', interval: 234, lazy: false}
+  - {name: '🇸🇬 新加坡节点', type: load-balance, proxies: [DIRECT, SG-A], strategy: consistent-hashing, interval: 345, lazy: true}
+  - {name: media, type: select, proxies: [DIRECT, '🇹🇼 台湾节点', TW-A, TW-B, US-with-TW-name, SG-A], x-note: kept}
+  - {name: unrelated, type: select, proxies: [DIRECT, media], icon: custom}
+  - {name: '🇯🇵 日本节点', type: fallback, proxies: [DIRECT], interval: 987}
+  - {name: provider, type: url-test, use: [airport], filter: JP, proxies: []}
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - TW-A
+      - TW-B
+      - US-with-TW-name
+      - SG-A
+  - name: 🚀 手动切换
+    type: select
+    proxies:
+      - TW-A
+      - TW-B
+      - US-with-TW-name
+      - SG-A
+  - name: 🐟 漏网之鱼
+    type: select
+    proxies:
+      - TW-A
+      - TW-B
+      - US-with-TW-name
+      - SG-A
+proxy-providers: {airport: {type: file, path: ./airport.yaml}}
+rules: ['MATCH,media']

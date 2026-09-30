@@ -1,0 +1,12 @@
+# Policy compatibility fixture
+proxies: [{name: old}]
+proxy-groups:
+  - {name: '🇹🇼 台湾节点', type: url-test, proxies: [old, DIRECT], url: 'http://client.local/check', interval: 123, tolerance: 75, lazy: false, icon: kept}
+  - {name: '🇺🇸 美国节点', type: fallback, proxies: [DIRECT], url: 'https://example.com/check', interval: 234, lazy: false}
+  - {name: '🇸🇬 新加坡节点', type: load-balance, proxies: [DIRECT], strategy: consistent-hashing, interval: 345, lazy: true}
+  - {name: media, type: select, proxies: [DIRECT, '🇹🇼 台湾节点'], x-note: kept}
+  - {name: unrelated, type: select, proxies: [DIRECT, media], icon: custom}
+  - {name: '🇯🇵 日本节点', type: fallback, proxies: [DIRECT], interval: 987}
+  - {name: provider, type: url-test, use: [airport], filter: JP}
+proxy-providers: {airport: {type: file, path: ./airport.yaml}}
+rules: ['MATCH,media']
