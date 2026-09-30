@@ -4,9 +4,11 @@ This is a feature-freeze audit, **not a publication**. VERSION and Latest Stable
 remain **1.1.1 / v1.1.1**. No release commit, tag or GitHub Release is authorized
 or created by this audit.
 
-**Controlled conclusion: NOT READY until the clean pushed-head release dry-run
-below completes.** All completed controlled gates pass; the dry-run is the last
-outstanding gate. Real acceptance is separately and explicitly deferred.
+**Controlled conclusion: READY WITH DOCUMENTED DEFERRED REAL ACCEPTANCE.**
+All controlled gates, including the clean pushed-head release dry-run below, PASS.
+The delivered report commit is verified again with the same command; its exact
+HEAD and final verification receipt are supplied in the final response. Real
+acceptance is separately and explicitly deferred.
 
 ## Identity and evidence
 
@@ -17,8 +19,9 @@ outstanding gate. Real acceptance is separately and explicitly deferred.
 | Original audited diff | `v1.1.1..faaadc9`: 46 commits, 130 files, 18,622 insertions / 174 deletions |
 | Audit implementation HEAD | `cd35b07d2f84a4c243b368b3ee141b80795c9d64` |
 | End HEAD | The delivered documentation commit containing this report; resolve with `git log -1 --format=%H -- docs/FINAL_AUDIT_REPORT.md`. The final response supplies its full SHA. A commit cannot embed its own SHA. |
-| Baseline before editing | Python 3.12.14: **1875 passed in 241.58s**, zero failures |
-| Final complete suite | **1949 passed in 255.11s**, zero failures; 74 additional tests, none removed |
+| Baseline before editing | Python 3.12.14 / pytest 9.1.1 in the independent audit environment: **1875 passed in 241.58s**, zero failures |
+| Post-fix independent complete suite | **1949 passed in 255.11s**, zero failures; 74 additional tests, none removed |
+| Pushed checkpoint release validation | Python 3.12.14 / project-required pytest 8.4.2: **1949 passed in 261.74s**, zero failures; dry-run PASS |
 | Focused audit/HTTPS/Fixed/release/state suite | **269 passed in 16.52s** |
 | Integrated interaction matrix | **40 passed**: five policy types × Health-aware Off/On × GeoIP Off/On × manual/automatic refresh |
 | Browser | All **11 suites PASS**; final copy correction rechecked with all suites; Preview additionally covers seven viewports |
@@ -71,6 +74,20 @@ the architecture, and the default YAML is not edited.
 | A5 | DOC | Proxy UI claimed checks never change YAML even with enabled Health-aware reconciliation. | **CORRECTED**: explains preserved top-level nodes and optional managed-candidate regeneration. Browser copy rechecked. |
 | A6 | LOW | Installed older reverse proxies and infrastructure error logs have their own credential logging policy. The application filter cannot sanitize Nginx/CDN/firewall logs. | **DOCUMENTED LIMIT**: new access-log defaults are safe; protect existing access/error logs, review over SSH and use reviewed integration regeneration where appropriate. No automatic external configuration rewrite. |
 | A7 | LOW | Root-only Mihomo download checks a 180s loop deadline, but stdlib DNS/header/per-read behavior is not a hard total DNS cancellation budget. Package/bootstrap/release tooling also has different network policies from provider ingestion. | **DOCUMENTED LIMIT**: fixed operator tooling, checksums and socket limits; no claim of the source fetcher's strict total budget for this path. No architectural refactor during freeze. |
+
+The first dry-run selected the pre-existing ignored `.venv` (Python 3.9.6),
+which was below the supported floor, lacked maxminddb and had Gunicorn 23.0.0.
+It produced 1943 passes / six dependency-related failures. The old environment
+was retained separately, and `.venv` was rebuilt with Python 3.12.14 and
+`requirements-dev.txt`; no requirement or release-tool code was changed. All
+runtime package versions match the independent audit environment; pytest is now
+the required 8.4.2 instead of that environment's 9.1.1. Targeted dependency tests
+passed 99/99, then the complete pushed-head dry-run passed 1949/1949.
+A GitHub TLS timeout interrupted the first post-run remote snapshot; a bounded
+read-only retry verified its tracked files/refs/main/tags/Release metadata were
+unchanged. Successful rerun snapshots also match, including Release timestamps.
+These resolved local environment/transport issues are recorded, not hidden or
+classified as unresolved product defects.
 
 **Release blockers: 0. Unresolved HIGH: 0.** No arbitrary security scores are used.
 Remaining limitations are explicit product/deployment boundaries, not evidence
@@ -426,7 +443,7 @@ publication uses the existing-tag flow. Audit authorization stops at **dry-run**
 | systemd-analyze | **UNAVAILABLE** on this macOS host; structural unit tests only |
 | Native Nginx | **UNAVAILABLE / NOT RUN**; generated-config/command-double tests only |
 | Default.yaml | UNCHANGED — exact SHA above, 10,410-rule round trip PASS |
-| Release dry-run | PENDING until clean pushed-head execution below |
+| Release dry-run | PASS — exact pushed checkpoint below; same validation repeated on the delivered documentation HEAD |
 
 ## Real acceptance debt — explicitly deferred
 
@@ -449,15 +466,39 @@ do not themselves block controlled RC readiness.
 
 ## Dry-run closure
 
-Required command after all audit fixes/docs are committed and pushed:
+Actual command on clean main after all fixes/docs were committed and pushed:
 
 ```bash
 python3 scripts/release.py minor --dry-run
 ```
 
-Expected current VERSION/stable 1.1.1, proposed 1.2.0 and tag v1.2.0. Result currently
-PENDING. The closure records the exact pushed checkpoint, actual output and local
-file/ref/remote tag/Release invariance, then reruns against the final delivered
-clean pushed documentation commit. Neither run invokes publication. Until it
-passes, the conclusion remains NOT READY; after successful closure and all gates,
-the permitted conclusion is READY WITH DOCUMENTED DEFERRED REAL ACCEPTANCE.
+Verified pushed checkpoint: **`674d3f385aa448d01cb659650896e939b06de7cd`**,
+HEAD = origin/main = actual remote main, working tree clean.
+The release orchestrator uses the rebuilt repository `.venv` and ShellCheck 0.11.0.
+
+```text
+Current stable version: 1.1.1
+Current VERSION: 1.1.1
+Proposed version: 1.2.0
+Tag: v1.2.0
+1949 passed in 261.74s (0:04:21)
+Validation: PASS (includes 10,410-rule round trip)
+Release preflight: PASS
+Release dry run: PASS; no project files, refs or remote objects changed.
+```
+
+Independent before/after receipts compare every tracked file's SHA256, clean
+status, HEAD/origin/main/actual remote main, all local refs, all remote tags and
+GitHub Release metadata including title/body/flags/timestamps. **All unchanged**.
+Both standalone `remote-install.sh --resolve-only` and
+`remote-update.sh --resolve-only` also resolve **v1.1.1**.
+
+The final report update is committed and pushed normally, then the same dry-run
+and invariance check are repeated on that exact delivered HEAD. The final response
+provides its full SHA and actual result; no further tracked edit follows that
+verification. The End HEAD row explains the report's self-reference boundary.
+
+VERSION remains **1.1.1**, Latest Stable remains **v1.1.1**, README release/install/
+update markers and the default YAML stay unchanged. **No v1.2.0 tag, release commit,
+tag push or GitHub Release is created.** Recommendation v1.2.0 is a future minor
+release, awaiting a separate explicit publication instruction.
