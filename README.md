@@ -237,6 +237,18 @@ Batch、全部 Auxiliary rows、Policy Options、YAML source 和 Preview 手工�
 
 ---
 
+## 可選 HTTPS / Nginx（main 開發版）
+
+普通安裝及升級保持 HTTP，不會自動安裝 Nginx / Certbot 或申請憑證。可在
+Debian/Ubuntu VPS 以 SSH/root 執行 `sudo bash /opt/clash-yaml-manager/httpsctl.sh setup --domain example.com --email admin@example.com`。
+先配置 DNS 和公開 TCP 80/443；工具不修改防火牆或 DNS。成功後 Gunicorn 仍以
+clashyaml 執行，綁定 127.0.0.1；Nginx 使用 Certbot Webroot HTTPS，覆寫轉發標頭。
+
+`httpsctl.sh status` 為唯讀；`disable` 驗證所有權與 drift 後恢復原部署設定，
+保留憑證及 Certbot 帳戶。Settings Runtime 僅顯示安全元資料及執行設定，沒有
+Web 部署按鈕。完整流程、私有備份、回滾和限制見 [HTTPS 文件](docs/HTTPS.md)
+及 [受控驗收報告](docs/HTTPS_REPORT.md)。**REAL HTTPS VPS: NOT RUN**。
+
 ## 功能說明
 
 - 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。

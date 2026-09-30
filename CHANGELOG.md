@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add an optional SSH/root-only Nginx HTTPS deployment assistant with Certbot HTTP-01 Webroot, staged activation, verified local TLS health, private transaction backups, conservative drift/ownership checks, disable and known-backup recovery.
 - Expand authenticated Settings into Overview, GeoIP, Health and read-only Runtime sections with modular server-rendered partials, local aggregate status and isolated auxiliary failures.
 - Add Off-by-default offline GeoIP fallback for Unknown countries in Generate, Preview and Fixed sources, using only public literal IPv4/IPv6 and administrator-supplied MMDB data with Manual/Name priority preserved.
 - Add authenticated System Settings for private MMDB status, bounded upload/replace and removal, with CSRF and transactional rollback; no automatic dataset download or bulk regeneration.
@@ -17,6 +18,7 @@
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
 ### Changed
+- Show credential-free managed HTTPS metadata and validated application bind scope in authenticated read-only Settings Runtime.
 - Centralize global Full Proxy probe defaults in Settings Health, retaining the Fixed compatibility route and per-subscription controls; reuse existing validation, persistence and reset semantics.
 - Reconcile enabled Fixed policies after committed Proxy checks and through the existing bounded health scan; reuse committed base YAML and source caches without network work, skip identical YAML revisions and preserve successful observations when reconciliation fails.
 - Store policies, optional health settings and country detection in Fixed registry v6; read v1–v5 without rewriting revisions, preserve earlier defaults and keep GeoIP Off. Preserve settings during source refresh and cached health reconciliation.
@@ -40,6 +42,7 @@
 - Use 128-bit random tokens, permanent token-hash tombstones, constant-time authorization, private state permissions, strict schema/path checks and fixed-URL access-log redaction.
 
 ### Deployment
+- Validate APP_BIND_HOST (public or loopback only), preserve direct HTTP defaults, retain managed HTTPS metadata/binding during ordinary update, and detach only verified project Nginx integration during uninstall while keeping certificate data.
 - Manage separate health oneshot/timer units on install, update and uninstall, preserve health state, stop writers before backup, and recover the health unit pair and prior timer flags on setup failure.
 - Install and enable refresh oneshot/timer units, back up all existing units on upgrade, stop refresh writers before state backup/code replacement, and remove units on uninstall while preserving retained state.
 
