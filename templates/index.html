@@ -579,6 +579,7 @@
       <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Main navigation">
         <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Generate YAML</a>
         <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
+        <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
       </nav>
       {% if error_messages %}
         <div class="terminal-alert error p-4 mb-4">

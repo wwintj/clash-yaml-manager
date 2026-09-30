@@ -21,7 +21,9 @@ from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG
 from core.fixed_views import blueprint as fixed_blueprint
 from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
-from core import policy_engine
+from core import policy_engine, geoip
+from core.geoip_store import GeoIPStore
+from core.settings_views import blueprint as settings_blueprint
 from core.version import read_version
 from core.install_info import read_install_info, display_build
 from core.subscriptions import SubscriptionSigner, safe_filename
@@ -136,6 +138,7 @@ def cleanup_old_files() -> None:
 ensure_directories()
 temporary_links = TemporaryLinks(DIR_STATE)
 fixed_subscriptions = FixedSubscriptions(DIR_STATE)
+geoip_store = GeoIPStore(DIR_STATE)
 auth_store = AuthStore(DIR_STATE)
 login_limiter = LoginLimiter(
     DIR_STATE,
@@ -279,6 +282,8 @@ def get_base_context() -> Dict[str, Any]:
         "country_mapping": parser.get_country_mapping(),
         "default_special_groups": DEFAULT_SPECIAL_GROUPS,
         "policy_fields": policy_engine.form_values(policy_engine.defaults()),
+        "country_geoip": "off",
+        "geoip_status": geoip_store.status() if session.get("logged_in") else {"status": "Not installed"},
     }
 
 
@@ -455,7 +460,9 @@ def change_password():
 
 
 def parse_form_nodes():
-    return generator.parse_form_nodes(request.form)
+    detection = geoip.parse_form(request.form)
+    with geoip_store.lookup(detection['geoip']) as country_lookup:
+        return generator.parse_form_nodes(request.form, country_lookup)
 
 
 @app.route('/parse-nodes', methods=['POST'])
@@ -475,8 +482,9 @@ def process_config():
     cleanup_old_files()
 
     def generation_error():
+        context['country_geoip'] = request.form.get('country_geoip', 'off')[:64]
         # Redisplay policies in this response only; no new persisted temp state.
-        if any(key.startswith('policy_') for key in request.form):
+        if 'country_geoip' in request.form or any(key.startswith('policy_') for key in request.form):
             context['policy_fields'] = policy_engine.submitted_values(request.form)
             return render_template('index.html', **context), 400
         return redirect_to_index(context)
@@ -641,6 +649,9 @@ def state_unavailable(error):
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
+    if request.blueprint == 'settings' and session.get('logged_in'):
+        session['settings_error'] = 'GeoIP upload too large. Maximum database size is 32 MiB; previous database is unchanged.'
+        return redirect(url_for('settings.index'), code=303)
     context = get_base_context()
     context["error_messages"].append("上传文件过大，最大支持 50MB。")
     return redirect_to_index(context)
@@ -657,6 +668,8 @@ def csrf_failed(error):
     )
     if request.endpoint == 'parse_nodes':
         return jsonify(code='csrf_failed', error='Session or security token expired; refresh or log in again. Any saved draft will be restored.'), 400
+    if request.blueprint == 'settings' and session.get('logged_in'):
+        return redirect(url_for('settings.index'), code=303)
     if request.blueprint == 'fixed' and session.get('logged_in'):
         if request.endpoint in ('fixed.create', 'fixed.edit'):
             return redirect(url_for(request.endpoint, **(request.view_args or {})), code=303)
@@ -670,13 +683,15 @@ def fixed_public_url(slug):
         'short_subscribe_file', slug=slug, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme)
 
 
+app.register_blueprint(settings_blueprint(geoip_store, get_base_context, login_required))
+
 app.register_blueprint(fixed_blueprint(fixed_subscriptions, get_base_context, login_required,
                                       DEFAULT_YAML_PATH, DEFAULT_SPECIAL_GROUPS, fixed_public_url))
 
 
 @app.after_request
 def private_fixed_pages(response):
-    if request.blueprint == 'fixed':
+    if request.blueprint in ('fixed', 'settings'):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Referrer-Policy'] = 'no-referrer'
     return response

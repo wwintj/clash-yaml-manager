@@ -45,3 +45,4 @@
   .proxy-health-table tr { border: 1px solid #343434; margin-bottom: 1rem; }
   .proxy-health-table td::before { content: attr(data-label); display: block; color: #a0a0a0; margin-bottom: .3rem; }
 }
+.geoip-metadata dd { overflow-wrap:anywhere; }

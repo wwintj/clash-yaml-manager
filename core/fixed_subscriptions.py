@@ -21,7 +21,8 @@ import time
 import uuid
 from urllib.parse import unquote
 
-from core import generator, fixed_sources, refresh_schedule, policy_engine, health_policy
+from core import generator, fixed_sources, refresh_schedule, policy_engine, health_policy, geoip
+from core.geoip_store import GeoIPStore
 from core.source_errors import SourceError
 from core.state import StateError, atomic_write, file_lock, private_directory, read_json, write_json
 
@@ -132,7 +133,7 @@ class FixedSubscriptions:
             if not condition:
                 raise ValueError
         try:
-            require(type(data['version']) is int and data['version'] in (1, 2, 3, 4, 5))
+            require(type(data['version']) is int and data['version'] in (1, 2, 3, 4, 5, 6))
             require(isinstance(data['subscriptions'], dict) and isinstance(data['retired_tokens'], list))
             require(all(isinstance(t, str) and re.fullmatch('[0-9a-f]{64}', t) for t in data['retired_tokens']))
             used = set(data['retired_tokens'])
@@ -160,6 +161,8 @@ class FixedSubscriptions:
                 else:
                     entry['health_policy'] = health_policy.normalize(entry['health_policy'])
                     require(health_policy.valid_audit(entry['health_policy_audit']))
+                entry['country_detection'] = (geoip.defaults() if data['version'] < 6
+                    else geoip.normalize(entry['country_detection']))
                 digest = token_hash(entry['token'])
                 require(digest not in used)
                 used.add(digest)
@@ -176,7 +179,7 @@ class FixedSubscriptions:
     def _commit(self, data, migrate=True):
         data = copy.deepcopy(data)
         if migrate:
-            data['version'] = 5
+            data['version'] = 6
         elif data['version'] == 1:
             for entry in data['subscriptions'].values():
                 entry.pop('sources', None)
@@ -192,6 +195,9 @@ class FixedSubscriptions:
             for entry in data['subscriptions'].values():
                 entry.pop('health_policy', None)
                 entry.pop('health_policy_audit', None)
+        if not migrate and data['version'] < 6:
+            for entry in data['subscriptions'].values():
+                entry.pop('country_detection', None)
         # atomic_write may report a directory-fsync error after os.replace. Restore
         # the old registry in that case before exposing an unsuccessful mutation.
         previous = self.path.read_bytes() if self.path.exists() else None
@@ -261,6 +267,7 @@ class FixedSubscriptions:
             raise GenerationError('请检查订阅名称和配置。')
         source['policy_config'] = policy_engine.normalize(source.get('policy_config', policy_engine.defaults()))
         source['health_policy'] = health_policy.normalize(source.get('health_policy', health_policy.defaults()))
+        source['country_detection'] = geoip.normalize(source.get('country_detection', geoip.defaults()))
         if not isinstance(name, str) or not 0 < len(name.strip()) <= 128 or not valid_source(source):
             raise GenerationError('请检查订阅名称和配置。')
         if parsed['errors']:
@@ -297,11 +304,15 @@ class FixedSubscriptions:
         with tempfile.TemporaryDirectory(prefix='.fixed-candidate-', dir=self.state) as scratch:
             candidate = self._allocate(Path(scratch))
             revision = candidate.name
-            if _cached:
-                aggregate, payloads = fixed_sources.aggregate_cached(configured,caches,parsed)
-            else:
-                aggregate, payloads = fixed_sources.prepare(configured, previous, caches,
-                                                            uploads or {}, parsed, refresh, trigger, clock)
+            with GeoIPStore(self.state).lookup(source['country_detection']['geoip']) as country_lookup:
+                if country_lookup is not None:
+                    parsed = generator.parse_form_nodes(dict(batch_nodes=source['batch_nodes'],
+                        aux_nodes=json.dumps(source['aux_nodes']), node_overrides=json.dumps(source['node_overrides'])), country_lookup)
+                if _cached:
+                    aggregate, payloads = fixed_sources.aggregate_cached(configured,caches,parsed,country_lookup)
+                else:
+                    aggregate, payloads = fixed_sources.prepare(configured, previous, caches,
+                        uploads or {}, parsed, refresh, trigger, clock, country_lookup)
             base_bytes = (base_snapshot if _cached else custom if source['yaml_source'] == 'custom'
                           else Path(default_path).read_bytes())
             # Capture after provider work. One observation/time snapshot for this generation.
@@ -400,7 +411,7 @@ class FixedSubscriptions:
                 refresh = {identifier}
         else:
             raise SourceError('config')
-        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config', 'health_policy')}
+        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config', 'health_policy', 'country_detection')}
         parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
             aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
         return self.save(key, entry['name'], entry['prefix'], source, parsed, default_path,
@@ -411,7 +422,7 @@ class FixedSubscriptions:
         available = {s['id'] for s in entry['sources'] if s['type'] == 'remote_url' and s['enabled']}
         if not identifiers or not set(identifiers) <= available:
             raise StateError(STATE_ERROR)
-        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config', 'health_policy')}
+        source = {k: entry[k] for k in ('yaml_source', 'batch_nodes', 'aux_nodes', 'node_overrides', 'special_groups', 'policy_config', 'health_policy', 'country_detection')}
         parsed = generator.parse_form_nodes(dict(batch_nodes=entry['batch_nodes'],
             aux_nodes=json.dumps(entry['aux_nodes']), node_overrides=json.dumps(entry['node_overrides'])))
         return self.save(entry['id'], entry['name'], entry['prefix'], source, parsed, default_path,
@@ -428,7 +439,7 @@ class FixedSubscriptions:
                 return 'off'
             health = health_policy.snapshot(self,key)
             source = {k:expected[k] for k in ('yaml_source','batch_nodes','aux_nodes',
-                'node_overrides','special_groups','policy_config','health_policy')}
+                'node_overrides','special_groups','policy_config','health_policy','country_detection')}
             parsed = generator.parse_form_nodes(dict(batch_nodes=expected['batch_nodes'],
                 aux_nodes=json.dumps(expected['aux_nodes']),node_overrides=json.dumps(expected['node_overrides'])))
             result = self.save(key,expected['name'],expected['prefix'],source,parsed,None,

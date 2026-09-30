@@ -86,7 +86,7 @@ def configure(existing, requested):
     return result
 
 
-def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger='save', clock=None):
+def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger='save', clock=None, country_lookup=None):
     """Pure candidate metadata/payloads; no writes and no registry lock here.
 
     uploads is keyed by the submitted external row index (transport only, never
@@ -110,7 +110,7 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger=
             if payload is None:
                 raise SourceError('upload')
             # Replacements are validated even when disabled: never store invalid uploads.
-            parsed = source_parser.parse(payload, item['format'])
+            parsed = source_parser.parse(payload, item['format'], country_lookup)
             item.update(last_attempt_at=clock(), last_success_at=clock(), last_error=None,
                         using_cache=False, node_count=len(parsed['nodes']), warnings=parsed['warnings'])
         else:
@@ -123,13 +123,13 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger=
                 result, error_code = 'success', None
                 try:
                     payload = source_fetch.fetch(item['url'])
-                    parsed = source_parser.parse(payload, item['format'])
+                    parsed = source_parser.parse(payload, item['format'], country_lookup)
                 except SourceError as error:
                     if cached is None or changed:
                         error.source_id = item['id']
                         raise
                     payload = cached
-                    parsed = source_parser.parse(cached, item['format'])
+                    parsed = source_parser.parse(cached, item['format'], country_lookup)
                     item.update(last_error=error.code, using_cache=True)
                     result, error_code = 'cached', error.code
                 else:
@@ -139,7 +139,7 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger=
             if item['enabled'] and parsed is None:
                 if payload is None:
                     raise SourceError('empty')
-                parsed = source_parser.parse(payload, item['format'])
+                parsed = source_parser.parse(payload, item['format'], country_lookup)
             if parsed is not None:
                 item.update(node_count=len(parsed['nodes']), warnings=parsed['warnings'])
         if payload is not None:
@@ -149,12 +149,12 @@ def prepare(sources, previous, caches, uploads, manual_result, refresh, trigger=
     return source_parser.combine(results), payloads
 
 
-def aggregate_cached(sources, caches, manual_result):
+def aggregate_cached(sources, caches, manual_result, country_lookup=None):
     """Exact existing source aggregation, without fetch or source metadata changes."""
     results = [manual_result]
     for item in sources[1:]:
         if not item['enabled']: continue
         payload = caches.get(item['id'])
         if payload is None: raise SourceError('empty')
-        results.append(source_parser.parse(payload,item['format']))
+        results.append(source_parser.parse(payload,item['format'], country_lookup))
     return source_parser.combine(results), copy.deepcopy(caches)

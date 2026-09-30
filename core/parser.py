@@ -282,7 +282,7 @@ def split_node_input(line: str, line_num: int):
     return code, name, link, 'Unknown' if code == 'UNKNOWN' else 'Name Detection'
 
 
-def parse_node_line(line: str, line_num: int = 1, override=None) -> Tuple[str, Dict[str, Any], Dict[str, str]]:
+def parse_node_line(line: str, line_num: int = 1, override=None, country_lookup=None) -> Tuple[str, Dict[str, Any], Dict[str, str]]:
     code, raw_name, link, source = split_node_input(line, line_num)
     if override:
         if 'name' in override:
@@ -305,6 +305,12 @@ def parse_node_line(line: str, line_num: int = 1, override=None) -> Tuple[str, D
                 else parse_vless_link(link, display_name))
     except Exception:
         raise ValueError('节点解析失败，请检查链接格式、必填字段及端口范围。') from None
+    if code == 'UNKNOWN' and source != 'Manual' and country_lookup is not None:
+        assisted = country_lookup.country(node['server'])
+        if assisted:
+            code, source = assisted, 'GeoIP'
+            display_name = build_display_name(code, raw_name)
+            node['name'] = display_name
     return display_name, node, dict(code=code, group=COUNTRY_MAPPING[code]['group'],
                                     source=source, raw_name=raw_name)
 
@@ -315,7 +321,7 @@ def preview_name(name: str) -> str:
     return re.sub(r'(?i)\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b', '[UUID hidden]', name)
 
 
-def parse_batch_nodes(text: str, overrides=None) -> Dict[str, Any]:
+def parse_batch_nodes(text: str, overrides=None, country_lookup=None) -> Dict[str, Any]:
     result = dict(nodes=[], node_names=[], countries=[], errors=[], preview=[])
     seen_names, occurrences = set(), {}
     overrides = overrides or {}
@@ -329,7 +335,7 @@ def parse_batch_nodes(text: str, overrides=None) -> Dict[str, Any]:
         record = dict(key=key, line=idx, name='', country='UNKNOWN', protocol='—',
                       status='Error', source='Unknown', message='')
         try:
-            display_name, node, info = parse_node_line(line, idx, overrides.get(key))
+            display_name, node, info = parse_node_line(line, idx, overrides.get(key), country_lookup)
             record.update(name=preview_name(info['raw_name']), country=info['code'], protocol=node['type'].upper(), source=info['source'])
             if display_name in seen_names:
                 raise ValueError('节点名称重复，请修改名称以防止冲突。')

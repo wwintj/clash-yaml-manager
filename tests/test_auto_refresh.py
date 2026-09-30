@@ -153,7 +153,7 @@ def test_old_schema_scan_and_public_stats_preserve_version_bytes_identity(store,
     disk = json.loads(store.path.read_bytes()); assert disk['version'] == version
     if version == 2: assert not set(schedule.FIELDS) & set(disk['subscriptions'][entry['id']]['sources'][1])
     store.action(entry['id'], 'disable')
-    assert json.loads(store.path.read_bytes())['version'] == 5
+    assert json.loads(store.path.read_bytes())['version'] == 6
     new = store.get(entry['id']); assert new['revision'] == entry['revision'] and new['token'] == entry['token']
 
 

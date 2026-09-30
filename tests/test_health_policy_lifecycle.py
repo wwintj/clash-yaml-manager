@@ -207,7 +207,7 @@ def test_v1_v4_read_migration_off_without_rewrite_or_yaml_changes(store,base,res
     assert store.path.read_bytes()==before and store.snapshot(entry['id'])[1]==yaml and not response['calls']
     store.resolve(store.slug(migrated));raw=json.loads(store.path.read_bytes())
     assert raw['version']==version and 'health_policy' not in raw['subscriptions'][entry['id']]
-    store.action(entry['id'],'disable');assert json.loads(store.path.read_bytes())['version']==5
+    store.action(entry['id'],'disable');assert json.loads(store.path.read_bytes())['version']==6
 
 
 @pytest.mark.parametrize('field,bad',[('health_policy',None),('health_policy',{}),('health_policy',settings(min_candidates=17)),

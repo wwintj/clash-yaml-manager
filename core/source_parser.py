@@ -60,7 +60,7 @@ def combine(results, require_nodes=True):
     return result
 
 
-def _raw(text):
+def _raw(text, country_lookup=None):
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.lstrip().startswith('#')]
     if not lines:
         raise SourceError('empty')
@@ -70,7 +70,7 @@ def _raw(text):
     results = []
     for index, line in enumerate(lines, 1):
         try:
-            name, node, info = parser.parse_node_line(line, index)
+            name, node, info = parser.parse_node_line(line, index, country_lookup=country_lookup)
         except (ValueError, TypeError, AttributeError):
             raise SourceError('invalid') from None
         results.append(dict(nodes=[node], node_names=[name], errors=[], countries=[
@@ -78,7 +78,7 @@ def _raw(text):
     return combine(results)
 
 
-def _clash(data):
+def _clash(data, country_lookup=None):
     data = _plain(data)
     if not isinstance(data, dict) or not isinstance(data.get('proxies'), list):
         raise SourceError('format')
@@ -97,6 +97,8 @@ def _clash(data):
         except ValueError:
             raise SourceError('invalid') from None
         code = parser.detect_country(node['name'])
+        if code == 'UNKNOWN' and country_lookup is not None:
+            code = country_lookup.country(node['server']) or 'UNKNOWN'
         node['name'] = parser.build_display_name(code, node['name'])
         results.append(dict(nodes=[node], node_names=[node['name']], errors=[],
                             countries=[dict(node_name=node['name'], code=code,
@@ -107,7 +109,7 @@ def _clash(data):
     return result
 
 
-def parse(payload, format='auto'):
+def parse(payload, format='auto', country_lookup=None):
     if format not in FORMATS:
         raise SourceError('format')
     if not isinstance(payload, bytes) or len(payload) > MAX_PAYLOAD:
@@ -122,15 +124,15 @@ def parse(payload, format='auto'):
                 if format == 'clash':
                     raise SourceError('invalid') from None
             if format == 'clash' or isinstance(data, dict) and isinstance(data.get('proxies'), list):
-                return _clash(data)
+                return _clash(data, country_lookup)
         if format == 'raw' or format == 'auto' and any(
                 line.lstrip().startswith(('vmess://', 'vless://')) for line in text.splitlines()):
-            return _raw(text)
+            return _raw(text, country_lookup)
         compact = ''.join(text.split())
         decoded = base64.b64decode(compact + '=' * (-len(compact) % 4), altchars=b'-_', validate=True)
         if len(decoded) > MAX_PAYLOAD:
             raise SourceError('size')
-        return _raw(decoded.decode('utf-8-sig'))
+        return _raw(decoded.decode('utf-8-sig'), country_lookup)
     except SourceError:
         raise
     except (ValueError, UnicodeError, binascii.Error, RecursionError, YAMLError):

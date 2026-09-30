@@ -3,7 +3,7 @@ import json
 from core import parser, yaml_utils
 
 
-def parse_form_nodes(form):
+def parse_form_nodes(form, country_lookup=None):
     """Shared input path for Preview and Generate; never trust a cached preview."""
     text = form.get('batch_nodes', '').strip()
     try:
@@ -29,7 +29,7 @@ def parse_form_nodes(form):
     country, name, link = (form.get('single_' + k, '').strip() for k in ('country', 'name', 'link'))
     if country and name and link:
         text += f'\n{country}|{name}|{link}'
-    return parser.parse_batch_nodes(text, overrides)
+    return parser.parse_batch_nodes(text, overrides, country_lookup)
 
 
 def generate(input_path, output_dir, backup_dir, parsed, special_groups, policy_config=None, group_transform=None):
