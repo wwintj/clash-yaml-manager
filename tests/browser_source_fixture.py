@@ -55,7 +55,7 @@ def external_source_server():
         # Test-only deterministic TCP outcomes. Production has no destination bypass.
         return dict(latency_ms=37.6 if state['health']=='success' else None,
                     error=None if state['health']=='success' else 'connection_refused')
-    def engine_status(self):
+    def engine_status(self, **kwargs):
         return dict(status='COMPATIBLE' if state['proxy_engine']=='compatible' else 'NOT INSTALLED',
                     required='v1.19.31',
                     installed='v1.19.31' if state['proxy_engine']=='compatible' else None,
