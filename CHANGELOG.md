@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Expand authenticated Settings into Overview, GeoIP, Health and read-only Runtime sections with modular server-rendered partials, local aggregate status and isolated auxiliary failures.
 - Add Off-by-default offline GeoIP fallback for Unknown countries in Generate, Preview and Fixed sources, using only public literal IPv4/IPv6 and administrator-supplied MMDB data with Manual/Name priority preserved.
 - Add authenticated System Settings for private MMDB status, bounded upload/replace and removal, with CSRF and transactional rollback; no automatic dataset download or bulk regeneration.
 - Add Off-by-default Health-aware Policy for Fixed managed automatic groups, with fresh confirmed Full Proxy Unhealthy exclusion, five freshness windows, per-group minimum candidates and fail-open summaries.
@@ -16,6 +17,7 @@
 - Keep fixed output outside temporary retention, record node/group/rule counts and shared throttled last access, and preserve existing V2/legacy subscriptions and temporary links.
 
 ### Changed
+- Centralize global Full Proxy probe defaults in Settings Health, retaining the Fixed compatibility route and per-subscription controls; reuse existing validation, persistence and reset semantics.
 - Reconcile enabled Fixed policies after committed Proxy checks and through the existing bounded health scan; reuse committed base YAML and source caches without network work, skip identical YAML revisions and preserve successful observations when reconciliation fails.
 - Store policies, optional health settings and country detection in Fixed registry v6; read v1–v5 without rewriting revisions, preserve earlier defaults and keep GeoIP Off. Preserve settings during source refresh and cached health reconciliation.
 - Read health schema v1 as v2 in memory without changing existing Off/Manual modes; separate scheduler backoff from node observations and preserve newer settings/results during busy or revision races.
@@ -26,6 +28,7 @@
 - Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
 
 ### Security
+- Keep Settings GET local-only without DNS, probes or subprocesses; sanitize Runtime/status presentation, retain authentication/CSRF/no-store/no-referrer and never edit deployment configuration from Web.
 - Keep GeoIP local-only with no DNS or network calls, reject unsafe database objects/permissions and fail open to Unknown on unavailable state or lookup errors; retain country-independent health fingerprints.
 - Restrict automatic policy candidates to generated nodes assigned to each managed group, exclude DIRECT/nested/provider expansion, reject invalid policy fields safely and keep the pure policy core free of health reads and network probes; apply optional health eligibility in a separate layer before final reference validation.
 - Verify pinned archive and executable hashes, architecture and exact version before installing a root-owned binary; run probes in private short-lived directories through a secret-protected localhost controller with bounded batches, concurrency and process cleanup.

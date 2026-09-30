@@ -55,6 +55,12 @@ Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理�
 
 預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。預設不改動 YAML；只有另外啟用下述 Health-aware Policy 才會保守排除自動組候選，頂層節點及固定 URL 保留。只有明確啟用 Automatic 才會排程健康檢查。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
 
+## Settings Workspace（Unreleased / main）
+
+登入後的 **Settings** 提供 Overview / GeoIP / Health / Runtime 四個模組。GeoIP 資料庫管理保留原有私有交易；全域 Full Proxy Probe Defaults 統一移到 **Settings → Health**，Fixed Edit 保留摘要、管理連結及每個訂閱自己的模式、自訂目標與間隔。既有 Fixed 全域保存路由仍相容，驗證及保存繼續由 ProxyHealth 負責。
+
+Overview 只讀本地版本、build、狀態及 Fixed 數量；Runtime 只顯示經篩選的有效配置，原始 URL／環境內容、秘密與 token 不顯示。**GET Settings 無 DNS、網路、探測或 subprocess**；Mihomo 顯示僅校驗本地檔案／metadata，不證明二進位能執行。部署配置仍經 `.env` + SSH 重啟管理，Web 不修改環境或 systemd，也不安裝 Mihomo。詳見 [Settings](docs/SETTINGS.md) 與 [受控驗收](docs/SETTINGS_REPORT.md)。
+
 ## GeoIP Country Assist（Unreleased / main）
 
 Generate / Fixed 的 Country Detection 新增 **Off（預設） / Literal public IP only**。優先序為 **Manual → Name Detection → GeoIP → Unknown**，只對名稱未識別國家的公共字面 IPv4/IPv6 查詢；不解析域名、不發出 GeoIP 網路請求，也不覆蓋手動國家。

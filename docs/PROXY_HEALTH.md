@@ -282,3 +282,13 @@ controller fixtures. The upstream Linux assets were independently downloaded
 and hashed; the macOS development host did not execute them. See
 [PROXY_HEALTH_REPORT.md](PROXY_HEALTH_REPORT.md) for the controlled gates and
 operator evidence boundary.
+
+## Global defaults UI (Settings Framework, Unreleased main)
+
+Edit global HTTPS URL/status/timeout under **Settings → Health**. Fixed edit now
+shows a summary and link; custom per-subscription targets/modes/intervals remain
+on Fixed edit. The existing Fixed POST route stays compatible and both paths
+reuse `ProxyHealth.set_global()`, including observation/schedule resets for global
+users only. Settings engine status checks local pinned files/metadata without
+executing Mihomo; CLI/probe execution validation remains unchanged. See
+[Settings](SETTINGS.md) for authority, privacy and read-only Runtime boundaries.
