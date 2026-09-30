@@ -1,6 +1,8 @@
 """Shared opt-in scheduling rules for independent Endpoint and Proxy observations."""
 import copy
 
+from core import notification_events
+
 from core.refresh_schedule import BACKOFF, INTERVALS, MAX_EPOCH, OPTIONS as REFRESH_OPTIONS, timestamp
 
 OPTIONS = REFRESH_OPTIONS[1:]
@@ -142,8 +144,11 @@ class ScheduledHealth:
                     if (current != expected or current['mode'] != 'automatic'
                             or expected_global is not None and data['global'] != expected_global):
                         return False
-                    record(current,'auto',result,self.clock())
+                    before, at = current['scheduler_failures'], self.clock()
+                    record(current,'auto',result,at)
                     self._commit(data,previous)
+                    notification_events.scheduler(before, current['scheduler_failures'],
+                        entries[key]['name'], at, result, self.notification_kind)
                     return True
         except Exception:
             # No exception text, traceback or sensitive state may reach the journal.

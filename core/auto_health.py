@@ -6,6 +6,8 @@ import signal
 import time
 
 from core import health_schedule, health_policy
+from core.notifications import Notifications
+from core import notification_events
 from core.fixed_subscriptions import FixedSubscriptions
 from core.node_health import HealthError, NodeHealth
 from core.proxy_health import ProxyHealth, ProxyHealthError
@@ -36,8 +38,9 @@ def run_once(store, *, endpoint=None, proxy=None, clock=None):
     clock = clock or time.time
     endpoint = endpoint or NodeHealth(store,clock=clock)
     proxy = proxy or ProxyHealth(store,clock=clock)
+    notifications, batch = Notifications(store.state, clock=clock), []
     try:
-        with file_lock(store.state/'auto_health.lock',blocking=False,strict=True):
+        with notification_events.collect(batch if notifications.enabled() else None), file_lock(store.state/'auto_health.lock',blocking=False,strict=True):
             entries, now = store.list(), clock()
             work = []
             for kind, observer, limit in (('endpoint',endpoint,MAX_ENDPOINT_JOBS),('proxy',proxy,MAX_PROXY_JOBS)):
@@ -68,10 +71,12 @@ def run_once(store, *, endpoint=None, proxy=None, clock=None):
                     except Exception:
                         result = 'error'
                     LOGGER.info('Auto %s health subscription=%s nodes=%d result=%s',kind,key,count,result)
-            return 0
     except LockBusyError:
         LOGGER.info('Automatic health already running.')
         return 0
+
+    notifications.deliver(batch)
+    return 0
 
 
 def main(argv=None):

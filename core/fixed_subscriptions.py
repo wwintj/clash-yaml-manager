@@ -21,7 +21,7 @@ import time
 import uuid
 from urllib.parse import unquote
 
-from core import generator, fixed_sources, refresh_schedule, policy_engine, health_policy, geoip
+from core import generator, fixed_sources, refresh_schedule, policy_engine, health_policy, geoip, notification_events
 from core.geoip_store import GeoIPStore
 from core.source_errors import SourceError
 from core.state import StateError, atomic_write, file_lock, private_directory, read_json, write_json
@@ -383,6 +383,8 @@ class FixedSubscriptions:
                                      rule_count=result['rule_count'])
                         data['subscriptions'][key] = entry
                         self._commit(data)
+                        if trigger == 'auto' and refresh:
+                            notification_events.source(current, entry, now)
                     except BaseException:
                         referenced = True
                         try:
@@ -491,12 +493,14 @@ class FixedSubscriptions:
             entry = data['subscriptions'].get(snapshot['id'])
             if self._identity(entry) != self._identity(snapshot):
                 return False
+            before_failures = notification_events.source_count(entry)[0]
             for item in entry['sources']:
                 if item['id'] in identifiers and item['type'] == 'remote_url':
                     item['using_cache'] = item['last_success_at'] is not None
                     refresh_schedule.record(item, 'auto', 'error', clock(), code)
             entry['updated_at'] = clock()
             self._commit(data)
+            notification_events.source_changed(before_failures, entry, entry['updated_at'])
             return True
 
     def _collect(self, home, keep=None):

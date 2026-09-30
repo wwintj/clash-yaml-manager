@@ -9,7 +9,7 @@ import socket
 import time
 from urllib.parse import urlsplit
 
-from core import health_schedule, mihomo_probe, node_health, source_fetch
+from core import notification_events, health_schedule, mihomo_probe, node_health, source_fetch
 from core.mihomo_manager import ManagedMihomo
 from core.refresh_schedule import timestamp
 from core.source_errors import SourceError
@@ -166,6 +166,7 @@ def valid_state(data):
 
 
 class ProxyHealth(health_schedule.ScheduledHealth):
+    notification_kind = 'proxy_health'
     def __init__(self, fixed, *, engine=None, runner=None, clock=None, resolver=None):
         self.fixed = fixed
         self.state = Path(fixed.state)
@@ -400,12 +401,15 @@ class ProxyHealth(health_schedule.ScheduledHealth):
                     if (not health_schedule.same_check_state(data['subscriptions'].get(key,empty_entry()),expected_entry)
                             or data['global'] != expected_global):
                         raise ProxyHealthError('health_conflict')
+                    before = data['subscriptions'].get(key,expected_entry)
                     self._prune(data, ids)
                     completed = copy.deepcopy(expected_entry)
                     completed.update(last_check_at=at,nodes=records)
                     health_schedule.record(completed,trigger,'success',at)
                     data['subscriptions'][key] = completed
                     self._commit(data, previous)
+                    notification_events.health(self.notification_kind, before, completed,
+                        snapshot['name'], at, trigger)
             counts = {status:sum(record['status']==status for record in records.values())
                       for status in ('healthy','suspect','unhealthy','unsupported')}
             LOGGER.info('Proxy probe completed subscription=%s nodes=%d healthy=%d suspect=%d unhealthy=%d unsupported=%d',

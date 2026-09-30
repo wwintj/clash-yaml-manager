@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 import time
 
+from core.notifications import Notifications
+from core import notification_events
 from core.fixed_subscriptions import FixedSubscriptions, GenerationError
 from core import refresh_schedule
 from core.source_errors import SourceError
@@ -33,8 +35,9 @@ def select_work(entries, now):
 
 def run_once(store, default_path, clock=None):
     clock = clock or time.time
+    notifications, batch = Notifications(store.state, clock=clock), []
     try:
-        with file_lock(store.state / 'auto_refresh.lock', blocking=False, strict=True):
+        with notification_events.collect(batch if notifications.enabled() else None), file_lock(store.state / 'auto_refresh.lock', blocking=False, strict=True):
             work = select_work(store.list(), clock())
             LOGGER.info('Auto refresh started. subscriptions=%d sources=%d',
                         len(work), sum(len(ids) for _, ids in work))
@@ -52,10 +55,12 @@ def run_once(store, default_path, clock=None):
                 else:
                     result = 'cached' if any(s['using_cache'] for s in refreshed['sources'] if s['id'] in identifiers) else 'success'
                 LOGGER.info('Auto refresh subscription=%s sources=%d result=%s', entry['id'], len(identifiers), result)
-            return 0
     except LockBusyError:
         LOGGER.info('Auto refresh already running.')
         return 0
+
+    notifications.deliver(batch)
+    return 0
 
 
 def main(argv=None):

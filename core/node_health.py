@@ -11,7 +11,7 @@ import time
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
-from core import health_schedule, node_probe, source_parser
+from core import notification_events, health_schedule, node_probe, source_parser
 from core.node_identity import fingerprint
 from core.refresh_schedule import timestamp
 from core.source_errors import SourceError
@@ -139,6 +139,7 @@ def empty_entry():
 
 
 class NodeHealth(health_schedule.ScheduledHealth):
+    notification_kind = 'endpoint_health'
     def __init__(self, fixed, clock=None, probe=None):
         self.fixed = fixed
         self.state = Path(fixed.state)
@@ -296,12 +297,15 @@ class NodeHealth(health_schedule.ScheduledHealth):
                 data, previous = self._read()
                 if not health_schedule.same_check_state(data['subscriptions'].get(key,empty_entry()),expected):
                     raise HealthError('health_conflict')
+                before = data['subscriptions'].get(key,expected)
                 self._prune(data, ids)
                 completed = copy.deepcopy(expected)
                 completed.update(last_check_at=at,nodes=records)
                 health_schedule.record(completed,trigger,'success',at)
                 data['subscriptions'][key] = completed
                 self._commit(data, previous)
+                notification_events.health(self.notification_kind, before, completed,
+                    snapshot['name'], at, trigger)
         counts = {status:sum(r['status'] == status for r in records.values()) for status in ('healthy','suspect','unhealthy')}
         LOGGER.info('Node health check subscription=%s nodes=%d healthy=%d suspect=%d unhealthy=%d',
                     key,len(targets),counts['healthy'],counts['suspect'],counts['unhealthy'])
