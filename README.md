@@ -2,7 +2,7 @@
 
 適合部署在 Ubuntu VPS 上的輕量級 Clash/Mihomo YAML 節點管理面板。
 
-可上傳現有 YAML，也可直接使用內建預設 YAML。輸入 `vmess://` / `vless://` 節點後，系統會自動替換 `proxies`、清理舊節點引用、補齊策略組，並產生新的 Clash/Mihomo 設定檔。
+可上傳現有 YAML，也可直接使用內建預設 YAML。輸入 `vmess://` / `vless://` 節點後，Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
 **Latest Stable: [v1.2.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.2.1)**
@@ -18,7 +18,7 @@ main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable
 
 | 功能 | 行為與文件 |
 | --- | --- |
-| Generate / Preview | 替換 VMess/VLESS 節點、可編輯國家／名稱預覽、[Full YAML Diff Preview](docs/YAML_DIFF_PREVIEW.md)、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
+| Generate / Preview | [Replace（預設）／Merge](docs/MERGE_MODE.md)、VMess/VLESS 新輸入、可編輯國家／名稱預覽、[Full YAML Diff Preview](docs/YAML_DIFF_PREVIEW.md)、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
 | [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md) | 保存 Default / Custom YAML 與節點；一般保存保持 `/s/<prefix>-fs_<secret>`，不受臨時清理影響 |
 | [External Sources](docs/EXTERNAL_SOURCES.md) | 合併 Manual、Remote URL、Uploaded；Clash YAML / Raw / Base64，last-good cache |
 | [Automatic Refresh](docs/AUTO_REFRESH.md) | Remote Source 預設 Off，七檔間隔、獨立 timer、失敗退避及有限歷史 |
@@ -171,13 +171,15 @@ HK|GIA|vmess://xxxx
 
 Generate 頁新增 **Preview YAML Changes**（尚未發布，使用明確的 `--channel main` 測試）。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不保存 diff 草稿。Custom YAML 需仍選有實際檔案；過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
+Generate 的 **Node Update Mode** 預設 **Replace existing nodes**；明確選 **Merge with existing nodes** 會保持來源 proxies 順序及已有引用，再依提交順序追加新節點。同名會報錯，不覆蓋、不改名、不按連線去重。新節點加入一般組、所選 Special Groups 及本次國家組；顯式自動 Policy 仍依既有 contract 只用本次新候選。Merge 僅限 Generate，Fixed 仍為 Replace；新輸入仍只解析 VMess/VLESS，來源已存在的其他類型可原樣保留。Diff 使用同一個模式；詳見 [Merge Mode](docs/MERGE_MODE.md) 與 [驗收報告](docs/MERGE_MODE_REPORT.md)。本功能尚未納入 Stable。
+
 點 **Parse Nodes** 查看 Name、Country、Protocol、Ready / Warning / Error 和來源。修改輸入後顯示 Changes not parsed yet。Preview 可修改 Country / Name，修改立即保存；Apply edit 或 Parse Nodes 更新預覽。手工國家優先，重排未修改的輸入不會丟掉手工修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
 
 支援完整 249 個 ISO 國家/地區，使用同一份[離線資料](docs/COUNTRY_DATA.md)。Auxiliary 和 Preview 的搜尋欄支援 ISO、English、中文和別名，常用國家置頂；例如 tai 找 Taiwan / Thailand，美 找美國，JP 找日本。預設只依據旗幟、保守的名稱/代碼和城市別名，不使用 DNS。明確啟用 GeoIP 後，名稱未識別的公共字面 IP 可使用操作員提供的離線 MMDB；手動國家及名稱判斷仍優先。衝突或不明名稱為 **🌐 Unknown**，Warning 仍可 Generate，加入 **🌐 其他节点**。只為本次存在的國家建立策略組，保留來源 YAML 既有組。
 
 ## 草稿
 
-Batch、全部 Auxiliary rows、Policy Options、YAML source 和 Preview 手工修正自動存到同一瀏覽器、同一網站 origin 的 localStorage，保留最後保存後 30 天。提交前同步保存；刷新、退出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。成功生成不清空；**Clear Draft** 需確認。
+Batch、全部 Auxiliary rows、Policy Options、YAML source、Node Update Mode 和 Preview 手工修正自動存到同一瀏覽器、同一網站 origin 的 localStorage，保留最後保存後 30 天。提交前同步保存；刷新、退出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。沒有模式欄位的舊草稿恢復為 Replace。成功生成不清空；**Clear Draft** 需確認，清除後模式回到 Replace。
 
 不儲存上傳 YAML 的內容；恢復 Custom YAML 時必須重新選檔，不會靜默使用預設 YAML。CSRF 保護仍在，token 過期刷新，session 過期登入後恢復。
 
@@ -379,7 +381,7 @@ done
 
 Node 可用時 pytest 也會執行草稿與搜尋 JS 測試（可單獨 `node tests/test_draft.js`）。如有 shellcheck，另執行 `shellcheck install.sh remote-install.sh update.sh remote-update.sh uninstall.sh httpsctl.sh mihomoctl.sh scripts/deploy-common.sh`。測試使用臨時資料，包含真實 YAML 全量 round trip、下載、訂閱及並發輸出；部署腳本測試使用 systemctl/curl/pip 替身，不能取代 Ubuntu systemd 驗收。
 
-處理模式仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突，或 rules 仍指向刪除的舊節點時會阻止生成並提供位置，避免靜默丟設定；先在來源 YAML 處理衝突再重試。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。已有節點 Parse Preview；Merge 和新協議尚未實作。
+Generate 支援 Replace（預設）／Merge，Fixed 仍為 Replace。錯誤 YAML 結構、重複策略組、節點與組名稱衝突會阻止生成；Replace 的 rules 若仍指向刪除的舊節點也會拒絕，Merge 保留的節點可繼續被引用。同名 Merge 必須先在來源或新輸入處理，不會自動覆蓋。未涉及部分的註解和引號盡量保留；這還不是完整 Mihomo validator。已有節點 Parse Preview 和 Full YAML Diff Preview；新輸入協議仍僅 VMess/VLESS，其他新協議尚未實作。
 
 ---
 

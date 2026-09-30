@@ -34,6 +34,9 @@ Refreshing/navigation discards the diff.
 Both paths parse the latest form, including Batch, Auxiliary and manual Preview
 name/country edits. The server never trusts the cached Parse DOM. It uses current
 Special Groups, Policy Engine fields and Country Detection/GeoIP choice.
+Node Update Mode also participates: Replace is the default, while explicit
+[Merge](MERGE_MODE.md) preserves source nodes and appends submitted nodes through
+the same transformer. Fixed remains Replace.
 Health-aware eligibility is a Fixed-only feature today; this MVP does not add it
 to Generate or read health observations.
 
@@ -44,7 +47,7 @@ Randomness and time belong only to filenames/URLs, not YAML content.
 
 ```text
 latest form → current local country lookup → parsed nodes
-source YAML → shared load / replace / policies / reference validation
+source YAML → shared load / selected node update / policies / reference validation
             → shared serialization
               ├─ Preview: bounded in-memory unified diff JSON
               └─ Generate: existing backup / atomic output / temporary link
@@ -55,7 +58,7 @@ generated-side UTF-8 bytes match subsequent Generate output exactly. Preview is
 not a reserved transaction or frozen server snapshot: an administrator replacing
 the default/MMDB or changing inputs between requests can change the result.
 
-Generate retains Replace + VMess/VLESS, filenames, backups, counts, redirects,
+Generate retains default Replace and VMess/VLESS new input, filenames, backups, counts, redirects,
 cleanup, expiry, downloads and `/t/` behavior. Fixed callers still use the same
 shared transformer; no Fixed schema, sources, refresh or policy persistence change.
 
@@ -137,6 +140,6 @@ servers, passwords and provider details. Do not share that panel. Redacting YAML
 would break the exact-preview contract. Existing input drafts remain independent;
 this feature does not store its source upload/generated output/diff in drafts.
 
-This is Generate-only: no Fixed diff, Merge/Append, additional protocols, semantic
+This is Generate-only: no Fixed diff/Merge, additional input protocols, semantic
 diff, complete Mihomo validation or server-side network testing. Real VPS YAML Diff
 Preview is **NOT RUN**; controlled tests/browser checks are not VPS acceptance.

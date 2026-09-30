@@ -4,6 +4,7 @@
 
 ### Added
 - Add authenticated Full YAML Diff Preview for Generate, using the current Default or selected Custom YAML and the same transformation/serialization as Generate; show bounded complete text differences without saving outputs, backups or subscription links.
+- Add explicit Generate-only Merge mode alongside default Replace: preserve source proxies and ordinary memberships, append submitted nodes in order, reject name conflicts, and share the selected mode with exact YAML Diff Preview and local drafts; Fixed remains Replace and new input remains VMess/VLESS.
 
 ## v1.2.1 - 2026-10-01
 
