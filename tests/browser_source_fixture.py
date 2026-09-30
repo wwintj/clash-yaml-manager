@@ -8,16 +8,28 @@ from unittest.mock import patch
 
 @contextmanager
 def external_source_server(app_module=None):
-    from core import source_fetch, node_probe, mihomo_probe, geoip
+    from core import source_fetch, node_probe, mihomo_probe, geoip, telegram
     from types import SimpleNamespace
     from core.mihomo_manager import ManagedMihomo
-    state = {'mode':'initial', 'health':'success', 'proxy_engine':'not-installed', 'proxy_result':'success'}
+    state = {'mode':'initial', 'health':'success', 'proxy_engine':'not-installed', 'proxy_result':'success',
+             'notification_result':'success', 'notification_calls':0}
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args): pass
 
         def do_POST(self):
             mode = self.rfile.read(int(self.headers['Content-Length'])).decode()
-            if mode.startswith('https-') and app_module is not None:
+            if mode.startswith('notifications-') and app_module is not None:
+                from pathlib import Path
+                path = Path(app_module.DIR_STATE)/'notifications.json'
+                if mode == 'notifications-clear':
+                    path.unlink(missing_ok=True)
+                    state['notification_calls'] = 0
+                    state['notification_result'] = 'success'
+                elif mode == 'notifications-corrupt':
+                    path.write_text('PRIVATE_NOTIFICATION_STATE_SECRET'); path.chmod(0o600)
+                else:
+                    state['notification_result'] = mode.removeprefix('notifications-')
+            elif mode.startswith('https-') and app_module is not None:
                 import json, os
                 from pathlib import Path
                 from core import https_metadata
@@ -50,6 +62,10 @@ def external_source_server(app_module=None):
             self.send_response(204); self.end_headers()
 
         def do_GET(self):
+            if self.path == '/notification-count':
+                body = str(state['notification_calls']).encode()
+                self.send_response(200); self.send_header('Content-Length', str(len(body)))
+                self.end_headers(); self.wfile.write(body); return
             if state['mode']=='failure': status, body = 503, b'PRIVATE failure details'
             elif state['mode']=='invalid': status, body = 200, b'invalid PRIVATE payload'
             else:
@@ -106,8 +122,13 @@ def external_source_server(app_module=None):
         def metadata(self):return SimpleNamespace(database_type='Synthetic-Country',ip_version=6)
         def get(self,address):return {'country':{'iso_code':self.code}}
         def close(self):pass
+    def notification_send(self, token, chat, text):
+        assert telegram.valid_token(token) and telegram.valid_chat(chat)
+        assert text.startswith('Clash YAML Manager test notification.')
+        state['notification_calls'] += 1
+        return state['notification_result']
     try:
-        with patch.object(https_metadata,'read',fixture_metadata_read), patch.object(geoip,'open_reader',SyntheticGeoIPReader), patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
+        with patch.object(telegram.Telegram,'send',notification_send), patch.object(https_metadata,'read',fixture_metadata_read), patch.object(geoip,'open_reader',SyntheticGeoIPReader), patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
             yield dict(EXTERNAL_TEST_URL=f'http://external-source.test:{server.server_port}/sub?token=PRIVATE',
                        EXTERNAL_TEST_CONTROL=f'http://127.0.0.1:{server.server_port}/')
     finally:
