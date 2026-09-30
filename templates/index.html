@@ -200,6 +200,8 @@
       line-height: 1.2;
     }
 
+    .output-filename { overflow-wrap: anywhere; }
+
     .status-value.green {
       color: var(--green);
     }
@@ -574,7 +576,7 @@
             </div>
             <div class="col-md-3">
               <div class="status-label">Parser</div>
-              <div class="status-value">VMESS / VLESS</div>
+              <div class="status-value">VMESS / VLESS / TROJAN</div>
             </div>
             <div class="col-md-3">
               <div class="status-label">Backend</div>
@@ -677,7 +679,7 @@
                 <div class="row g-3 align-items-center">
                   <div class="col-lg-4">
                     <div class="status-label mb-1">File Name</div>
-                    <div class="mono">{{ output_filename }}</div>
+                    <div class="mono output-filename">{{ output_filename }}</div>
                   </div>
                   <div class="col-lg-8">
                     <label class="form-label mb-1" for="download-url">Temporary Link</label>
@@ -748,7 +750,7 @@
             <div class="col-lg-7">
               <ol class="notes-list">
                 <li>可上傳 Clash/Mihomo YAML；不選檔案時會使用內建預設 YAML。</li>
-                <li>輸入 vmess/vless 節點後，系統會替換原 proxies 節點。</li>
+                <li>輸入 VMess / VLESS / Trojan 節點；Replace 替換原 proxies，Merge 保留來源並追加新節點。</li>
                 <li>rules、rule-providers、dns、proxy-groups 等設定會盡量保留。</li>
                 <li>系統會自動新增國旗、國家策略組、通用策略組。</li>
                 <li>勾選 Policy Options 後，新節點會加入對應特殊策略組。</li>

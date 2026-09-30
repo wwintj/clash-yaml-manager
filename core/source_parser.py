@@ -1,7 +1,8 @@
-"""Offline, bounded imports of VMess/VLESS nodes; never import base YAML settings."""
+"""Offline, bounded imports of VMess/VLESS/Trojan nodes; never import base YAML settings."""
 import base64
 import binascii
 import math
+from types import FunctionType, SimpleNamespace
 
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
@@ -64,7 +65,7 @@ def _raw(text, country_lookup=None):
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.lstrip().startswith('#')]
     if not lines:
         raise SourceError('empty')
-    if any(not line.startswith(('vmess://', 'vless://')) or '|' in line for line in lines):
+    if any(not line.startswith(parser.SUPPORTED_URI_SCHEMES) or '|' in line for line in lines):
         raise SourceError('invalid')
     # Parse individually so duplicate failures retain a fixed, specific error code.
     results = []
@@ -86,14 +87,16 @@ def _clash(data, country_lookup=None):
     for node in data['proxies']:
         if not isinstance(node, dict) or not isinstance(node.get('type'), str):
             raise SourceError('invalid')
-        if node['type'] not in ('vmess', 'vless'):
+        if node['type'] not in ('vmess', 'vless', 'trojan'):
             skipped += 1
             continue
         if any(not isinstance(node.get(field), str) or not node[field].strip()
-               for field in ('name', 'server', 'uuid')):
+               for field in (('name', 'server') if node['type'] == 'trojan' else ('name', 'server', 'uuid'))):
             raise SourceError('invalid')
         try:
             node['port'] = parser.parse_port(node.get('port'))
+            if node['type'] == 'trojan':
+                parser.validate_trojan_options(node)
         except ValueError:
             raise SourceError('invalid') from None
         code = parser.detect_country(node['name'])
@@ -109,6 +112,24 @@ def _clash(data, country_lookup=None):
     return result
 
 
+def _private_safe_yaml():
+    """Same safe scalar semantics, without warnings that echo private values.
+
+    As in Diff Preview, clone only the instance's float constructor; never modify
+    global warning filters or the dependency's shared constructor registry.
+    """
+    engine = YAML(typ='safe')
+    constructor = engine.constructor
+    tag = 'tag:yaml.org,2002:float'
+    original = constructor.yaml_constructors[tag]
+    scope = dict(original.__globals__, warnings=SimpleNamespace(warn=lambda *args, **kwargs: None))
+    quiet = FunctionType(original.__code__, scope, original.__name__, original.__defaults__, original.__closure__)
+    quiet.__kwdefaults__ = original.__kwdefaults__
+    constructor.yaml_constructors = dict(constructor.yaml_constructors)
+    constructor.yaml_constructors[tag] = quiet
+    return engine
+
+
 def parse(payload, format='auto', country_lookup=None):
     if format not in FORMATS:
         raise SourceError('format')
@@ -119,14 +140,14 @@ def parse(payload, format='auto', country_lookup=None):
         data = None
         if format in ('auto', 'clash'):
             try:
-                data = YAML(typ='safe').load(text)
+                data = _private_safe_yaml().load(text)
             except (YAMLError, RecursionError):
                 if format == 'clash':
                     raise SourceError('invalid') from None
             if format == 'clash' or isinstance(data, dict) and isinstance(data.get('proxies'), list):
                 return _clash(data, country_lookup)
         if format == 'raw' or format == 'auto' and any(
-                line.lstrip().startswith(('vmess://', 'vless://')) for line in text.splitlines()):
+                line.lstrip().startswith(parser.SUPPORTED_URI_SCHEMES) for line in text.splitlines()):
             return _raw(text, country_lookup)
         compact = ''.join(text.split())
         decoded = base64.b64decode(compact + '=' * (-len(compact) % 4), altchars=b'-_', validate=True)
