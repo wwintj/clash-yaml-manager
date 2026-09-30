@@ -3,12 +3,14 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
 
+from core.notifications import NotificationError
+from core.notification_events import CATEGORIES
 from core.geoip_store import GeoIPError, MAX_DATABASE
 from core.proxy_health import ProxyHealthError
 from core.settings_status import engine_status, probe_fields
 
 
-def blueprint(store, context, login_required, *, proxy_health, fixed, runtime_context):
+def blueprint(store, context, login_required, *, proxy_health, fixed, runtime_context, notifications):
     views = Blueprint('settings', __name__, url_prefix='/settings')
 
     def page(error=None):
@@ -37,9 +39,13 @@ def blueprint(store, context, login_required, *, proxy_health, fixed, runtime_co
             runtime = runtime_context()
         except Exception:
             runtime = None
+        try:
+            notification_status = notifications.status()
+        except Exception:
+            notification_status = None
         return render_template('settings.html', **ctx, database=database,
             database_limit=MAX_DATABASE // (1024 * 1024), proxy_defaults=defaults,
-            engine=engine, fixed_counts=counts, runtime=runtime)
+            engine=engine, fixed_counts=counts, runtime=runtime, notifications=notification_status)
 
     @views.route('', methods=['GET'])
     @login_required
@@ -79,5 +85,42 @@ def blueprint(store, context, login_required, *, proxy_health, fixed, runtime_co
         except GeoIPError:
             session['settings_error'] = 'GeoIP database could not be removed. Check private state permissions.'
         return redirect(url_for('settings.index', _anchor='geoip'), code=303)
+
+    @views.route('/notifications', methods=['POST'])
+    @login_required
+    def notification_save():
+        try:
+            # Duplicate/unknown fields cannot hide invalid input behind checkbox parsing.
+            allowed = {'csrf_token', 'enabled', 'bot_token', 'chat_id', *CATEGORIES}
+            if (set(request.form) - allowed or any(len(request.form.getlist(key)) != 1 for key in request.form)
+                    or any(request.form.get(key) not in (None, 'on') for key in ('enabled', *CATEGORIES))):
+                raise NotificationError
+            notifications.save(request.form.get('enabled') == 'on',
+                {key: request.form.get(key) == 'on' for key in CATEGORIES},
+                request.form.get('bot_token', ''), request.form.get('chat_id', ''))
+            session['settings_notice'] = 'Notification settings saved. Saving does not contact Telegram.'
+        except Exception:
+            session['settings_error'] = 'Unable to save notification settings. Check credentials and private state permissions. Previous configuration is unchanged.'
+        return redirect(url_for('settings.index', _anchor='notifications'), code=303)
+
+    @views.route('/notifications/test', methods=['POST'])
+    @login_required
+    def notification_test():
+        result = notifications.deliver(test=True)
+        if result == 'success':
+            session['settings_notice'] = 'Telegram test notification sent.'
+        else:
+            session['settings_error'] = 'Telegram test failed. Check saved credentials, private state permissions and outbound connectivity.'
+        return redirect(url_for('settings.index', _anchor='notifications'), code=303)
+
+    @views.route('/notifications/remove', methods=['POST'])
+    @login_required
+    def notification_remove():
+        try:
+            notifications.remove()
+            session['settings_notice'] = 'Telegram disabled and credentials removed.'
+        except Exception:
+            session['settings_error'] = 'Unable to remove notification credentials. Check private state permissions.'
+        return redirect(url_for('settings.index', _anchor='notifications'), code=303)
 
     return views

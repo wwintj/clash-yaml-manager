@@ -4,7 +4,7 @@
   <h2 class="panel-title">System Settings</h2>
   <p class="helper-text">Global controls and local status. Subscription-specific settings remain on each Fixed edit page.</p>
   <nav class="settings-nav" aria-label="Settings sections">
-    {% for section, label in [('overview','Overview'),('geoip','GeoIP'),('health','Health'),('runtime','Runtime')] %}
+    {% for section, label in [('overview','Overview'),('geoip','GeoIP'),('health','Health'),('runtime','Runtime'),('notifications','Notifications')] %}
     <a class="btn btn-outline-terminal btn-terminal" href="#{{ section }}">{{ label }}</a>
     {% endfor %}
   </nav>
@@ -13,5 +13,6 @@
 {% include 'settings/_geoip.html' %}
 {% include 'settings/_health.html' %}
 {% include 'settings/_runtime.html' %}
+{% include 'settings/_notifications.html' %}
 {% endblock %}
 {% block generator_scripts %}{% endblock %}

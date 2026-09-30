@@ -23,6 +23,7 @@ from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
 from core import policy_engine, geoip
 from core.geoip_store import GeoIPStore
+from core.notifications import Notifications
 from core.settings_views import blueprint as settings_blueprint
 from core import settings_status, https_metadata
 from core.deployment_config import bind_host
@@ -702,7 +703,7 @@ def settings_runtime():
 
 
 app.register_blueprint(settings_blueprint(geoip_store, get_base_context, login_required,
-    proxy_health=proxy_health, fixed=fixed_subscriptions, runtime_context=settings_runtime))
+    proxy_health=proxy_health, fixed=fixed_subscriptions, runtime_context=settings_runtime, notifications=Notifications(DIR_STATE)))
 
 app.register_blueprint(fixed_blueprint(fixed_subscriptions, get_base_context, login_required,
                                       DEFAULT_YAML_PATH, DEFAULT_SPECIAL_GROUPS, fixed_public_url,
