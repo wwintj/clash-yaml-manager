@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.2.0 - 2026-09-30
+
 ### Added
 - Add persistent Fixed Subscriptions with custom/default base YAML, stable bearer URLs, source editing and explicit enable, disable, regenerate and delete controls.
 - Merge ordered Manual, Remote URL and Uploaded sources; import VMess/VLESS from Clash YAML, raw and Base64 lists with last-good cache and manual refresh.
