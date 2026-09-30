@@ -13,16 +13,19 @@ deleted or disabled; it may be empty. Add Remote URL and Add Uploaded Source app
 sources. Multiple sources of each kind are supported (up to 63 external sources).
 Names must be nonblank, 1–128 characters, and distinct within the subscription.
 
-Formats are Auto, Clash / Mihomo YAML, Raw URI List and Base64 URI List. Only VMess
-and VLESS are imported. Raw lists accept blank lines and whole-line `#` comments;
+Formats are Auto, Clash / Mihomo YAML, Raw URI List and Base64 URI List. VMess,
+VLESS and Trojan are imported. Raw lists accept blank lines and whole-line `#` comments;
 URI fragments remain node names. Base64 accepts standard/URL-safe alphabets and
 whitespace. Auto detects a YAML mapping with a proxies list, then URI lists, then
 Base64. YAML content types and filename extensions do not decide the format.
 
-Clash imports require name/type/server/port/uuid, ports 1–65535 (not booleans), and
-nonempty string credentials/server/name. Plain mapping/list/scalar options such as
-TLS, WebSocket, Reality, ALPN, UDP and fingerprints are retained. Unsupported
-protocols are skipped with a count warning; zero supported nodes is an error. The
+Clash imports require nonblank name/type/server, ports 1–65535 (not booleans),
+and UUID for VMess/VLESS or a nonempty string password for Trojan. Trojan passwords
+are never stripped. Existing VMess/VLESS plain options (TLS, WebSocket, Reality,
+ALPN, UDP and fingerprints) are retained unchanged. Trojan imports validate and
+retain the explicit TCP/WS mapping subset documented in [Trojan Protocol](TROJAN_PROTOCOL.md);
+unknown Trojan fields/transports fail, without weakening the general YAML defenses.
+Unsupported protocols are skipped with a count warning; zero supported nodes is an error. The
 safe YAML loader rejects object construction; structural limits reject cycles,
 deep nesting, non-string keys and oversized alias expansion. Payloads are limited
 to 10 MiB, including decoded Base64. Node names use the existing country detection,
