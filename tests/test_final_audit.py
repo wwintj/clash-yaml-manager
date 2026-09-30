@@ -204,7 +204,7 @@ def test_unsafe_auth_object_aborts_update_before_service_or_data_changes(deploym
 def test_complete_route_inventory_auth_and_csrf_boundaries(web, logged_in):
     from conftest import post
     expected = {
-        'static', 'index', 'healthz', 'login', 'logout', 'change_password', 'parse_nodes',
+        'static', 'index', 'healthz', 'login', 'logout', 'change_password', 'parse_nodes', 'preview_yaml_diff',
         'process_config', 'temporary_subscribe', 'download_file', 'subscribe_file',
         'short_subscribe_file', 'delete_temp', 'fixed.index', 'fixed.create', 'fixed.edit',
         'fixed.health_action', 'fixed.proxy_defaults', 'fixed.proxy_action',
@@ -215,7 +215,7 @@ def test_complete_route_inventory_auth_and_csrf_boundaries(web, logged_in):
     rules = list(web.app.url_map.iter_rules())
     assert {rule.endpoint for rule in rules} == expected
     anonymous = web.app.test_client()
-    protected = {'change_password','parse_nodes','process_config','delete_temp'}
+    protected = {'change_password','parse_nodes','process_config','delete_temp','preview_yaml_diff'}
     for rule in rules:
         path = rule.rule.replace('<key>','a'*32).replace('<identifier>','b'*32)
         path = path.replace('<operation>','settings').replace('<action>','disable')
@@ -226,10 +226,12 @@ def test_complete_route_inventory_auth_and_csrf_boundaries(web, logged_in):
                 assert response.status_code==302 and response.headers['Location'].endswith('/')
             if 'POST' in rule.methods:
                 response=post(anonymous,path,{})
-                assert response.status_code==302 and response.headers['Location'].endswith('/')
+                if rule.endpoint=='preview_yaml_diff':
+                    assert response.status_code==401 and response.json['ok'] is False
+                else:assert response.status_code==302 and response.headers['Location'].endswith('/')
         if 'POST' in rule.methods:
             response=logged_in.post(path,data={})
-            assert response.status_code==(400 if rule.endpoint=='parse_nodes' else 303)
+            assert response.status_code==(400 if rule.endpoint in ('parse_nodes','preview_yaml_diff') else 303)
             if 'GET' not in rule.methods:assert logged_in.get(path).status_code==405
 
 

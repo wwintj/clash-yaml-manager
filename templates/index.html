@@ -461,6 +461,14 @@
         padding: 24px 12px 48px;
       }
     }
+    .yaml-diff-text {
+      max-width: 100%; max-height: 34rem; overflow: auto;
+      white-space: pre; font-family: monospace; font-size: .85rem;
+      padding: 1rem; border: 1px solid var(--border-color, #333);
+      background: #101010; color: #d4d4d4;
+    }
+    #yaml-diff-panel, #yaml-diff-panel .panel-inner { min-width: 0; }
+    #yaml-diff-status { overflow-wrap: anywhere; }
     .preview-node {
       display: grid;
       grid-template-areas: "name country info action";
@@ -615,6 +623,15 @@
               <button type="submit" id="generate-yaml" name="action" value="generate" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
             </div>
           </form>
+        </div>
+      </section>
+
+      <section id="yaml-diff-panel" class="terminal-panel mb-4" hidden>
+        <div class="panel-inner">
+          <div class="panel-title-row"><h2 class="panel-title">YAML Changes</h2><span id="yaml-diff-status" class="panel-subtitle" role="status" aria-live="polite"></span></div>
+          <p class="form-text">Private preview of current inputs. Nothing is generated or saved. YAML may contain credentials.</p>
+          <p id="yaml-diff-summary" class="form-text"></p>
+          <pre id="yaml-diff-text" class="yaml-diff-text" tabindex="0" aria-label="Full YAML unified diff" hidden><code id="yaml-diff-code"></code></pre>
         </div>
       </section>
 

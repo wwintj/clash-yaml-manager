@@ -33,8 +33,20 @@
     const summary = document.getElementById('parse-summary');
     const preview = document.getElementById('parse-preview');
     const parseButton = document.getElementById('parse-nodes');
+    const diffButton = document.getElementById('preview-yaml-diff');
+    const diffPanel = document.getElementById('yaml-diff-panel');
+    const diffStatus = document.getElementById('yaml-diff-status');
+    const diffSummary = document.getElementById('yaml-diff-summary');
+    const diffCode = document.getElementById('yaml-diff-code');
+    const diffText = document.getElementById('yaml-diff-text');
     let revision = 0;
-    function dirty() { revision++; summary.textContent = 'Changes not parsed yet'; }
+    function dirty() {
+      revision++; summary.textContent = 'Changes not parsed yet';
+      if (diffPanel && !diffPanel.hidden) {
+        diffCode.textContent = ''; diffText.hidden = true; diffSummary.textContent = '';
+        diffStatus.textContent = 'Inputs changed; preview again.';
+      }
+    }
     function serialize() {
       document.getElementById('aux-nodes-data').value = JSON.stringify([...rows.children].map(row => ({
         country:row.querySelector('.aux-country').value, name:row.querySelector('.aux-name').value,
@@ -119,6 +131,34 @@
         summary.textContent = `${result.nodes.length} nodes detected · ${count('Ready')} ready · ${count('Warning')} warning · ${count('Error')} errors`;
       } catch (error) {summary.textContent = error.message;}
       finally {parseButton.disabled = false;}
+    });
+    if (diffButton) diffButton.addEventListener('click', async () => {
+      // Read current controls/edits; never send cached parse records or save diff.
+      serialize();
+      const start = revision;
+      diffPanel.hidden = false; diffText.hidden = true; diffCode.textContent = '';
+      diffSummary.textContent = ''; diffStatus.textContent = 'Previewing…';
+      const file = form.querySelector('[name=yaml_file]');
+      if (document.getElementById('yaml-source').value === 'custom' && !file.files.length) {
+        diffStatus.textContent = 'Preview unavailable — Custom YAML needs to be selected again.';
+        return;
+      }
+      diffButton.disabled = true;
+      try {
+        const response = await fetch('/api/preview-yaml-diff', {method:'POST', body:new FormData(form), credentials:'same-origin', cache:'no-store'});
+        if (response.redirected || !response.headers.get('content-type')?.includes('application/json')) {
+          throw Error('Session or security token expired; refresh or log in again.');
+        }
+        const result = await response.json();
+        if (start !== revision) return;
+        if (!response.ok || !result.ok) throw Error(result.error || 'YAML preview failed.');
+        diffStatus.textContent = result.changed ? 'Changed' : 'No YAML changes.';
+        const counts = result.summary;
+        diffSummary.textContent = `Old nodes: ${counts.old_node_count} · New nodes: ${counts.new_node_count} · Groups: ${counts.group_count} · Rules: ${counts.rule_count}`;
+        diffCode.textContent = result.diff; diffText.hidden = !result.changed;
+      } catch (error) {
+        if (start === revision) diffStatus.textContent = 'Preview unavailable — ' + error.message;
+      } finally { diffButton.disabled = false; }
     });
     form.addEventListener('submit', event => {
       if (!isExplicitGenerate(event, generateButton)) return;

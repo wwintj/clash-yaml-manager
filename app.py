@@ -21,7 +21,7 @@ from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG
 from core.fixed_views import blueprint as fixed_blueprint
 from core.retention import seconds_from_env
 from core.rate_limit import LoginLimiter
-from core import policy_engine, geoip
+from core import policy_engine, geoip, yaml_diff
 from core.geoip_store import GeoIPStore
 from core.notifications import Notifications
 from core.settings_views import blueprint as settings_blueprint
@@ -192,7 +192,8 @@ else:
 def invalidate_old_sessions():
     if request.endpoint == 'healthz':
         return None
-    cleanup_old_files()
+    if request.path != '/api/preview-yaml-diff':
+        cleanup_old_files()
     if session.get('logged_in'):
         state = auth_store.read()
         if (session.get('auth_version') != state['auth_version'] or
@@ -469,9 +470,9 @@ def change_password():
     return redirect_to_index(context)
 
 
-def parse_form_nodes():
+def parse_form_nodes(*, readonly=False):
     detection = geoip.parse_form(request.form)
-    with geoip_store.lookup(detection['geoip']) as country_lookup:
+    with geoip_store.lookup(detection['geoip'], readonly=readonly) as country_lookup:
         return generator.parse_form_nodes(request.form, country_lookup)
 
 
@@ -483,6 +484,66 @@ def parse_nodes():
     except ValueError as error:
         return jsonify(error=str(error)), 400
     return jsonify(nodes=result['preview'], errors=result['errors'])
+
+
+class GenerateInputError(ValueError):
+    """Reviewed source-selection messages shared with normal Generate."""
+
+
+def selected_yaml_file():
+    file = request.files.get('yaml_file')
+    if file is None or file.filename == '':
+        if request.form.get('yaml_source') == 'custom':
+            raise GenerateInputError('Custom YAML needs to be selected again.')
+        return None
+    if not allowed_file(file.filename):
+        raise GenerateInputError('不支持的文件格式，仅支持 .yaml 或 .yml 文件。')
+    return file
+
+
+def generation_special_groups():
+    return [group for group in request.form.getlist('special_groups') if group in DEFAULT_SPECIAL_GROUPS]
+
+
+@app.route('/api/preview-yaml-diff', methods=['POST'])
+@login_required
+def preview_yaml_diff():
+    try:
+        yaml_diff.check_form_size(request.form)
+        policy = policy_engine.parse_form(request.form)
+        file = selected_yaml_file()
+        parsed = parse_form_nodes(readonly=True)
+    except (GenerateInputError, yaml_diff.PreviewValidationError, policy_engine.PolicyError) as error:
+        return jsonify(ok=False, error=str(error)), 400
+    except ValueError as error:
+        # Existing country/form parsers intentionally raise these fixed messages.
+        # Unexpected ValueErrors must never reveal an exception's private text.
+        safe = (geoip.MESSAGE, '辅助节点或手工修改格式无效，请检查名称、国家及链接。')
+        message = str(error) if str(error) in safe else yaml_diff.PROCESSING_ERROR
+        return jsonify(ok=False, error=message), 400
+    except Exception:
+        return jsonify(ok=False, error=yaml_diff.PROCESSING_ERROR), 400
+    if parsed['errors']:
+        return jsonify(ok=False, error=' '.join(parsed['errors'])), 400
+    if not parsed['nodes']:
+        return jsonify(ok=False, error='没有提供任何有效的新节点信息。'), 400
+    try:
+        if file is None:
+            if not os.path.exists(DEFAULT_YAML_PATH):
+                raise yaml_diff.PreviewValidationError('未上传 YAML，且默认 YAML 模板不存在。请先放置 defaults/default.yaml。')
+            with open(DEFAULT_YAML_PATH, 'rb') as stream:
+                source = yaml_diff.read_source(stream)
+        else:
+            source = yaml_diff.read_source(file.stream)
+        result = yaml_diff.preview(source, parsed, generation_special_groups(), policy)
+        response = jsonify(ok=True, **result)
+        if len(response.get_data()) > yaml_diff.MAX_RESPONSE_BYTES:
+            raise yaml_diff.PreviewLimitError(yaml_diff.TOO_LARGE)
+        return response
+    except yaml_diff.PreviewValidationError as error:
+        return jsonify(ok=False, error=str(error)), 400
+    except Exception:
+        return jsonify(ok=False, error=yaml_diff.PROCESSING_ERROR), 400
 
 
 @app.route("/process", methods=["POST"])
@@ -505,16 +566,12 @@ def process_config():
         context['error_messages'].append(str(error))
         return generation_error()
 
-    file = request.files.get("yaml_file")
-    use_default_yaml = file is None or file.filename == ""
-
-    if request.form.get("yaml_source") == "custom" and use_default_yaml:
-        context["error_messages"].append("Custom YAML needs to be selected again.")
+    try:
+        file = selected_yaml_file()
+    except ValueError as error:
+        context['error_messages'].append(str(error))
         return generation_error()
-
-    if not use_default_yaml and not allowed_file(file.filename):
-        context["error_messages"].append("不支持的文件格式，仅支持 .yaml 或 .yml 文件。")
-        return generation_error()
+    use_default_yaml = file is None
 
     try:
         parsed_result = parse_form_nodes()
@@ -548,8 +605,7 @@ def process_config():
 
         context["upload_filename"] = upload_filename
 
-    raw_special_groups = request.form.getlist("special_groups")
-    special_groups = [group for group in raw_special_groups if group in DEFAULT_SPECIAL_GROUPS]
+    special_groups = generation_special_groups()
 
     yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups, policy)
 
@@ -654,11 +710,15 @@ def delete_temp():
 @app.errorhandler(OSError)
 def state_unavailable(error):
     logging.error('共享安全状态不可用，请检查权限或恢复备份。')
+    if request.path == '/api/preview-yaml-diff':
+        return jsonify(ok=False, error='安全状态暂不可用，请联系管理员检查 state/。'), 503
     return '安全状态暂不可用，请联系管理员检查 state/。', 503
 
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
+    if request.path == '/api/preview-yaml-diff':
+        return jsonify(ok=False, error=yaml_diff.TOO_LARGE), 413
     if request.blueprint == 'settings' and session.get('logged_in'):
         session['settings_error'] = 'GeoIP upload too large. Maximum database size is 32 MiB; previous database is unchanged.'
         return redirect(url_for('settings.index'), code=303)
@@ -676,7 +736,7 @@ def csrf_failed(error):
         '安全令牌已刷新，请重试；如有草稿，将自动恢复。' if session.get('logged_in') else
         '请重新登录；如有草稿，将在登录后自动恢复。'
     )
-    if request.endpoint == 'parse_nodes':
+    if request.endpoint in ('parse_nodes', 'preview_yaml_diff'):
         return jsonify(code='csrf_failed', error='Session or security token expired; refresh or log in again. Any saved draft will be restored.'), 400
     if request.blueprint == 'settings' and session.get('logged_in'):
         return redirect(url_for('settings.index'), code=303)
@@ -712,7 +772,11 @@ app.register_blueprint(fixed_blueprint(fixed_subscriptions, get_base_context, lo
 
 @app.after_request
 def private_fixed_pages(response):
-    if request.blueprint in ('fixed', 'settings'):
+    if request.path == '/api/preview-yaml-diff' and response.status_code == 302:
+        # Keep an expired API session from following a GET that runs cleanup.
+        response = jsonify(ok=False, code='session_expired', error='Session expired; refresh or log in again.')
+        response.status_code = 401
+    if request.blueprint in ('fixed', 'settings') or request.path == '/api/preview-yaml-diff':
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Referrer-Policy'] = 'no-referrer'
     return response

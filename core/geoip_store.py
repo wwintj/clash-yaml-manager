@@ -1,5 +1,7 @@
 """Private MMDB transactions, with one verified memory reader per operation."""
 from contextlib import contextmanager
+import fcntl
+import stat
 import hashlib
 import json
 import os
@@ -64,31 +66,50 @@ class GeoIPStore:
             raise ValueError
         return meta
 
-    def _snapshot(self):
+    @contextmanager
+    def _readonly_lock(self):
+        """Reuse a present lock without creating/chmodding any filesystem object."""
+        try:
+            fd = os.open(self.lock, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        except FileNotFoundError:
+            # Hash/metadata pairing still validates a snapshot without a lock.
+            yield
+            return
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:
+                raise StateError(ERROR)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            yield
+        finally:
+            os.close(fd)
+
+    def _snapshot(self, readonly=False):
         if not self._directories():
             # No read-time directory/database creation; orphan metadata is invalid.
             if self.settings.exists() or self.settings.is_symlink():
                 if self._metadata(read_private_bytes(self.settings, 65536)) is not None:
                     raise ValueError
             return None, None
-        with file_lock(self.lock, blocking=False, strict=True):
+        with (self._readonly_lock() if readonly else file_lock(self.lock, blocking=False, strict=True)):
             raw = self._optional(self.path, MAX_DATABASE)
             meta = self._metadata(self._optional(self.settings, 65536))
             if (raw is None) != (meta is None):
                 raise ValueError
             if raw is not None and (len(raw) != meta['size'] or hashlib.sha256(raw).hexdigest() != meta['sha256']):
                 raise ValueError
+            # Byte/hash validation also rejects a mixed pair during replacement.
             return raw, meta
 
     @contextmanager
-    def lookup(self, mode):
+    def lookup(self, mode, *, readonly=False):
         geoip.normalize({'geoip': mode})
         if mode == 'off':
             yield None
             return
         reader = None
         try:
-            raw, meta = self._snapshot()
+            raw, meta = self._snapshot(readonly=readonly)
             if raw is not None:
                 reader = (self.reader_factory or geoip.open_reader)(raw)
                 if geoip.database_type(reader) != meta['database_type']:

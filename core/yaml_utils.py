@@ -1,4 +1,5 @@
 import os
+import io
 import re
 import secrets
 import shutil
@@ -78,21 +79,50 @@ def generate_output_filename(output_dir: str) -> str:
 
 def load_yaml(file_path: str) -> Dict[str, Any]:
     """读取 YAML 文件。"""
-    yaml = get_yaml_engine()
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = yaml.load(f)
+    with open(file_path, "r", encoding="utf-8") as source:
+        return load_yaml_stream(source)
+
+
+def load_yaml_text(text, *, engine=None):
+    """Match file TextIO universal-newline loading, including comment tokens."""
+    return load_yaml_stream(io.StringIO(text, newline=None), engine=engine)
+
+
+def load_yaml_stream(stream, *, engine=None):
+    data = (engine or get_yaml_engine()).load(stream)
     return data if data is not None else {}
+
+
+class YamlSizeError(ValueError):
+    """The caller's in-memory serialization budget was exhausted."""
+
+
+def serialize_yaml(data, max_bytes=None, *, stream=None):
+    """Same serialization for committed output and would-be preview bytes."""
+    if stream is not None:
+        get_yaml_engine().dump(data, stream)
+        return None
+    class Buffer(io.StringIO):
+        size = 0
+        def write(self, text):
+            if max_bytes is not None:
+                self.size += len(text.encode('utf-8'))
+                if self.size > max_bytes:
+                    raise YamlSizeError
+            return super().write(text)
+    stream = Buffer()
+    get_yaml_engine().dump(data, stream)
+    return stream.getvalue()
 
 
 def save_yaml(data: Dict[str, Any], output_path: str) -> None:
     """Serialize privately, then atomically replace; never expose partial YAML."""
     directory = os.path.dirname(os.path.abspath(output_path))
     os.makedirs(directory, exist_ok=True)
-    yaml = get_yaml_engine()
     fd, temporary = tempfile.mkstemp(prefix='.yaml-', dir=directory)
     try:
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            yaml.dump(data, f)
+            serialize_yaml(data, stream=f)
             f.flush()
             os.fsync(f.fileno())
         os.replace(temporary, output_path)
@@ -383,17 +413,8 @@ def fill_empty_proxy_groups(data: Dict[str, Any], new_node_names: List[str]) -> 
 # ==========================================
 # 主入口
 # ==========================================
-def process_yaml_config(
-    input_path: str,
-    output_dir: str,
-    backup_dir: str,
-    new_nodes: List[Dict[str, Any]],
-    countries: List[Dict[str, str]],
-    special_groups: Optional[List[str]] = None,
-    policy_config: Optional[Dict[str, Any]] = None,
-    group_transform=None,
-) -> Dict[str, Any]:
-    """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
+def transform_yaml_config(data, new_nodes, countries, special_groups=None, policy_config=None, group_transform=None):
+    """Shared in-memory replacement/validation; no files, state or network work."""
     result: Dict[str, Any] = {
         "success": False,
         "output_path": "",
@@ -414,9 +435,6 @@ def process_yaml_config(
 
     try:
         policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
-        result["backup_path"] = backup_yaml(input_path, backup_dir)
-
-        data = load_yaml(input_path)
         validate_input_structure(data)
 
         if "proxies" not in data or not isinstance(data["proxies"], list):
@@ -504,9 +522,7 @@ def process_yaml_config(
         result["group_count"] = len(data.get("proxy-groups", []))
         result["rule_count"] = len(data.get("rules", []))
 
-        output_path = save_new_output(data, output_dir)
-
-        result["output_path"] = output_path
+        result["data"] = data
         result["success"] = True
 
     except (ConfigValidationError, policy_engine.PolicyError) as e:
@@ -517,6 +533,47 @@ def process_yaml_config(
         result["success"] = False
         result["errors"].append('YAML 处理失败，请检查配置结构、磁盘空间及目录权限。')
 
+    return result
+
+
+def process_yaml_config(
+    input_path: str,
+    output_dir: str,
+    backup_dir: str,
+    new_nodes: List[Dict[str, Any]],
+    countries: List[Dict[str, str]],
+    special_groups: Optional[List[str]] = None,
+    policy_config: Optional[Dict[str, Any]] = None,
+    group_transform=None,
+) -> Dict[str, Any]:
+    """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
+    result = dict(success=False, output_path="", backup_path="", old_node_count=0,
+                  new_node_count=0, group_count=0, rule_count=0, errors=[])
+    errors = validate_new_nodes(new_nodes)
+    if errors:
+        result['errors'].extend(errors)
+        return result
+    result['new_node_count'] = len(new_nodes)
+    try:
+        policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
+        result['backup_path'] = backup_yaml(input_path, backup_dir)
+        transformed = transform_yaml_config(load_yaml(input_path), new_nodes, countries,
+                                            special_groups, policy, group_transform)
+        data = transformed.pop('data', None)
+        transformed.pop('output_path')
+        transformed.pop('backup_path')
+        result.update(transformed)
+        if result['success']:
+            result['success'] = False
+            result['output_path'] = save_new_output(data, output_dir)
+            result['success'] = True
+    except (ConfigValidationError, policy_engine.PolicyError) as error:
+        result['errors'].append(str(error))
+    except YAMLError:
+        result['errors'].append('YAML 格式错误，请检查缩进、引号和重复键。')
+    except Exception:
+        result['success'] = False
+        result['errors'].append('YAML 处理失败，请检查配置结构、磁盘空间及目录权限。')
     return result
 
 

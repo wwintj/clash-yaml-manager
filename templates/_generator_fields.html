@@ -58,6 +58,7 @@
             <input type="hidden" name="node_overrides" id="node-overrides-data">
             <div class="mb-4">
               <button type="button" id="parse-nodes" class="btn btn-outline-terminal btn-terminal">Parse Nodes</button>
+              {% if not fixed_editor %}<button type="button" id="preview-yaml-diff" class="btn btn-outline-terminal btn-terminal mt-2 mt-md-0">Preview YAML Changes</button>{% endif %}
               <span id="parse-summary" class="form-text ms-2" role="status">Changes not parsed yet</span>
               <div id="parse-preview" class="mt-3"></div>
             </div>
