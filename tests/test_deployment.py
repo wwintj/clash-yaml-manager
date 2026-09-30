@@ -66,6 +66,7 @@ def deployment(tmp_path):
     shutil.copytree(ROOT / 'scripts', source / 'scripts')
     shutil.copy2(ROOT / 'VERSION', source / 'VERSION')
     shutil.copy2(ROOT / 'mihomoctl.sh', source / 'mihomoctl.sh')
+    shutil.copy2(ROOT / 'httpsctl.sh', source / 'httpsctl.sh')
     shutil.copy2(ROOT / 'mihomo-manifest.json', source / 'mihomo-manifest.json')
     (source / 'app.py').write_text('VERSION = "new"\n')
     shutil.copy2(ROOT / 'requirements.txt', source / 'requirements.txt')
@@ -280,6 +281,9 @@ exec "$TEST_PYTHON" "$@"
     env['TEST_FAIL_FIRST'] = '2'
     env['TEST_HEALTH_FAIL'] = '1' if health_failure else '0'
     result = run('install.sh', input_text='\n\n' + password + '\n')
+    assert 'nginx' not in events.read_text() and 'certbot' not in events.read_text()
+    assert 'APP_BIND_HOST=0.0.0.0\n' in (installed/'.env').read_text()
+    assert '-b 0.0.0.0:${APP_PORT}' in service.read_text()
     if health_failure:
         assert result.returncode != 0
         assert 'Health check FAILED' in result.stderr
@@ -664,3 +668,50 @@ def test_all_five_units_real_systemd_verify_where_available(deployment):
         for path,name in zip([service,refresh_service,refresh_timer,health_service,health_timer],names):shutil.copy2(path,directory/name)
         result=subprocess.run([analyze,'verify',*[str(directory/name) for name in names]],capture_output=True,text=True,timeout=15)
         assert result.returncode==0,result.stderr
+
+
+@pytest.mark.parametrize('host',['0.0.0.0','127.0.0.1'])
+def test_update_preserves_https_metadata_and_bind(deployment,host):
+    installed,source,service,events,env,run = deployment
+    path = installed/'.env'
+    path.write_text(path.read_text()+f'APP_BIND_HOST={host}\nCOOKIE_SECURE=true\nTRUST_PROXY_HEADERS=true\nDOWNLOAD_URL_SCHEME=https\nDOWNLOAD_BASE_URL=https://example.com\n')
+    lock=installed/'.httpsctl.lock';lock.touch();lock.chmod(0o600)
+    info = installed/'HTTPS_DEPLOYMENT.json'
+    info.write_bytes(b'PRESERVED_DEPLOYMENT_METADATA');info.chmod(0o640)
+    (source/'HTTPS_DEPLOYMENT.json').write_bytes(b'DO_NOT_COPY')
+    result = run()
+    assert result.returncode == 0, result.stdout+result.stderr
+    assert info.read_bytes() == b'PRESERVED_DEPLOYMENT_METADATA'
+    assert info.stat().st_mode & 0o777 == 0o640
+    assert lock.stat().st_mode & 0o777 == 0o600
+    assert f'-b {host}:${{APP_PORT}}' in service.read_text()
+    assert (installed/'httpsctl.sh').read_bytes() == (source/'httpsctl.sh').read_bytes()
+    assert not any(command in events.read_text() for command in ('nginx','certbot'))
+    backup = next(installed.parent.glob('upgrade-backup-*'))
+    assert (backup/'HTTPS_DEPLOYMENT.json').read_bytes() == info.read_bytes()
+
+
+@pytest.mark.parametrize('host',['example.com','192.0.2.1',' 127.0.0.1','127.0.0.1\nBAD'])
+def test_invalid_bind_stops_update_before_service_changes(deployment,host):
+    installed,_,service,events,_,run=deployment
+    path=installed/'.env';path.write_text(path.read_text()+f'APP_BIND_HOST="{host}"\n')
+    before=service.read_bytes();result=run()
+    assert result.returncode != 0
+    assert service.read_bytes() == before
+    assert not events.exists() or 'systemctl stop' not in events.read_text()
+
+
+
+def test_uninstall_legacy_metadata_without_assistant_keeps_external_ownership(deployment):
+    installed,source,service,events,env,run=deployment
+    assert run().returncode==0
+    info=installed/'HTTPS_DEPLOYMENT.json';info.write_bytes(b'RETAINED_METADATA');info.chmod(0o640)
+    (installed/'core/https_manager.py').unlink()
+    # core is a namespace package; remove the test-only source fallback too.
+    (source/'core/https_manager.py').unlink()
+    result=run('uninstall.sh',input_text='y\n\n')
+    assert result.returncode==0, result.stdout+result.stderr
+    assert 'external files left untouched. Manual review required.' in result.stdout
+    assert 'Traceback' not in result.stderr and 'nginx' not in events.read_text() and 'certbot' not in events.read_text()
+    backup=next(installed.parent.glob('uninstall-backup-*'))
+    assert (backup/'HTTPS_DEPLOYMENT.json').read_bytes()==b'RETAINED_METADATA'

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 
 @contextmanager
-def external_source_server():
+def external_source_server(app_module=None):
     from core import source_fetch, node_probe, mihomo_probe, geoip
     from types import SimpleNamespace
     from core.mihomo_manager import ManagedMihomo
@@ -17,7 +17,27 @@ def external_source_server():
 
         def do_POST(self):
             mode = self.rfile.read(int(self.headers['Content-Length'])).decode()
-            if mode.startswith('health-'):
+            if mode.startswith('https-') and app_module is not None:
+                import json, os
+                from pathlib import Path
+                from core import https_metadata
+                path = Path(app_module.BASE_DIR)/https_metadata.NAME
+                path.unlink(missing_ok=True)
+                configured = mode in ('https-configured','https-manual')
+                for key,value in dict(APP_BIND_HOST='127.0.0.1' if configured else '0.0.0.0',
+                    COOKIE_SECURE=configured,TRUST_PROXY_HEADERS=configured,
+                    DOWNLOAD_URL_SCHEME='https' if configured else '',
+                    DOWNLOAD_BASE_URL='https://example.com' if configured else '').items():
+                    setattr(app_module,key,value)
+                if mode == 'https-configured':
+                    info=dict(version=1,managed=True,domain='example.com',configured_at='2026-09-30T00:00:00+00:00',
+                        cert_mode='certbot-webroot',app_port=8899,nginx_config_sha256='a'*64,hook_sha256='b'*64,unit_sha256='c'*64,
+                        managed_settings=https_metadata.managed_settings('example.com'),
+                        previous_backup='/root/clash-yaml-manager-https-backup-20260930_000000.abcdef')
+                    path.write_text(json.dumps(info));path.chmod(0o640)
+                if mode == 'https-invalid':
+                    path.write_text('{"SECRET_KEY":"PRIVATE_METADATA_SECRET", "email":"PRIVATE_EMAIL@example.com"}');path.chmod(0o640)
+            elif mode.startswith('health-'):
                 state['health'] = mode.removeprefix('health-')
             elif mode == 'proxy-run-error':
                 state['proxy_result'] = 'engine-error'
@@ -41,6 +61,11 @@ def external_source_server():
             self.end_headers(); self.wfile.write(body)
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
     worker=threading.Thread(target=server.serve_forever,daemon=True); worker.start()
+    from core import https_metadata
+    import os
+    original_metadata_read = https_metadata.read
+    def fixture_metadata_read(directory):
+        return original_metadata_read(directory,owner_uid=os.getuid(),group_gid=os.getgid())
     original=source_fetch._PinnedConnection
     class FixtureConnection(original):
         def connect(self):
@@ -82,7 +107,7 @@ def external_source_server():
         def get(self,address):return {'country':{'iso_code':self.code}}
         def close(self):pass
     try:
-        with patch.object(geoip,'open_reader',SyntheticGeoIPReader), patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
+        with patch.object(https_metadata,'read',fixture_metadata_read), patch.object(geoip,'open_reader',SyntheticGeoIPReader), patch.object(source_fetch,'_PinnedConnection',FixtureConnection), patch.object(source_fetch,'_resolve',resolve), patch.object(node_probe,'probe',probe), patch.object(ManagedMihomo,'status',engine_status), patch.object(mihomo_probe,'run',proxy_run):
             yield dict(EXTERNAL_TEST_URL=f'http://external-source.test:{server.server_port}/sub?token=PRIVATE',
                        EXTERNAL_TEST_CONTROL=f'http://127.0.0.1:{server.server_port}/')
     finally:
