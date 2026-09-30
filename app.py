@@ -24,7 +24,8 @@ from core.rate_limit import LoginLimiter
 from core import policy_engine, geoip
 from core.geoip_store import GeoIPStore
 from core.settings_views import blueprint as settings_blueprint
-from core import settings_status
+from core import settings_status, https_metadata
+from core.deployment_config import bind_host
 from core.proxy_health import ProxyHealth
 from core.version import read_version
 from core.install_info import read_install_info, display_build
@@ -34,6 +35,10 @@ from core.subscriptions import SubscriptionSigner, safe_filename
 # 环境变量与应用配置
 # ==========================================
 APP_PORT = int(os.environ.get("APP_PORT", 8899))
+try:
+    APP_BIND_HOST = bind_host(os.environ.get("APP_BIND_HOST", "0.0.0.0"))
+except ValueError:
+    sys.exit("APP_BIND_HOST 必须为 0.0.0.0 或 127.0.0.1。")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
 DOWNLOAD_BASE_URL = os.environ.get("DOWNLOAD_BASE_URL", "").rstrip("/")
@@ -692,7 +697,8 @@ def settings_runtime():
         trust_proxy=TRUST_PROXY_HEADERS, download_base=DOWNLOAD_BASE_URL,
         download_scheme=DOWNLOAD_URL_SCHEME, upload_retention=UPLOAD_RETENTION_SECONDS,
         output_retention=OUTPUT_RETENTION_SECONDS, cleanup_interval=CLEANUP_INTERVAL_SECONDS,
-        backup_retention=BACKUP_RETENTION_SECONDS)
+        backup_retention=BACKUP_RETENTION_SECONDS, bind=APP_BIND_HOST,
+        managed_https=https_metadata.status(BASE_DIR))
 
 
 app.register_blueprint(settings_blueprint(geoip_store, get_base_context, login_required,
@@ -713,4 +719,4 @@ def private_fixed_pages(response):
 
 if __name__ == "__main__":
     logging.info(f"启动 clash-yaml-manager (Port: {APP_PORT})")
-    app.run(host="0.0.0.0", port=APP_PORT, debug=False)
+    app.run(host=APP_BIND_HOST, port=APP_PORT, debug=False)

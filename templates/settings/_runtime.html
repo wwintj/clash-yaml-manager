@@ -2,10 +2,14 @@
   <h3 class="panel-title">Runtime / Deployment</h3>
   {% if runtime %}
   <dl class="settings-metadata">
-    {% for field, label in [('port','APP_PORT'),('download_mode','Download URL mode'),('download_base','DOWNLOAD_BASE_URL'),('download_scheme','Download URL scheme'),('https_download','Explicit HTTPS download URL'),('cookie_secure','Secure cookies'),('trust_proxy','Trusted proxy headers'),('upload_retention','Upload retention'),('output_retention','Output retention'),('cleanup_interval','Cleanup interval'),('backup_retention','Backup retention'),('session_lifetime','Session lifetime')] %}
+    {% for field, label in [('bind','Application bind'),('port','APP_PORT'),('download_mode','Download URL mode'),('download_base','DOWNLOAD_BASE_URL'),('download_scheme','Download URL scheme'),('https_download','Explicit HTTPS download URL'),('cookie_secure','Secure cookies'),('trust_proxy','Trusted proxy headers'),('upload_retention','Upload retention'),('output_retention','Output retention'),('cleanup_interval','Cleanup interval'),('backup_retention','Backup retention'),('session_lifetime','Session lifetime')] %}
     <dt>{{ label }}</dt><dd data-runtime="{{ field }}">{{ runtime[field] }}</dd>
     {% endfor %}
+    <dt>Managed HTTPS</dt><dd data-runtime="managed_https">{{ runtime.managed_https.status }}</dd>
+    {% if runtime.managed_https.domain %}<dt>Managed domain</dt><dd data-runtime="managed_domain">{{ runtime.managed_https.domain }}</dd>{% endif %}
   </dl>
+  <p class="form-text">Metadata records configuration by httpsctl. It does not verify public DNS, certificates, Nginx or firewall status. Manual HTTPS deployments may use the runtime flags without managed metadata.</p>
+  <p class="form-text">Check through SSH: <code>sudo bash /opt/clash-yaml-manager/httpsctl.sh status</code>. See the HTTPS deployment guide for setup and recovery.</p>
   {% else %}<p class="source-warning" role="status">Runtime status unavailable.</p>{% endif %}
   <p class="form-text">Read-only effective process configuration. Change deployment configuration / .env and restart the service via SSH; these changes can affect proxy trust and sessions. This workspace does not write .env, installation metadata or deployment files.</p>
   <p class="form-text">Download base URL is shown only as Configured / Not configured. Secrets, credentials, bearer tokens and raw environment contents are never displayed.</p>

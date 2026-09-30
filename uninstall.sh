@@ -26,6 +26,19 @@ echo "=========================================================="
 echo "开始卸载 ${SERVICE_NAME}"
 echo "=========================================================="
 
+# Cleanup before deleting the unit; preserve metadata for retained application backups.
+if [[ -e "${INSTALL_DIR}/HTTPS_DEPLOYMENT.json" || -L "${INSTALL_DIR}/HTTPS_DEPLOYMENT.json" ]]; then
+  python3 -B - "${INSTALL_DIR}" <<'PYHTTPS'
+import sys
+sys.path.insert(0, sys.argv[1])
+try:
+    from core.https_manager import cleanup_uninstall
+    print(cleanup_uninstall(sys.argv[1]))
+except Exception:
+    print('HTTPS cleanup unavailable; external files left untouched. Manual review required.')
+PYHTTPS
+fi
+
 echo ">> 步骤 1: 停止并禁用 systemd 服务"
 stop_health_units disable
 stop_refresh_units disable
@@ -90,7 +103,7 @@ if [[ -d "${INSTALL_DIR}" ]]; then
         echo "  - 未找到 outputs 目录，跳过"
       fi
 
-      for item in state .env VERSION INSTALLATION.json; do
+      for item in state .env VERSION INSTALLATION.json HTTPS_DEPLOYMENT.json; do
         if [[ -e "${INSTALL_DIR}/${item}" ]]; then
           if [[ "${item}" == state ]]; then
             backup_private_state "${INSTALL_DIR}/state" "${BACKUP_DEST}/state"

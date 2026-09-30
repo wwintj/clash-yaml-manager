@@ -49,7 +49,7 @@ repair_permissions() {
   for entry in "${INSTALL_DIR}"/*; do
     name="$(basename "${entry}")"
     case "${name}" in
-      bin|uploads|outputs|backups|logs|state|.env|.service-account|.git) continue ;;
+      bin|uploads|outputs|backups|logs|state|.env|HTTPS_DEPLOYMENT.json|.httpsctl.lock|.service-account|.git) continue ;;
     esac
     # Do not follow symlinks into another application or the system Python.
     chown -hR root:root "${entry}"
@@ -84,34 +84,17 @@ backup_private_state() {
 }
 
 write_service_unit() {
-  local bind_capability=""
-  if (( APP_PORT < 1024 )); then
-    # Preserve existing low-port installs without running Python as root.
-    bind_capability=$'AmbientCapabilities=CAP_NET_BIND_SERVICE\nCapabilityBoundingSet=CAP_NET_BIND_SERVICE'
-  fi
-  cat > "${SERVICE_FILE}" <<EOF
-[Unit]
-Description=clash-yaml-manager
-After=network.target
-
-[Service]
-Type=simple
-User=clashyaml
-Group=clashyaml
-UMask=0077
-NoNewPrivileges=true
-PrivateTmp=true
-Environment=PYTHONDONTWRITEBYTECODE=1
-${bind_capability}
-WorkingDirectory=${INSTALL_DIR}
-EnvironmentFile=${INSTALL_DIR}/.env
-ExecStart=${INSTALL_DIR}/venv/bin/gunicorn --no-control-socket -w 2 --timeout 300 -b 0.0.0.0:\${APP_PORT} app:app
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
+  python3 - "${INSTALL_DIR}" "${SERVICE_FILE}" <<'PYUNIT'
+import pathlib
+import sys
+sys.path.insert(0, sys.argv[1])
+from core.envfile import values
+from core.deployment_config import service_unit
+root = pathlib.Path(sys.argv[1])
+config = values((root / '.env').read_text())
+unit = service_unit(root, int(config.get('APP_PORT', '8899')), config.get('APP_BIND_HOST', '0.0.0.0'))
+pathlib.Path(sys.argv[2]).write_text(unit)
+PYUNIT
   chmod 644 "${SERVICE_FILE}"
 }
 

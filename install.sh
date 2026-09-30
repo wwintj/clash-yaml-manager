@@ -58,7 +58,7 @@ if [[ "${CURRENT_DIR}" != "${INSTALL_DIR}" ]]; then
   for item in "${CURRENT_DIR}"/*; do
     name="$(basename "${item}")"
     case "${name}" in
-      .env|INSTALLATION.json|.venv|venv|bin|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
+      .env|INSTALLATION.json|HTTPS_DEPLOYMENT.json|.httpsctl.lock|.venv|venv|bin|uploads|outputs|backups|logs|state|.service-account|.git|.last_cleanup|.pytest_cache|__pycache__)
         continue
         ;;
       *)
@@ -133,6 +133,7 @@ echo "正在写入环境变量配置文件..."
 ENV_FILE="${INSTALL_DIR}/.env"
 cat > "${ENV_FILE}" <<EOF
 APP_PORT=${APP_PORT}
+APP_BIND_HOST=0.0.0.0
 SECRET_KEY=${SECRET_KEY}
 COOKIE_SECURE=false
 DOWNLOAD_URL_SCHEME=

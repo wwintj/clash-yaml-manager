@@ -48,6 +48,7 @@ try:
     source = pathlib.Path(sys.argv[1])
     sys.path.insert(0, str(source))
     from core.envfile import values as env_values
+    from core.deployment_config import bind_host
     from core.version import read_version
     read_version(source / "VERSION")
     for path in [source / 'app.py', *sorted((source / 'core').glob('*.py'))]:
@@ -58,6 +59,7 @@ try:
     values = env_values(env_path.read_bytes().decode('utf-8'))
     port = int(values.get('APP_PORT', '8899'))
     assert 1 <= port <= 65535
+    bind_host(values.get('APP_BIND_HOST', '0.0.0.0'))
     assert values.get('SECRET_KEY')
     state_path = env_path.parent / 'state/auth.json'
     assert state_path.is_file() or any(values.get(k) for k in ('APP_PASSWORD_HASH', 'APP_PASSWORD_B64', 'APP_PASSWORD'))
@@ -71,7 +73,7 @@ try:
     assert values.get('DOWNLOAD_URL_SCHEME', '') in ('', 'http', 'https')
     print(port)
 except Exception:
-    sys.exit('升级预检失败：请检查源码语法、APP_PORT、SECRET_KEY、密码及 URL 协议配置；未停止服务。')
+    sys.exit('升级预检失败：请检查源码语法、APP_PORT、APP_BIND_HOST、SECRET_KEY、密码及 URL 协议配置；未停止服务。')
 PY
 )"
 
@@ -96,7 +98,7 @@ echo "备份目录: ${BACKUP_DIR}"
 echo "正在备份当前安装目录..."
 mkdir -p "${BACKUP_DIR}"
 
-for item in VERSION INSTALLATION.json app.py requirements.txt install.sh uninstall.sh update.sh remote-install.sh remote-update.sh core templates static scripts venv .service-account; do
+for item in VERSION INSTALLATION.json HTTPS_DEPLOYMENT.json app.py requirements.txt install.sh uninstall.sh update.sh remote-install.sh remote-update.sh httpsctl.sh mihomoctl.sh core templates static scripts venv .service-account; do
   if [[ -e "${INSTALL_DIR}/${item}" ]]; then
     cp -a "${INSTALL_DIR}/${item}" "${BACKUP_DIR}/"
   fi
@@ -148,7 +150,7 @@ shopt -s dotglob nullglob
 for item in "${CURRENT_DIR}"/*; do
   name="$(basename "${item}")"
   case "${name}" in
-    .env|INSTALLATION.json|.git|.venv|venv|bin|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
+    .env|INSTALLATION.json|HTTPS_DEPLOYMENT.json|.httpsctl.lock|.git|.venv|venv|bin|uploads|outputs|backups|logs|state|.service-account|.last_cleanup|.pytest_cache|__pycache__)
       continue
       ;;
     defaults)

@@ -23,7 +23,7 @@ DEFAULT_SHA256 = 'a30bd14fd5b5873d8eaa6c56e3205ddcf8fc39f4efa30675fdb88c8cec9ecf
 PRIVATE_EMAIL = 'wwintj' + '@gmail.com'
 RAW = f'https://raw.githubusercontent.com/{REPO}/main'
 SHELL_SCRIPTS = ('install.sh', 'remote-install.sh', 'update.sh', 'remote-update.sh',
-                 'uninstall.sh', 'mihomoctl.sh', 'scripts/deploy-common.sh')
+                 'uninstall.sh', 'httpsctl.sh', 'mihomoctl.sh', 'scripts/deploy-common.sh')
 
 
 class ReleaseError(RuntimeError):
