@@ -55,19 +55,19 @@ existing generation error, with no invalid revision committed.
 Missing, corrupt, duplicate-key, unsafe-permission, symlink, FIFO, unreadable or
 busy Proxy auxiliary state makes the entire generation retain original candidates.
 It is not repaired/reset or replaced with an empty health file. Authoritative
-Fixed v5 corruption remains fail-closed, preserving the existing state contract.
+Fixed v6 corruption remains fail-closed, preserving the existing state contract.
 Proxy mode Off or an unavailable engine produces a nonblocking UI warning:
 existing observations can still be fresh, but new observations will not arrive
 and old ones eventually expire. Engine presence is not eligibility evidence.
 
 ## Registry and generation transaction
 
-Fixed registry **v5** stores `health_policy` and a safe `health_policy_audit`.
+Fixed registry **v6** stores `health_policy` and a safe `health_policy_audit`.
 Reading v1/v2/v3/v4 supplies **Off / 48h / 2** and empty audit in memory. It does
 not rewrite files, generate output, rotate tokens or touch caches/schedules.
 Existing v4 policy choices remain; earlier Preserve migration remains unchanged.
 Public Last Access statistics preserve the legacy disk version. A legitimate
-management/scheduler mutation writes v5. No existing subscription opts in.
+management/scheduler mutation writes v6. No existing subscription opts in.
 
 `core/policy_engine.py` remains pure: no health imports, reads, files or probes.
 `core/health_policy.py` applies eligibility after normal policy construction and
@@ -173,3 +173,7 @@ COMPATIBLE Mihomo. Save the fixed URL privately and perform three Proxy checks.
 Record deployment commit, settings, redacted before/after group memberships,
 revision transitions, timer journal, engine/client validation and healthz. Keep
 all three real acceptances open until their own evidence is supplied.
+
+Current main also stores optional country detection in Fixed v6, with
+v1–v5 GeoIP Off migration. Country assignment and health identity remain
+independent; see [GEOIP.md](GEOIP.md).

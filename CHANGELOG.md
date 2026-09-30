@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Add Off-by-default offline GeoIP fallback for Unknown countries in Generate, Preview and Fixed sources, using only public literal IPv4/IPv6 and administrator-supplied MMDB data with Manual/Name priority preserved.
+- Add authenticated System Settings for private MMDB status, bounded upload/replace and removal, with CSRF and transactional rollback; no automatic dataset download or bulk regeneration.
 - Add Off-by-default Health-aware Policy for Fixed managed automatic groups, with fresh confirmed Full Proxy Unhealthy exclusion, five freshness windows, per-group minimum candidates and fail-open summaries.
 - Add opt-in Country and selected Special group policies for Generate and Fixed Subscriptions: Preserve (default), Select, URL-Test, Fallback and round-robin Load-Balance with validated client test settings.
 - Add opt-in Automatic Endpoint and Full Proxy Health checks with seven intervals, independent scheduling metadata and a bounded dedicated systemd health timer; retain manual checks in Automatic mode.
@@ -15,7 +17,7 @@
 
 ### Changed
 - Reconcile enabled Fixed policies after committed Proxy checks and through the existing bounded health scan; reuse committed base YAML and source caches without network work, skip identical YAML revisions and preserve successful observations when reconciliation fails.
-- Store policy and optional health settings in Fixed registry v5; read v1–v4 without rewriting revisions, preserve earlier policy defaults and keep health filtering Off. Reapply both settings during manual/automatic source refresh.
+- Store policies, optional health settings and country detection in Fixed registry v6; read v1–v5 without rewriting revisions, preserve earlier defaults and keep GeoIP Off. Preserve settings during source refresh and cached health reconciliation.
 - Read health schema v1 as v2 in memory without changing existing Off/Manual modes; separate scheduler backoff from node observations and preserve newer settings/results during busy or revision races.
 - Select explicit pinned Mihomo amd64 v1/v2/v3 builds from the intersection of Linux-exposed CPU capabilities, with verified execution-only fallback and legacy generic v3 metadata recognition; preserve the arm64 asset and ordinary update behavior.
 - Keep managed Mihomo binaries and metadata across ordinary project updates; leave proxy checks Off after upgrades and keep health filtering Off unless explicitly configured and preserve Fixed URLs and top-level nodes.
@@ -24,6 +26,7 @@
 - Fetch and generate outside the registry lock, then reject stale commits after concurrent management changes; preserve prior configuration, caches and output on failed source updates.
 
 ### Security
+- Keep GeoIP local-only with no DNS or network calls, reject unsafe database objects/permissions and fail open to Unknown on unavailable state or lookup errors; retain country-independent health fingerprints.
 - Restrict automatic policy candidates to generated nodes assigned to each managed group, exclude DIRECT/nested/provider expansion, reject invalid policy fields safely and keep the pure policy core free of health reads and network probes; apply optional health eligibility in a separate layer before final reference validation.
 - Verify pinned archive and executable hashes, architecture and exact version before installing a root-owned binary; run probes in private short-lived directories through a secret-protected localhost controller with bounded batches, concurrency and process cleanup.
 - Restrict probe targets to public HTTPS with all locally resolved addresses safe, store only opaque health metadata and sanitized errors, and reject stale revisions or concurrent checks without penalizing nodes.

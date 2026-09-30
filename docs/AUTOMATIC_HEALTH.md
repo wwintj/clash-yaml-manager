@@ -32,7 +32,7 @@ Endpoint and Proxy into a score, rank nodes or select a best node.
 ## Independent state and migration
 
 `state/node_health.json` and `state/proxy_health.json` remain separate; the Fixed
-health scheduling does not change its auxiliary schema. Fixed now uses v5 for
+health scheduling does not change its auxiliary schema. Fixed now uses v6 for
 optional policy eligibility (see [HEALTH_AWARE_POLICY.md](HEALTH_AWARE_POLICY.md)).
 Both health files use schema **v2**, with per-entry
 mode, `interval_seconds`, `next_check_at`, `scheduler_failures`, `last_trigger`,
@@ -219,3 +219,7 @@ then internal ID first. This runs before probes so stale candidates can recover
 without any new probe. A successful due Proxy job can add one reactive attempt
 (maximum four attempts per scan). No new timer/service is introduced. Reconcile
 errors are separate from health-job results and scheduler backoff.
+
+Current main also stores optional country detection in Fixed v6, with
+v1–v5 GeoIP Off migration. Country assignment and health identity remain
+independent; see [GEOIP.md](GEOIP.md).

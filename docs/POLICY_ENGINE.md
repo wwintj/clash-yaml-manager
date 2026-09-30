@@ -98,7 +98,7 @@ NOT RUN.** No actual latency, failover or traffic distribution is claimed.
 
 ## Persistence, refresh and atomicity
 
-Fixed registry **v5** stores authoritative `policy_config` with this exact schema:
+Fixed registry **v6** stores authoritative `policy_config` with this exact schema:
 
 ```json
 {
@@ -118,7 +118,7 @@ reading does not write the registry, regenerate YAML or rotate tokens/revisions.
 Existing schedules, caches, current YAML and URL remain intact. Older v1/v2
 source schedules retain their established Off migration. Existing public access
 statistics may still be written without promoting the legacy registry schema.
-A legitimate management/scheduler mutation writes v5, including Health-aware Off
+A legitimate management/scheduler mutation writes v6, including Health-aware Off
 for v1–v4 subscriptions. See [HEALTH_AWARE_POLICY.md](HEALTH_AWARE_POLICY.md).
 
 Save, source enable/disable/delete, manual Refresh/Refresh All and Automatic
@@ -195,3 +195,7 @@ the operator reported installed/enabled/active timer, one real trigger exited 0
 with endpoint=0/proxy=0, real systemd-analyze PASS, COMPATIBLE and healthz 200.
 Actual timer-triggered **due Endpoint and due Proxy** evidence is still missing;
 follow [the independent checklist](AUTOMATIC_HEALTH.md#tim-vps-acceptance-a-real-timer-run-is-required).
+
+Current main also stores optional country detection in Fixed v6, with
+v1–v5 GeoIP Off migration. Country assignment and health identity remain
+independent; see [GEOIP.md](GEOIP.md).

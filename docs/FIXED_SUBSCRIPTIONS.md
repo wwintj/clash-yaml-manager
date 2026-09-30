@@ -22,8 +22,8 @@ state/fixed_subscriptions/<internal-id>/<revision>/current.yaml
 state/fixed_subscriptions/<internal-id>/<revision>/base.yaml  (default or custom snapshot)
 ```
 
-The version-5 registry (with in-memory v1–v4 migration, earlier Preserve defaults and Health-aware Off) contains subscription UUID4 ids, name, prefix, token, status,
-source type, batch/auxiliary nodes, preview overrides, existing policy options, optional health policy and safe reconciliation audit,
+The version-6 registry (with in-memory v1–v5 migration, earlier policy/health defaults and GeoIP Off) contains subscription UUID4 ids, name, prefix, token, status,
+source type, batch/auxiliary nodes, preview overrides, existing policy options, optional health policy, safe reconciliation audit and country detection,
 node/group/rule counts, UTC timestamps and SHA256 retired-token tombstones.
 Directories are 0700 and files 0600. A custom base is persisted separately from
 uploads; leaving the edit upload empty reuses it. Default-source subscriptions snapshot
@@ -116,3 +116,10 @@ only to configured managed automatic groups. It is Off by default. Health-only
 reconciliation uses the committed base and all enabled cached sources; it never
 reloads the built-in template. Identical YAML advances only safe audit metadata,
 leaving revision and Updated unchanged.
+
+## Optional offline GeoIP
+
+[GeoIP Country Assist](GEOIP.md) stores only the selected mode in Fixed v6;
+the administrator-supplied database is global private state. Every source and
+health-policy reconstruction preserves the mode. Database changes do not
+regenerate a subscription until its next normal regeneration.

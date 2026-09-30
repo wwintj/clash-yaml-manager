@@ -55,11 +55,18 @@ Fixed Subscription 的 **Full Proxy Validation** 使用可選、受專案管理�
 
 預設目標是 `https://www.gstatic.com/generate_204`，預期 HTTP 204、逾時 8 秒；可設定全域預設及每個固定訂閱的覆蓋值。結果**只代表該節點在當次檢查能否經 Mihomo 存取所選目標**，不代表所有網站可用。Proxy Health 與 TCP Endpoint Health 獨立；連續失敗 1–2 次為 Suspect，3 次起為 Unhealthy。預設不改動 YAML；只有另外啟用下述 Health-aware Policy 才會保守排除自動組候選，頂層節點及固定 URL 保留。只有明確啟用 Automatic 才會排程健康檢查。安全限制、安裝/回滾、真實 VPS 驗收步驟見 [Full Proxy Validation](docs/PROXY_HEALTH.md)；受控驗收結果見 [報告](docs/PROXY_HEALTH_REPORT.md)。Latest Stable 仍為 **v1.1.1**。
 
+## GeoIP Country Assist（Unreleased / main）
+
+Generate / Fixed 的 Country Detection 新增 **Off（預設） / Literal public IP only**。優先序為 **Manual → Name Detection → GeoIP → Unknown**，只對名稱未識別國家的公共字面 IPv4/IPv6 查詢；不解析域名、不發出 GeoIP 網路請求，也不覆蓋手動國家。
+管理員可在登入後的 **Settings → GeoIP Database** 上傳或移除自己的 Country-capable `.mmdb`（最大 32 MiB）。專案不附帶或下載任何 GeoIP 地理資料庫；缺失、損壞或不可讀時繼續生成，未識別節點仍為 Unknown。
+Fixed v6 保存 GeoIP 模式，來源刷新及 Health-aware 重生成保留設定。替換／移除資料庫不立即改动既有 YAML、URL 或 Health，下次正常重生成才使用新資料。臨時 Generate 不保存 GeoIP 選擇到草稿或 /t 狀態。
+依賴、離線限制、私有儲存及備份見 [GeoIP](docs/GEOIP.md)，受控驗收見 [報告](docs/GEOIP_REPORT.md)。**真實 GeoIP VPS 驗收 NOT RUN**；原有 Health due 作業 PENDING、Policy / Health-aware VPS NOT RUN 保持不變。
+
 ## Policy Engine（Unreleased / main）
 
 Generate YAML 和 Fixed create/edit 可分別設定 Country / Selected Special Groups 的 **Preserve、Select、URL-Test、Fallback、Load-Balance**。預設 Preserve / Preserve 保留 YAML 既有組行為；一般組與手動切換不會自動改型。
 自動策略候選僅含本次生成、屬於該組的真實 proxy nodes，排除 DIRECT 和巢狀組；Load-Balance 限 round-robin。客戶端測試 URL 可用 HTTP/HTTPS 與本地位址，伺服器不抓取。
-Fixed registry v5 保存策略及可選健康排除設定；v1/v2/v3 仅读取時補 Preserve，v1–v4 補 Health-aware Off，不改 URL、revision 或 current YAML。來源刷新重用保存的策略；預設不依健康結果排除，也不排序候選。臨時 Generate 使用原有 /t，沒有額外持久化 Policy 狀態。
+Fixed registry v6 保存策略、可選健康排除及 GeoIP 模式；v1/v2/v3 仅读取時補 Preserve，v1–v4 補 Health-aware Off，v1–v5 補 GeoIP Off，不改 URL、revision 或 current YAML。來源刷新重用保存的策略；預設不依健康結果排除，也不排序候選。臨時 Generate 使用原有 /t，沒有額外持久化 Policy 狀態。
 範圍、精確 Mihomo v1.19.31 語法、數值限制與 VPS 步驟見 [Policy Engine](docs/POLICY_ENGINE.md)，受控驗證見 [Policy 報告](docs/POLICY_ENGINE_REPORT.md)。**真機 Policy / client 驗收 NOT RUN**。
 
 ## Health-aware Policy（Unreleased / main）
