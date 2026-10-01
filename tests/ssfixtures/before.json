@@ -1,0 +1,125 @@
+{
+  "start": "76f4873fcf5ff9256df5bb978809951032768478",
+  "mappings": [
+    {
+      "uri": "vmess://eyJhZGQiOiAiZXhhbXBsZS5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAidGVzdC11dWlkIiwgIm5ldCI6ICJ0Y3AifQ==",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vmess",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "test-uuid",
+        "alterId": 0,
+        "cipher": "auto",
+        "udp": true,
+        "skip-cert-verify": false
+      }
+    },
+    {
+      "uri": "vmess://eyJhZGQiOiAiZXhhbXBsZS5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAidGVzdC11dWlkIiwgIm5ldCI6ICJ3cyIsICJ0bHMiOiAidGxzIiwgImhvc3QiOiAiY2RuLmV4YW1wbGUuY29tIiwgInBhdGgiOiAiL3dzIiwgInNuaSI6ICJ0bHMuZXhhbXBsZS5jb20iLCAiZnAiOiAiY2hyb21lIiwgImFscG4iOiAiaDIsaHR0cC8xLjEifQ==",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vmess",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "test-uuid",
+        "alterId": 0,
+        "cipher": "auto",
+        "udp": true,
+        "skip-cert-verify": false,
+        "network": "ws",
+        "tls": true,
+        "servername": "tls.example.com",
+        "client-fingerprint": "chrome",
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "ws-opts": {
+          "path": "/ws",
+          "headers": {
+            "Host": "cdn.example.com"
+          }
+        }
+      }
+    },
+    {
+      "uri": "vless://11111111-1111-4111-8111-111111111111@example.com:443?type=tcp",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vless",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "11111111-1111-4111-8111-111111111111",
+        "udp": true,
+        "skip-cert-verify": false
+      }
+    },
+    {
+      "uri": "vless://11111111-1111-4111-8111-111111111111@example.com:443?type=ws&path=%2Fws%252Fencoded",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "vless",
+        "server": "example.com",
+        "port": 443,
+        "uuid": "11111111-1111-4111-8111-111111111111",
+        "udp": true,
+        "skip-cert-verify": false,
+        "network": "ws",
+        "ws-opts": {
+          "path": "/ws%2Fencoded"
+        }
+      }
+    },
+    {
+      "uri": "trojan://%20TEST_ONLY_%E5%AF%86%3A%40%25%20%2B%20@example.com:443",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "trojan",
+        "server": "example.com",
+        "port": 443,
+        "password": " TEST_ONLY_密:@% + ",
+        "udp": true,
+        "skip-cert-verify": false
+      }
+    },
+    {
+      "uri": "trojan://%20TEST_ONLY_%E5%AF%86%3A%40%25%20%2B%20@example.com:443?type=ws&sni=tls.example&host=cdn.example&path=%2Fws",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "trojan",
+        "server": "example.com",
+        "port": 443,
+        "password": " TEST_ONLY_密:@% + ",
+        "udp": true,
+        "skip-cert-verify": false,
+        "sni": "tls.example",
+        "network": "ws",
+        "ws-opts": {
+          "path": "/ws",
+          "headers": {
+            "Host": "cdn.example"
+          }
+        }
+      }
+    },
+    {
+      "uri": "trojan://%20TEST_ONLY_%E5%AF%86%3A%40%25%20%2B%20@example.com:443#Tokyo",
+      "node": {
+        "name": "🇺🇸 Golden",
+        "type": "trojan",
+        "server": "example.com",
+        "port": 443,
+        "password": " TEST_ONLY_密:@% + ",
+        "udp": true,
+        "skip-cert-verify": false
+      }
+    }
+  ],
+  "preview_text": "US|Golden-0|vmess://eyJhZGQiOiAiZXhhbXBsZS5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAidGVzdC11dWlkIiwgIm5ldCI6ICJ0Y3AifQ==\nUS|Golden-1|vmess://eyJhZGQiOiAiZXhhbXBsZS5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAidGVzdC11dWlkIiwgIm5ldCI6ICJ3cyIsICJ0bHMiOiAidGxzIiwgImhvc3QiOiAiY2RuLmV4YW1wbGUuY29tIiwgInBhdGgiOiAiL3dzIiwgInNuaSI6ICJ0bHMuZXhhbXBsZS5jb20iLCAiZnAiOiAiY2hyb21lIiwgImFscG4iOiAiaDIsaHR0cC8xLjEifQ==\nUS|Golden-2|vless://11111111-1111-4111-8111-111111111111@example.com:443?type=tcp\nUS|Golden-3|vless://11111111-1111-4111-8111-111111111111@example.com:443?type=ws&path=%2Fws%252Fencoded\nUS|Golden-4|trojan://%20TEST_ONLY_%E5%AF%86%3A%40%25%20%2B%20@example.com:443\nUS|Golden-5|trojan://%20TEST_ONLY_%E5%AF%86%3A%40%25%20%2B%20@example.com:443?type=ws&sni=tls.example&host=cdn.example&path=%2Fws\nUS|Golden-6|trojan://%20TEST_ONLY_%E5%AF%86%3A%40%25%20%2B%20@example.com:443#Tokyo\nbad",
+  "preview_sha256": "7a647833798f17127a1264b4a845a0a11bd1b411b2db54901f5cd511f629250b",
+  "yaml_sha256": {
+    "replace": "14591c352d947021a10654c156a2e32124868f69e53248d2ae5571856bae2465",
+    "merge": "4defcbd9d1dc2c7e6d45ac9f55bc00fc4eb8c72afa9c34eeaca488d9e324958e"
+  }
+}
