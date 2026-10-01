@@ -323,7 +323,7 @@ def test_nonfatal_yaml_warnings_private_and_generate_bytes_unchanged(web,logged_
     with warnings.catch_warnings(record=True) as original_records:
         warnings.simplefilter('always')
         generated=post(logged_in,'/process',body(values,source))
-    assert generated.status_code==302 and original_records # No global warning suppression.
+    assert generated.status_code==302 and not original_records # Both application loaders are private.
     with logged_in.session_transaction() as session:name=session['page_context']['output_filename']
     assert apply_diff(source,preview.json['diff']).encode()==Path(web.DIR_OUTPUTS,name).read_bytes()
 

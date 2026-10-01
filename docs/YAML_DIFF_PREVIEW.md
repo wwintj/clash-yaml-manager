@@ -122,7 +122,9 @@ inputs cannot bypass Generate validation through Preview. Errors omit paths,
 tracebacks and exception internals. Nonfatal ruamel diagnostics can contain source anchors/scalars. Preview suppresses
 those on its own parser instance, without changing global warning filters or the
 shared constructor registry. It reuses the installed float handler's exact code;
-normal Generate behavior and resulting YAML remain unchanged.
+Generate and Fixed loading now share the same private diagnostic engine; scalar
+semantics and resulting YAML remain unchanged. This security correction is recorded
+in [v1.3 Final Audit](V1_3_FINAL_AUDIT_REPORT.md).
 
 No changes returns `changed: false`, `diff: ""`
 and an explicit No YAML changes message.

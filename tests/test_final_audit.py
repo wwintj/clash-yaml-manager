@@ -24,15 +24,16 @@ def isolated(root, program, env):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize('stable_commit', [STABLE, 'f62bf50721e3ac00d5d2a2a9f784ede4b79b49cf'], ids=['v1.1.1','v1.2.1'])
 @pytest.mark.parametrize('legacy_env', [False, True])
-def test_genuine_v111_upgrade_preserves_auth_links_session_and_runtime(deployment, legacy_env):
+def test_genuine_stable_upgrade_preserves_auth_links_session_and_runtime(deployment, legacy_env, stable_commit):
     installed, source, service, events, env, run = deployment
-    paths = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', STABLE,
+    paths = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', stable_commit,
                                      'core', 'app.py', 'VERSION', 'templates', 'static'], cwd=ROOT, text=True).splitlines()
     for name in paths:
         path = installed / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(subprocess.check_output(['git', 'show', STABLE + ':' + name], cwd=ROOT))
+        path.write_bytes(subprocess.check_output(['git', 'show', stable_commit + ':' + name], cwd=ROOT))
     # The source fixture normally uses a stub app. This gate loads the actual app
     # after running the real update script so session and public routes are checked.
     (source / 'app.py').write_bytes((ROOT / 'app.py').read_bytes())

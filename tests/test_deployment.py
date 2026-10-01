@@ -318,6 +318,8 @@ exec "$TEST_PYTHON" "$@"
     assert 'NoNewPrivileges=true' in service.read_text() and 'PrivateTmp=true' in service.read_text()
     assert 'Environment=HOME=' not in service.read_text()
     assert not (installed / '.venv').exists()
+    for name in ('yaml_diff.py', 'node_update.py'):
+        assert (installed / 'core' / name).read_bytes() == (source / 'core' / name).read_bytes()
     assert_refresh_units(installed, service, events)
 
 

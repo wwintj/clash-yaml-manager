@@ -1,6 +1,5 @@
 """Private, bounded text diff of the actual shared YAML transformation."""
 import difflib
-from types import FunctionType, SimpleNamespace
 from core import yaml_utils
 from ruamel.yaml.error import YAMLError
 
@@ -58,24 +57,8 @@ def unified(source, generated):
 
 
 def private_yaml_engine():
-    """Suppress only this parser's nonfatal diagnostics, never global warnings.
-
-    ruamel can warn with private anchor names / YAML 1.1 scalar values. Its float
-    handler has no warning switch: reuse the exact installed function code with
-    an instance-private warnings facade. Parsing/serialization semantics and the
-    dependency's global constructor registry remain unchanged.
-    """
-    engine = yaml_utils.get_yaml_engine()
-    engine.composer.warn_double_anchors = False
-    constructor = engine.constructor
-    tag = 'tag:yaml.org,2002:float'
-    original = constructor.yaml_constructors[tag]
-    scope = dict(original.__globals__, warnings=SimpleNamespace(warn=lambda *args, **kwargs: None))
-    quiet = FunctionType(original.__code__, scope, original.__name__, original.__defaults__, original.__closure__)
-    quiet.__kwdefaults__ = original.__kwdefaults__
-    constructor.yaml_constructors = dict(constructor.yaml_constructors)
-    constructor.yaml_constructors[tag] = quiet
-    return engine
+    """Use the same instance-private diagnostics as committed YAML loading."""
+    return yaml_utils.private_yaml_engine()
 
 
 def transform(source, parsed, special_groups, policy, *, node_update_mode='replace'):

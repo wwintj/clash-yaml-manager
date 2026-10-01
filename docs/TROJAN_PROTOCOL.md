@@ -1,8 +1,9 @@
 # Trojan Protocol MVP
 
 Development on `main`, not included in Stable v1.2.1. VERSION remains 1.2.1.
-New URI input protocols are VMess / VLESS / Trojan. Merge can separately retain
-arbitrary existing source proxy mappings; that does not enable new SS, Hysteria,
+Current new input protocols are VMess / VLESS / Trojan / Shadowsocks. SS is
+documented separately in [Shadowsocks Protocol](SHADOWSOCKS_PROTOCOL.md). Merge
+can retain arbitrary existing proxy mappings; that does not enable new Hysteria2,
 TUIC, WireGuard, SOCKS, HTTP proxy or SSR input.
 
 ## URI contract

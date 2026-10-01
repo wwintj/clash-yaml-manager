@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 import time
 
-from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from core import notification_events, health_schedule, node_probe, source_parser
@@ -51,7 +50,7 @@ def extract(payload, include_config=False):
     try:
         if not isinstance(payload, bytes) or len(payload) > MAX_YAML_BYTES:
             raise ValueError
-        data = YAML(typ='safe').load(payload.decode('utf-8-sig'))
+        data = source_parser._private_safe_yaml().load(payload.decode('utf-8-sig'))
         if not isinstance(data, dict) or not isinstance(data.get('proxies'), list):
             raise ValueError
         proxies = source_parser._plain(data['proxies'])

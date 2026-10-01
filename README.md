@@ -2,7 +2,7 @@
 
 適合部署在 Ubuntu VPS 上的輕量級 Clash/Mihomo YAML 節點管理面板。
 
-可上傳現有 YAML，也可直接使用內建預設 YAML。輸入 `vmess://` / `vless://` / `trojan://` 節點後，Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
+可上傳現有 YAML，也可直接使用內建預設 YAML。當前 main 支援 VMess / VLESS / Trojan / Shadowsocks 節點輸入（`vmess://` / `vless://` / `trojan://` / `ss://`）；Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
 **Latest Stable: [v1.2.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.2.1)**
@@ -14,7 +14,7 @@ main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable
 
 ## 功能與文件
 
-新增功能納入下一次 Stable 的發布範圍；發布前請用明確的 `--channel main` 測試，發布後由普通 Stable 安裝／升級取得。正式可用範圍以 Latest Stable 的 Release Notes 為準。當前受控驗收與延後的真機項目見 [Final Audit](docs/FINAL_AUDIT_REPORT.md)。
+新增功能納入下一次 Stable 的發布範圍；發布前請用明確的 `--channel main` 測試，發布後由普通 Stable 安裝／升級取得。正式可用範圍以 Latest Stable 的 Release Notes 為準。當前 main 已凍結 v1.3.0 的 Diff Preview、Generate Merge、Trojan 與 Shadowsocks 範圍；這些功能尚未包含在 Latest Stable v1.2.1。當前受控驗收與延後的真機項目見 [v1.3 Final Audit](docs/V1_3_FINAL_AUDIT_REPORT.md)，[v1.2 歷史審計](docs/FINAL_AUDIT_REPORT.md) 保留當時記錄。
 
 | 功能 | 行為與文件 |
 | --- | --- |
@@ -167,7 +167,7 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。這是 supported input protocols，不是所有 Clash proxy types；SS 尚未納入 Stable。
+節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。這是 supported input protocols，不是所有 Clash proxy types；Trojan 與 Shadowsocks 尚未納入 Stable v1.2.1。
 
 Generate 頁新增 **Preview YAML Changes**（尚未發布，使用明確的 `--channel main` 測試）。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不保存 diff 草稿。Custom YAML 需仍選有實際檔案；過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
@@ -215,9 +215,9 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 ## 功能說明
 
 - 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。
-- 自動刪除原 `proxies` 中的舊節點。
-- 自動清理 `proxy-groups` 裡失效的舊節點引用。
-- 支援解析 `vmess://`、`vless://` 和 `trojan://`。
+- Generate 預設 Replace 刪除舊節點；明確 Merge 保留來源節點並追加新節點。
+- Replace 清理舊節點引用；Merge 保留已有引用，同名或無效引用會拒絕。
+- main 的新輸入支援 `vmess://`、`vless://`、`trojan://` 和 `ss://`；保留來源其他 proxy 類型不等於支援其 URI 輸入。
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。
@@ -241,6 +241,7 @@ clash-yaml-manager/
 ├── mihomoctl.sh / mihomo-manifest.json / httpsctl.sh
 ├── core/
 │   ├── parser.py / generator.py / yaml_utils.py / countries.py
+│   ├── yaml_diff.py / node_update.py
 │   ├── security.py / rate_limit.py / subscriptions.py / temporary_links.py
 │   ├── state.py / envfile.py / migrate.py / install_info.py / version.py
 │   ├── fixed_subscriptions.py / fixed_sources.py / fixed_views.py
