@@ -1,6 +1,8 @@
 # Shadowsocks Protocol MVP
 
-Development on `main`; not yet included in Stable v1.2.1. VERSION stays 1.2.1.
+This feature is included in the v1.3.0 release scope. Ordinary install/update uses Latest Stable; see the
+[published release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest)
+for availability. Explicit `--channel main` is only for development testing.
 Supported **new input protocols** are VMess / VLESS / Trojan / Shadowsocks.
 This is not support for every Clash proxy type. Generate Merge can separately
 retain arbitrary existing proxy mappings, including Hysteria2 and WireGuard.

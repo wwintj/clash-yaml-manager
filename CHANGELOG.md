@@ -7,8 +7,12 @@
 - Add optional Generate Merge mode to preserve source nodes and append submitted nodes, with explicit name-conflict errors and saved draft mode; Replace remains the default and Fixed remains Replace only.
 - Accept Trojan TCP/WebSocket and Shadowsocks inputs in Batch, Auxiliary, Parse, Fixed and External Raw/Base64/Clash sources, including automatic refresh. Preserve passwords; reject unsupported transports, plugins and URI options.
 
+### Changed
+- Align current feature manuals and README with the v1.3 release scope while retaining historical acceptance reports.
+
 ### Fixed
 - Keep long generated filenames within the mobile layout without changing download behavior.
+- Use a protocol-neutral message when an external import has no supported nodes.
 
 ### Security
 - Hide Trojan/Shadowsocks credentials in ordinary previews and Health observations, and keep private YAML values out of parser warning output during Generate, Fixed imports, Diff and Health.

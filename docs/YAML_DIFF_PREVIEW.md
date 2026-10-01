@@ -1,8 +1,10 @@
 # Full YAML Diff Preview MVP
 
-Available on explicit `--channel main` during the v1.3 development cycle. This
-feature is not in Latest Stable v1.2.1; VERSION stays 1.2.1 and this work creates
-no tag or Release. Controlled evidence is in [the report](YAML_DIFF_PREVIEW_REPORT.md).
+This feature is included in the v1.3.0 release scope. Ordinary install/update uses Latest Stable; see the
+[published release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest)
+for availability. Explicit `--channel main` is only for development testing.
+
+Controlled evidence is in [the report](YAML_DIFF_PREVIEW_REPORT.md).
 
 ## Using the preview
 

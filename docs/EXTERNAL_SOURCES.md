@@ -1,8 +1,11 @@
 # Fixed Subscriptions: External Sources
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Current release scope, supported migrations and deferred real acceptance:
+[v1.3 Final Audit](V1_3_FINAL_AUDIT_REPORT.md). Earlier embedded acceptance records
+below retain their historical versions; published availability follows
+[Latest Stable release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest).
 
-Before Stable publication, use explicit `--channel main` to test this feature. Base YAML remains Default / Custom and is
+Ordinary installs use the default Stable channel. Base YAML remains Default / Custom and is
 separate from the ordered Node Sources used to replace its proxies.
 
 ## Using sources
@@ -30,8 +33,7 @@ fields, including empty values. There is no cipher whitelist or UUID requirement
 for SS; optional UDP must be boolean. URI queries are rejected, with explicit
 plugin errors for Manual inputs and fixed source failures for External inputs.
 See [Shadowsocks Protocol](SHADOWSOCKS_PROTOCOL.md) for SIP002 userinfo and legacy
-whole-authority Base64, percent-decoding and password-preservation rules. SS is
-development functionality on main, not yet included in Stable v1.2.1.
+whole-authority Base64, percent-decoding and password-preservation rules. SS is part of the v1.3.0 release scope.
 Unsupported protocols are skipped with a count warning; zero supported nodes is an error. The
 safe YAML loader rejects object construction; structural limits reject cycles,
 deep nesting, non-string keys and oversized alias expansion. Payloads are limited

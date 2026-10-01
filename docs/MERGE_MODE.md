@@ -1,9 +1,9 @@
 # Node Update Mode — Merge MVP
 
 Generate supports **Replace existing nodes** (default) and explicit **Merge with
-existing nodes**. This is main development for the next Stable, not part of
-Latest Stable v1.2.1. VERSION remains 1.2.1; no tag or Release is created.
-Use only explicit `--channel main` to test development deployments.
+existing nodes**. This feature is included in the v1.3.0 release scope. Ordinary install/update uses Latest Stable; see the
+[published release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest)
+for availability. Explicit `--channel main` is only for development testing.
 Controlled evidence is recorded in [MERGE_MODE_REPORT.md](MERGE_MODE_REPORT.md).
 
 ## Modes and ordering

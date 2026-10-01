@@ -2,7 +2,7 @@
 
 適合部署在 Ubuntu VPS 上的輕量級 Clash/Mihomo YAML 節點管理面板。
 
-可上傳現有 YAML，也可直接使用內建預設 YAML。當前 main 支援 VMess / VLESS / Trojan / Shadowsocks 節點輸入（`vmess://` / `vless://` / `trojan://` / `ss://`）；Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
+可上傳現有 YAML，也可直接使用內建預設 YAML。新節點輸入支援 VMess / VLESS / Trojan / Shadowsocks（`vmess://` / `vless://` / `trojan://` / `ss://`）；Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
 **Latest Stable: [v1.2.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.2.1)**
@@ -14,7 +14,7 @@ main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable
 
 ## 功能與文件
 
-新增功能納入下一次 Stable 的發布範圍；發布前請用明確的 `--channel main` 測試，發布後由普通 Stable 安裝／升級取得。正式可用範圍以 Latest Stable 的 Release Notes 為準。當前 main 已凍結 v1.3.0 的 Diff Preview、Generate Merge、Trojan 與 Shadowsocks 範圍；這些功能尚未包含在 Latest Stable v1.2.1。當前受控驗收與延後的真機項目見 [v1.3 Final Audit](docs/V1_3_FINAL_AUDIT_REPORT.md)，[v1.2 歷史審計](docs/FINAL_AUDIT_REPORT.md) 保留當時記錄。
+v1.3.0 發布範圍包括 Diff Preview、Generate Merge、Trojan 與 Shadowsocks。普通安裝／升級使用 Latest Stable；正式可用範圍以其 Release Notes 為準。受控發布前驗收與延後的真機項目見 [v1.3 Final Audit](docs/V1_3_FINAL_AUDIT_REPORT.md)，[v1.2 歷史審計](docs/FINAL_AUDIT_REPORT.md) 保留當時記錄。
 
 | 功能 | 行為與文件 |
 | --- | --- |
@@ -167,11 +167,11 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。這是 supported input protocols，不是所有 Clash proxy types；Trojan 與 Shadowsocks 尚未納入 Stable v1.2.1。
+節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。這是 supported input protocols，不是所有 Clash proxy types。
 
-Generate 頁新增 **Preview YAML Changes**（尚未發布，使用明確的 `--channel main` 測試）。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不保存 diff 草稿。Custom YAML 需仍選有實際檔案；過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
+Generate 頁新增 **Preview YAML Changes**。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不保存 diff 草稿。Custom YAML 需仍選有實際檔案；過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
-Generate 的 **Node Update Mode** 預設 **Replace existing nodes**；明確選 **Merge with existing nodes** 會保持來源 proxies 順序及已有引用，再依提交順序追加新節點。同名會報錯，不覆蓋、不改名、不按連線去重。新節點加入一般組、所選 Special Groups 及本次國家組；顯式自動 Policy 仍依既有 contract 只用本次新候選。Merge 僅限 Generate，Fixed 仍為 Replace；新輸入仍只解析 VMess/VLESS/Trojan/Shadowsocks，來源已存在的其他類型可原樣保留。Diff 使用同一個模式；詳見 [Merge Mode](docs/MERGE_MODE.md) 與 [驗收報告](docs/MERGE_MODE_REPORT.md)。本功能尚未納入 Stable。
+Generate 的 **Node Update Mode** 預設 **Replace existing nodes**；明確選 **Merge with existing nodes** 會保持來源 proxies 順序及已有引用，再依提交順序追加新節點。同名會報錯，不覆蓋、不改名、不按連線去重。新節點加入一般組、所選 Special Groups 及本次國家組；顯式自動 Policy 仍依既有 contract 只用本次新候選。Merge 僅限 Generate，Fixed 仍為 Replace；新輸入仍只解析 VMess/VLESS/Trojan/Shadowsocks，來源已存在的其他類型可原樣保留。Diff 使用同一個模式；詳見 [Merge Mode](docs/MERGE_MODE.md) 與 [驗收報告](docs/MERGE_MODE_REPORT.md)。
 
 點 **Parse Nodes** 查看 Name、Country、Protocol、Ready / Warning / Error 和來源。修改輸入後顯示 Changes not parsed yet。Preview 可修改 Country / Name，修改立即保存；Apply edit 或 Parse Nodes 更新預覽。手工國家優先，重排未修改的輸入不會丟掉手工修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
 
@@ -217,7 +217,7 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 - 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。
 - Generate 預設 Replace 刪除舊節點；明確 Merge 保留來源節點並追加新節點。
 - Replace 清理舊節點引用；Merge 保留已有引用，同名或無效引用會拒絕。
-- main 的新輸入支援 `vmess://`、`vless://`、`trojan://` 和 `ss://`；保留來源其他 proxy 類型不等於支援其 URI 輸入。
+- 新輸入支援 `vmess://`、`vless://`、`trojan://` 和 `ss://`；保留來源其他 proxy 類型不等於支援其 URI 輸入。
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。

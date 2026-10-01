@@ -1,6 +1,8 @@
 # Trojan Protocol MVP
 
-Development on `main`, not included in Stable v1.2.1. VERSION remains 1.2.1.
+This feature is included in the v1.3.0 release scope. Ordinary install/update uses Latest Stable; see the
+[published release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest)
+for availability. Explicit `--channel main` is only for development testing.
 Current new input protocols are VMess / VLESS / Trojan / Shadowsocks. SS is
 documented separately in [Shadowsocks Protocol](SHADOWSOCKS_PROTOCOL.md). Merge
 can retain arbitrary existing proxy mappings; that does not enable new Hysteria2,
