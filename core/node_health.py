@@ -57,7 +57,7 @@ def extract(payload, include_config=False):
         proxies = source_parser._plain(data['proxies'])
         nodes = []
         for index, config in enumerate(proxies):
-            if not isinstance(config, dict) or config.get('type') not in ('vmess', 'vless', 'trojan'):
+            if not isinstance(config, dict) or config.get('type') not in ('vmess', 'vless', 'trojan', 'ss'):
                 continue
             server, port = config.get('server'), config.get('port')
             if not isinstance(server, str) or not server.strip() or type(port) is not int or not 1 <= port <= 65535:
@@ -67,11 +67,11 @@ def extract(payload, include_config=False):
                 name = 'Node ' + str(index + 1)
             # Names are display data, but must not smuggle endpoint/credentials
             # into the observational table. The original YAML is never modified.
-            credential = config.get('password' if config['type'] == 'trojan' else 'uuid')
+            credential = config.get('password' if config['type'] in ('trojan', 'ss') else 'uuid')
             if (server in name or name.strip() == str(port)
                     or isinstance(credential, str) and credential and (credential in name or
-                        config['type'] == 'trojan' and credential.strip() and credential.strip() in name)
-                    or re.search(r'(?i)(?:https?://|vmess://|vless://|trojan://|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', name)):
+                        config['type'] in ('trojan', 'ss') and credential.strip() and credential.strip() in name)
+                    or re.search(r'(?i)(?:https?://|vmess://|vless://|trojan://|ss://|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', name)):
                 name = 'Node ' + str(index + 1)
             node = dict(fingerprint=fingerprint(config), name=name, protocol=config['type'], server=server, port=port)
             if include_config:

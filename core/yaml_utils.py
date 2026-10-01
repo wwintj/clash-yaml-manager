@@ -198,8 +198,10 @@ def validate_new_nodes(new_nodes: Any) -> List[str]:
             errors.append(f"第 {i} 个节点端口必须是 1–65535 的整数。")
         if node.get('type') in ('vmess', 'vless') and (not isinstance(node.get('uuid'), str) or not node['uuid'].strip()):
             errors.append(f"第 {i} 个节点缺失 uuid 字段。")
-        if node.get('type') == 'trojan' and (not isinstance(node.get('password'), str) or node['password'] == ''):
+        if node.get('type') in ('trojan', 'ss') and (not isinstance(node.get('password'), str) or node['password'] == ''):
             errors.append(f"第 {i} 个节点缺失 password 字段。")
+        if node.get('type') == 'ss' and (not isinstance(node.get('cipher'), str) or node['cipher'] == ''):
+            errors.append(f"第 {i} 个节点缺失 cipher 字段。")
 
     return errors
 

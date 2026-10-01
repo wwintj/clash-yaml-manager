@@ -44,7 +44,7 @@ def node(**changes):
 
 @pytest.mark.parametrize('format', ['auto', 'clash'])
 def test_clash_options_and_skipped_protocols(format):
-    result = sources.parse(clash([node(), node(type='vmess',name='Mystery'), node(type='ss')]), format)
+    result = sources.parse(clash([node(), node(type='vmess',name='Mystery'), node(type='hysteria2')]), format)
     assert result['warnings'] == ['1 unsupported proxies skipped']
     assert [c['code'] for c in result['countries']] == ['JP', 'UNKNOWN']
     assert result['countries'][1]['group'] == '🌐 其他节点'

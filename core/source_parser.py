@@ -1,4 +1,4 @@
-"""Offline, bounded imports of VMess/VLESS/Trojan nodes; never import base YAML settings."""
+"""Offline, bounded imports of VMess/VLESS/Trojan/Shadowsocks nodes; never import base YAML settings."""
 import base64
 import binascii
 import math
@@ -87,16 +87,18 @@ def _clash(data, country_lookup=None):
     for node in data['proxies']:
         if not isinstance(node, dict) or not isinstance(node.get('type'), str):
             raise SourceError('invalid')
-        if node['type'] not in ('vmess', 'vless', 'trojan'):
+        if node['type'] not in ('vmess', 'vless', 'trojan', 'ss'):
             skipped += 1
             continue
         if any(not isinstance(node.get(field), str) or not node[field].strip()
-               for field in (('name', 'server') if node['type'] == 'trojan' else ('name', 'server', 'uuid'))):
+               for field in (('name', 'server') if node['type'] in ('trojan', 'ss') else ('name', 'server', 'uuid'))):
             raise SourceError('invalid')
         try:
             node['port'] = parser.parse_port(node.get('port'))
             if node['type'] == 'trojan':
                 parser.validate_trojan_options(node)
+            elif node['type'] == 'ss':
+                parser.validate_ss_options(node)
         except ValueError:
             raise SourceError('invalid') from None
         code = parser.detect_country(node['name'])

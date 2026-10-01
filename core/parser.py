@@ -15,13 +15,16 @@ from core.countries import COUNTRY_MAPPING, detect_country
 # ==========================================
 # 辅助函数
 # ==========================================
-SUPPORTED_URI_SCHEMES = ('vmess://', 'vless://', 'trojan://')
+SUPPORTED_URI_SCHEMES = ('vmess://', 'vless://', 'trojan://', 'ss://')
 
 
 def mask_sensitive(value: str) -> str:
     """脱敏敏感信息，避免完整链接、UUID、password 出现在日志或前端错误里。"""
     if not value:
         return ""
+
+    if value.lower().startswith("ss://"):
+        return "ss://***"
 
     if value.lower().startswith("trojan://"):
         return "trojan://***"
@@ -350,6 +353,105 @@ def parse_trojan_link(link: str, display_name: str) -> Dict[str, Any]:
         raise ValueError(invalid) from None
 
 
+class SSValidationError(ValueError):
+    """Only fixed diagnostics may cross the Shadowsocks preview boundary."""
+    def __init__(self, code='invalid'):
+        messages = {
+            'invalid': 'Shadowsocks 链接或配置无效，请检查编码、必填字段及端口。',
+            'plugin': 'Shadowsocks 插件及混淆选项不受支持。',
+            'query': 'Shadowsocks URI query 参数不受支持。',
+        }
+        super().__init__(messages.get(code, messages['invalid']))
+
+
+def validate_ss_options(node: Dict[str, Any]) -> None:
+    """Keep safe plain extra fields; do not accept plugin/obfs configurations."""
+    for key in node:
+        normalized = key.lower().replace('_', '-')
+        if (normalized in ('plugin', 'obfs', 'simple-obfs', 'v2ray-plugin', 'sip003')
+                or normalized.startswith(('plugin-', 'obfs-'))):
+            raise SSValidationError('plugin')
+    if any(not isinstance(node.get(field), str) or node[field] == '' for field in ('cipher', 'password')):
+        raise SSValidationError()
+    if 'udp' in node and type(node['udp']) is not bool:
+        raise SSValidationError()
+
+
+def _ss_base64(value: str) -> str:
+    # Strict alphabet/padding; no guessed alternate decoding after a failure.
+    value = urllib.parse.unquote(value, errors='strict')
+    if not re.fullmatch(r'[A-Za-z0-9+/_-]+={0,2}', value) or '=' in value and len(value) % 4:
+        raise ValueError
+    return base64.b64decode(value + '=' * (-len(value) % 4), altchars=b'-_', validate=True).decode('utf-8')
+
+
+def _ss_endpoint(authority: str, optional_slash: bool):
+    if any(c.isspace() or ord(c) < 32 or ord(c) == 127 or c == '\\' for c in authority):
+        raise ValueError
+    parsed = urllib.parse.urlsplit('//' + authority)
+    if (parsed.username is not None or parsed.query or parsed.fragment
+            or parsed.path not in (('', '/') if optional_slash else ('',))):
+        raise ValueError
+    server = parsed.hostname
+    if not server or not _trojan_host(server):
+        raise ValueError
+    if parsed.netloc.startswith('[') and (':' not in server or not re.fullmatch(
+            r'\[[^\[\]]+\]:[0-9]+', parsed.netloc)):
+        raise ValueError
+    return server, parse_port(parsed.port)
+
+
+def parse_ss_link(link: str, display_name: str) -> Dict[str, Any]:
+    """SIP002 encoded/plain userinfo plus requested legacy full Base64 authority."""
+    try:
+        if (not link.startswith('ss://') or any(c.isspace() or ord(c) < 32 or ord(c) == 127
+                                                or c == '\\' for c in link)
+                or re.search(r'%(?![0-9a-fA-F]{2})', link)):
+            raise ValueError
+        payload, _, fragment = link[5:].partition('#')
+        urllib.parse.unquote(fragment, errors='strict')  # Validate even with a manual name.
+        payload, has_query, query = payload.partition('?')
+        if has_query:
+            pairs = urllib.parse.parse_qsl(query, keep_blank_values=True, errors='strict', max_num_fields=16)
+            if any(key.lower().replace('_', '-').startswith(('plugin', 'obfs', 'simple-obfs', 'v2ray-plugin', 'sip003'))
+                   for key, _ in pairs):
+                raise SSValidationError('plugin')
+            raise SSValidationError('query')
+        if '@' in payload:
+            # One bounded authority split also permits standard Base64 '/' in userinfo.
+            # Plain userinfo must percent-encode reserved '@' and '/' characters.
+            userinfo, _, authority = payload.rpartition('@')
+            if not userinfo or '@' in userinfo:
+                raise ValueError
+            server, port = _ss_endpoint(authority, True)
+            if ':' in userinfo:
+                parsed = urllib.parse.urlsplit('ss://' + userinfo + '@placeholder.invalid:443')
+                if parsed.path or parsed.password is None or not parsed.username:
+                    raise ValueError
+                cipher = urllib.parse.unquote(parsed.username, errors='strict')
+                password = urllib.parse.unquote(parsed.password, errors='strict')
+            else:
+                credentials = re.fullmatch(r'([^:]+):(.*)', _ss_base64(userinfo), re.DOTALL)
+                if not credentials:
+                    raise ValueError
+                cipher, password = credentials.groups()
+        else:
+            # Greedy password ends at the last '@', not the first; ':'/'/' stay data.
+            legacy = re.fullmatch(r'([^:]+):(.*)@([^@]+)', _ss_base64(payload), re.DOTALL)
+            if not legacy:
+                raise ValueError
+            cipher, password, authority = legacy.groups()
+            server, port = _ss_endpoint(authority, False)
+        node = dict(name=display_name, type='ss', server=server, port=port,
+                    cipher=cipher, password=password, udp=True)
+        validate_ss_options(node)
+        return node
+    except SSValidationError:
+        raise
+    except (ValueError, TypeError, UnicodeError):
+        raise SSValidationError() from None
+
+
 # ==========================================
 # 批量处理层
 # ==========================================
@@ -377,7 +479,7 @@ def split_node_input(line: str, line_num: int):
         link = parts[0]
         name = ''
         try:
-            if link.startswith('trojan://'):
+            if link.startswith(('trojan://', 'ss://')):
                 name = urllib.parse.unquote(urllib.parse.urlsplit(link).fragment, errors='strict')
             elif link.startswith('vless://'):
                 name = urllib.parse.unquote(urllib.parse.urlsplit(link).fragment)
@@ -417,8 +519,11 @@ def parse_node_line(line: str, line_num: int = 1, override=None, country_lookup=
     display_name = build_display_name(code, raw_name)
     try:
         node = (parse_vmess_link(link.split('#', 1)[0], display_name) if link.startswith('vmess://')
+                else parse_ss_link(link, display_name) if link.startswith('ss://')
                 else parse_trojan_link(link, display_name) if link.startswith('trojan://')
                 else parse_vless_link(link, display_name))
+    except SSValidationError as error:
+        raise ValueError(str(error)) from None
     except Exception:
         raise ValueError('节点解析失败，请检查链接格式、必填字段及端口范围。') from None
     if code == 'UNKNOWN' and source != 'Manual' and country_lookup is not None:
@@ -433,7 +538,7 @@ def parse_node_line(line: str, line_num: int = 1, override=None, country_lookup=
 
 def preview_name(name: str, credential: str = '') -> str:
     """Do not echo a credential even if it was embedded in a user-provided remark."""
-    name = re.sub(r'(?i)(?:vmess|vless|trojan)://\S+', '[link hidden]', name)
+    name = re.sub(r'(?i)(?:vmess|vless|trojan|ss)://\S+', '[link hidden]', name)
     if credential:
         name = name.replace(credential, '[password hidden]')
         if credential.strip() and credential.strip() != credential:
@@ -456,7 +561,7 @@ def parse_batch_nodes(text: str, overrides=None, country_lookup=None) -> Dict[st
                       status='Error', source='Unknown', message='')
         try:
             display_name, node, info = parse_node_line(line, idx, overrides.get(key), country_lookup)
-            credential = node.get('password', '') if node['type'] == 'trojan' else ''
+            credential = node.get('password', '') if node['type'] in ('trojan', 'ss') else ''
             record.update(name=preview_name(info['raw_name'], credential), country=info['code'],
                           protocol=node['type'].upper(), source=info['source'])
             if display_name in seen_names:

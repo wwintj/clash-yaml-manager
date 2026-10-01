@@ -68,7 +68,7 @@ def test_connection_config_changes_identity(changes):
     assert health.fingerprint(proxy()) != health.fingerprint(proxy(**changes))
 
 
-@pytest.mark.parametrize('nodes',[[],[dict(type='ss',server='127.0.0.1',port=22)],
+@pytest.mark.parametrize('nodes',[[],[dict(type='tuic',server='127.0.0.1',port=22)],
     [proxy(),dict(type='future-protocol')],[proxy(type='vmess')]])
 def test_extract_ignores_unsupported_types(nodes):
     result = health.extract(yaml_bytes(nodes))
