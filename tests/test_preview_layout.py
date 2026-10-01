@@ -3,7 +3,9 @@ from conftest import ROOT
 
 
 def test_preview_layout_has_responsive_areas_and_wrapping(logged_in):
-    html = logged_in.get('/').get_data(as_text=True)
+    response = logged_in.get('/static/ui.css')
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
     assert 'grid-template-areas: "name country info action"' in html
     assert '(min-width: 768px) and (max-width: 1199px)' in html
     assert 'grid-template-areas: "name country" "info action"' in html

@@ -1,10 +1,10 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-4">
-              <label class="form-label">{{ '01 / Base YAML' if fixed_editor else '01 / YAML Source' }}</label>
+              <label class="form-label" for="yaml-source">{{ '01 / Base YAML' if fixed_editor else '01 / YAML Source' }}</label>
               <select id="yaml-source" name="yaml_source" class="form-select terminal-select mb-2" aria-label="YAML source"><option value="default">Default YAML</option><option value="custom">Custom YAML</option></select>
               <div id="source-hint" class="form-text mb-2" role="status"></div>
-              <input class="form-control terminal-file" type="file" name="yaml_file" accept=".yaml,.yml">
-              <div class="form-text mt-2">{% if fixed_editor %}Base YAML 決定配置模板；Custom 已保存時可留空保留，節點來源在下方獨立設定。{% else %}可上傳朋友的 Clash/Mihomo YAML；不選檔案時會使用伺服器內建的預設 YAML。{% endif %}</div>
+              <input class="form-control terminal-file" type="file" name="yaml_file" aria-label="Upload YAML file" accept=".yaml,.yml">
+              <div class="form-text mt-2">{% if fixed_editor %}Base YAML defines the configuration template. Leave a saved Custom upload empty to keep it; configure node sources separately below.{% else %}Upload Clash/Mihomo YAML or use the server default when no file is selected.{% endif %}</div>
             </div>
 
             {% if not fixed_editor %}
@@ -19,16 +19,16 @@
             {% endif %}
             {% if fixed_editor %}<h3 class="panel-title mb-3">02 / Node Sources — Manual Nodes</h3><p class="form-text">Manual nodes may be empty when external sources provide nodes.</p>{% endif %}
             <div class="mb-4">
-              <label class="form-label">02 / Batch Nodes</label>
+              <label class="form-label" for="batch_nodes">02 / Batch Nodes</label>
               <textarea id="batch_nodes" class="form-control terminal-input" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
-              <div class="form-text mt-2">每行支援 COUNTRY|NAME|URI、NAME|URI 或 URI；VMess / VLESS / Trojan / Shadowsocks。Unknown 是 Warning，仍可生成。</div>
+              <div class="form-text mt-2">One COUNTRY|NAME|URI, NAME|URI or URI per line; VMess / VLESS / Trojan / Shadowsocks. Unknown countries produce a warning and can still be generated.</div>
             </div>
 
             <div class="mb-4">
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
                   <label class="form-label mb-1">03 / Auxiliary Multi Nodes</label>
-                  <div class="form-text">新增多個節點，Country 可留空自動識別；Parse 與 Generate 都會包含這些節點。</div>
+                  <div class="form-text">Add multiple nodes. Leave Country empty for detection; Parse and Generate both include these rows.</div>
                 </div>
                 <button type="button" id="add-node-row" class="btn btn-outline-terminal btn-terminal">+ Add Row</button>
               </div>
@@ -38,21 +38,21 @@
                   <div class="row g-3 align-items-end">
                     <div class="col-md-3">
                       <label class="form-label">Country</label>
-                      <input class="form-control terminal-input country-search mb-1" type="search" placeholder="Search ISO / English / 中文" aria-label="Search country">
+                      <input class="form-control terminal-input country-search mb-1" type="search" placeholder="Search country / ISO" aria-label="Search country">
                       <select class="form-select terminal-select aux-country" aria-label="Country">
                         <option value="">Auto detect</option>
                         {% for code, info in country_mapping.items() %}
-                          <option value="{{ code }}">{{ info.emoji }} {{ code }} · {{ info.english }} / {{ info.chinese }}</option>
+                          <option value="{{ code }}">{{ info.emoji }} {{ code }} · {{ info.english }}</option>
                         {% endfor %}
                       </select>
                     </div>
                     <div class="col-md-3">
                       <label class="form-label">Node Name</label>
-                      <input type="text" class="form-control terminal-input aux-name" placeholder="GIA">
+                      <input type="text" class="form-control terminal-input aux-name" aria-label="Node name" placeholder="GIA">
                     </div>
                     <div class="col-md-5">
                       <label class="form-label">Node Link</label>
-                      <input type="text" class="form-control terminal-input aux-link" placeholder="vmess://、vless://、trojan:// 或 ss:// 連結">
+                      <input type="text" class="form-control terminal-input aux-link" aria-label="Node URI" placeholder="vmess://, vless://, trojan:// or ss:// URI">
                     </div>
                     <div class="col-md-1 d-grid">
                       <button type="button" class="btn btn-danger-terminal btn-terminal remove-node-row">DEL</button>
@@ -61,7 +61,7 @@
                 </div>
               </div>
 
-              <div id="aux-node-alert" class="terminal-alert error p-3 mt-3 d-none"></div>
+              <div id="aux-node-alert" class="terminal-alert error mt-3 d-none"></div>
             </div>
 
             <input type="hidden" name="aux_nodes" id="aux-nodes-data">
@@ -80,14 +80,14 @@
             <span class="panel-subtitle">Optional Groups</span>
           </div>
 
-          <p class="helper-text mb-3">勾選後，所有新節點會加入對應特殊策略組。預設不勾選。</p>
+          <p class="helper-text mb-3">Selected groups receive all new nodes. Off by default.</p>
 
           <div class="row g-3">
             {% for group in default_special_groups %}
               <div class="col-md-6">
                 <label class="terminal-check">
                   <input class="form-check-input" type="checkbox" name="special_groups" value="{{ group }}" form="process-form" id="special_group_{{ loop.index }}">
-                  <span>{{ group }}</span>
+                  <span>{{ {'🎥 奈飞节点':'🎥 Netflix Nodes','📹 油管视频':'📹 YouTube Video','💬 Ai平台':'💬 AI Platforms','📲 电报消息':'📲 Telegram Messages'}.get(group, group) }}</span>
                 </label>
               </div>
             {% endfor %}

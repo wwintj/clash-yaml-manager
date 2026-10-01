@@ -128,7 +128,7 @@ assert(control && new URL(control).hostname === '127.0.0.1');
       assert(await section.locator('.proxy-engine-card').first().isVisible());
       assert.equal(await section.locator('#proxy-defaults').count(),0);
       assert(await section.locator('#global-proxy-summary').isVisible());
-      assert(await section.getByRole('link',{name:'Manage Global Defaults in Settings'}).isVisible());
+      assert(await section.getByRole('link',{name:'Global Defaults in Settings'}).isVisible());
       assert(await section.locator('#proxy-settings').isVisible());
       assert(await section.locator('.health-summary').isVisible());
       assert(await section.locator('.proxy-health-table').isVisible());

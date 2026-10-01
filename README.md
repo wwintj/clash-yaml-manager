@@ -34,6 +34,8 @@ v1.3.0 發布範圍包括 Diff Preview、Generate Merge、Trojan 與 Shadowsocks
 
 Fixed 舊 registry v1–v5 只在內存補新功能預設，合法修改才寫 v6；既有 Health v1 讀作 v2，Off / Manual 不會變成 Automatic。更新保留 token、已提交 YAML、來源快取與獨立狀態。普通安裝不下載 Mihomo、GeoIP 資料庫或申請憑證，也不聯絡 Telegram。
 
+Web UI consistency（main development only）：界面統一為英文，並使用共享的字體、控件和響應式排版；[設計契約](docs/UI_CONSISTENCY.md)與[驗證報告](docs/UI_CONSISTENCY_REPORT.md)記錄本輪範圍。正式 Stable 仍為 v1.3.0。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：

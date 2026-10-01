@@ -123,7 +123,8 @@ def test_collision_rejected_without_output_and_preview_matches(web,logged_in,kin
         return
     preview=post(logged_in,ROUTE,body(values,source));assert preview.status_code==400
     actual=post(logged_in,'/process',body(values,source));assert actual.status_code==400
-    assert preview.json['error'] in actual.text
+    from core.ui import display_message
+    assert display_message(preview.json['error']) in actual.text
     if kind=='existing':assert preview.json['error']=='Node name already exists in source YAML.'
     assert not list(Path(web.DIR_OUTPUTS).iterdir()) and LINK not in caplog.text
 

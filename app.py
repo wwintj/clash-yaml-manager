@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
 from core import parser, generator
+from core.ui import display_message, BROWSER_DISPLAY_PHRASES
 from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
 from core.state import StateError, file_lock, atomic_write
@@ -268,6 +269,10 @@ def login_required(func):
         return func(*args, **kwargs)
 
     return decorated_function
+
+
+app.jinja_env.filters['ui_message'] = display_message
+app.jinja_env.globals['ui_display_phrases'] = BROWSER_DISPLAY_PHRASES
 
 
 def get_base_context() -> Dict[str, Any]:
@@ -719,7 +724,7 @@ def state_unavailable(error):
     logging.error('共享安全状态不可用，请检查权限或恢复备份。')
     if request.path == '/api/preview-yaml-diff':
         return jsonify(ok=False, error='安全状态暂不可用，请联系管理员检查 state/。'), 503
-    return '安全状态暂不可用，请联系管理员检查 state/。', 503
+    return display_message('安全状态暂不可用，请联系管理员检查 state/。'), 503
 
 
 @app.errorhandler(413)

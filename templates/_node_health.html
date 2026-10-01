@@ -29,7 +29,7 @@
       <p>Last Check: {{ node_health.check_display }}</p>
       {% set health_schedule = node_health %}{% include '_health_schedule_status.html' %}
     </div>
-    <table class="health-table"><thead><tr>{% for title in ['Node','Protocol','Status','Connect Latency','Failures','Last Checked','Last Success'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
+    <div class="table-scroll" role="region" aria-label="Subscription status table" tabindex="0"><table class="health-table"><thead><tr>{% for title in ['Node','Protocol','Status','Connect Latency','Failures','Last Checked','Last Success'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
       <tbody>{% for node in node_health.rows %}<tr>
         <td data-label="Node">{{ node.name }}</td>
         <td data-label="Protocol">{{ node.protocol|upper }}</td>
@@ -38,8 +38,8 @@
         <td data-label="Failures">{{ node.consecutive_failures }}</td>
         <td data-label="Last Checked">{{ node.checked_display }}</td>
         <td data-label="Last Success">{{ node.success_display }}</td>
-      </tr>{% else %}<tr><td colspan="7">No supported VMess/VLESS nodes.</td></tr>{% endfor %}</tbody>
-    </table>
+      </tr>{% else %}<tr><td colspan="7">No supported VMess / VLESS / Trojan / Shadowsocks nodes.</td></tr>{% endfor %}</tbody>
+    </table></div>
     {% endif %}
   </div>
 </section>

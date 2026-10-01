@@ -11,7 +11,7 @@ const batch = [
   'UNKNOWN|Mystery-Test|vless://44444444-4444-4444-8444-444444444444@192.0.2.40:443?security=tls&type=tcp'
 ].join('\n');
 const summary = '4 nodes detected · 3 ready · 1 warning · 0 errors';
-const warning = 'Country Unknown — choose a country or generate as 其他节点.';
+const warning = 'Country unknown. Choose a country or generate in the Other Nodes group.';
 const near = (a, b) => assert(Math.abs(a - b) <= 1, `${a} differs from ${b}`);
 
 async function geometry(page) {

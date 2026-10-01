@@ -60,7 +60,7 @@ assert(base && new URL(base).hostname === '127.0.0.1');
     await nav(page.locator('#generate-yaml'));
     assert.equal(await country.inputValue(),'url-test');assert.equal(await page.locator(prefix+'interval').inputValue(),'0');
     assert.equal(await page.locator(prefix+'url').inputValue(),'http://client.local/check');
-    assert(await page.getByText(/Policy 配置无效/).isVisible());
+    assert(await page.getByText(/Invalid Policy settings/).isVisible());
     const storage=await page.evaluate(()=>localStorage.getItem('clash-yaml-manager.draft.v1'));
     assert(!storage.includes('client.local') && !storage.includes('policy_country_groups'));
     await page.locator(prefix+'interval').fill('300');

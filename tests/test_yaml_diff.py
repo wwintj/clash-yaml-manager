@@ -131,7 +131,8 @@ def test_preview_generate_validation_parity_no_secret_traceback(web,logged_in,ca
     if case=='extension':payload['yaml_file']=(io.BytesIO(source.encode()),'secret.txt')
     actual=post(logged_in,'/process',payload)
     assert actual.status_code==400
-    assert preview.json['error'] in actual.text or all(e in actual.text for e in preview.json['error'].split(' 第 '))
+    from core.ui import display_message
+    assert display_message(preview.json['error']) in actual.text or all(display_message(e) in actual.text for e in preview.json['error'].split(' 第 '))
     assert not list(Path(web.DIR_OUTPUTS).iterdir())
     assert all(secret not in caplog.text for secret in ('PRIVATE-invalid','PRIVATE-body','PRIVATE-policy'))
     assert 'Traceback' not in preview.text and str(web.BASE_DIR) not in preview.text

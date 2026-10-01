@@ -33,8 +33,8 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   const proxy=page.locator('#proxy-health');assert.equal(await proxy.locator('#proxy-defaults').count(),0);
   assert(await proxy.locator('#proxy-settings').isVisible());
   await proxy.locator('#proxy-scope').selectOption('custom');assert(await proxy.locator('#proxy-custom-fields').isVisible());
-  assert.equal(await proxy.getByRole('link',{name:'Manage Global Defaults in Settings'}).getAttribute('href'),'/settings#health');
-  await proxy.getByRole('link',{name:'Manage Global Defaults in Settings'}).click();
+  assert.equal(await proxy.getByRole('link',{name:'Global Defaults in Settings'}).getAttribute('href'),'/settings#health');
+  await proxy.getByRole('link',{name:'Global Defaults in Settings'}).click();
   assert(page.url().endsWith('/settings#health'));assert(await page.locator('#health').isVisible());
   const oldUrl=await page.locator('#global-probe-url').inputValue();
   await page.locator('#global-probe-url').fill('https://user:REJECTED_CREDENTIAL@8.8.8.8/');

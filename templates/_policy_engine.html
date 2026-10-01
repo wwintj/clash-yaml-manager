@@ -1,7 +1,7 @@
 <section class="terminal-panel mb-4" aria-label="Policy Engine"><div class="panel-inner">
   <h2 class="panel-title">Policy Engine</h2>
-  <p class="helper-text">Preserve 保留 YAML 既有組行為；Select 手動選擇；URL-Test 選擇較低延遲候選；Fallback 依序備援；Load-Balance 分配流量。</p>
-  <p class="form-text">{% if fixed_editor %}Health-aware filtering below is Off by default and can optionally exclude fresh Proxy UNHEALTHY candidates with fail-open.{% else %}Health observations do not automatically remove nodes in this version.{% endif %} 此處只生成客戶端策略，不執行伺服器健康檢查。</p>
+  <p class="helper-text">Preserve keeps existing YAML group behavior; Select chooses manually; URL-Test prefers lower latency; Fallback uses ordered backups; Load-Balance distributes traffic.</p>
+  <p class="form-text">{% if fixed_editor %}Health-aware filtering below is Off by default and can optionally exclude fresh Proxy UNHEALTHY candidates with fail-open.{% else %}Health observations do not automatically remove nodes in this version.{% endif %} These controls generate client policies; they do not run server health checks.</p>
   <div class="row g-3">
   {% for scope, label in [('country_groups', 'Country Groups'), ('special_groups', 'Special Groups')] %}
     {% set prefix = 'policy_' + scope + '_' %}

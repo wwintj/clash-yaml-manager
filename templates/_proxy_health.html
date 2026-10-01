@@ -15,7 +15,7 @@
   <div id="global-proxy-summary" class="proxy-engine-card mb-4">
     <h4 class="panel-title">GLOBAL PROXY DEFAULTS</h4>
     <p>Using global defaults: {{ proxy_health.global_settings.url }} · Expected status {{ proxy_health.global_settings.expected_status }} · Timeout {{ proxy_health.global_settings.timeout_ms }} ms</p>
-    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal">Manage Global Defaults in Settings</a>
+    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal">Global Defaults in Settings</a>
   </div>
   <form id="proxy-settings" method="POST" action="{{ url_for('fixed.proxy_action', key=entry.id, operation='settings') }}" class="mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -45,7 +45,7 @@
     {% set health_schedule = proxy_health %}{% include '_health_schedule_status.html' %}
     <p>Last Proxy Check: {{ proxy_health.check_display }} · Active target: {{ proxy_health.effective.url }} · Expected: {{ proxy_health.effective.expected_status }}</p>
   </div>
-  <table class="proxy-health-table"><thead><tr>{% for title in ['Node','Protocol','Endpoint','Proxy','TCP Latency','Proxy Latency','Endpoint Failures','Proxy Failures','Last Proxy Check'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
+  <div class="table-scroll" role="region" aria-label="Subscription status table" tabindex="0"><table class="proxy-health-table"><thead><tr>{% for title in ['Node','Protocol','Endpoint','Proxy','TCP Latency','Proxy Latency','Endpoint Failures','Proxy Failures','Last Proxy Check'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
     <tbody>{% for node in proxy_health.rows %}<tr>
       <td data-label="Node">{{ node.name }}</td><td data-label="Protocol">{{ node.protocol|upper }}</td>
       <td data-label="Endpoint"><span class="health-badge health-{{ node.endpoint_status }}">{{ node.endpoint_status|upper }}</span></td>
@@ -53,7 +53,7 @@
       <td data-label="TCP Latency">{{ node.tcp_latency_display }}</td><td data-label="Proxy Latency">{{ node.proxy_latency_display }}</td>
       <td data-label="Endpoint Failures">{{ node.endpoint_failures }}</td><td data-label="Proxy Failures">{{ node.consecutive_failures }}</td>
       <td data-label="Last Proxy Check">{{ node.proxy_check_display }}</td>
-    </tr>{% else %}<tr><td colspan="9">No supported VMess/VLESS nodes.</td></tr>{% endfor %}</tbody>
-  </table>
+    </tr>{% else %}<tr><td colspan="9">No supported VMess / VLESS / Trojan / Shadowsocks nodes.</td></tr>{% endfor %}</tbody>
+  </table></div>
   {% endif %}
 </div></section>

@@ -247,7 +247,7 @@ def test_login_rate_limit_429_retry_after_and_spoofed_xff(web, client):
         response = post(client, '/login', {'password': 'wrong'}, headers={'X-Forwarded-For': f'192.0.2.{i}'})
         assert response.status_code == (302 if i < 4 else 429)
     assert response.headers['Retry-After'] == '900'
-    assert '登录尝试过多' in response.get_data(as_text=True)
+    assert 'Too many login attempts' in response.get_data(as_text=True)
     assert post(client, '/login', {'password': 'test 密码'}).status_code == 429
 
 

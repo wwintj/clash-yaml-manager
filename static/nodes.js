@@ -57,7 +57,7 @@
       select.replaceChildren(new Option('Auto detect', ''));
       for (const [code, info] of Object.entries(countries)) {
         if (!matchesCountry(code, info, query) && code !== value) continue;
-        select.add(new Option(`${info.emoji} ${code} · ${info.english} / ${info.chinese}`, code));
+        select.add(new Option(`${info.emoji} ${code} · ${info.english}`, code));
       }
       select.value = value;
     }
@@ -99,10 +99,10 @@
         nameBox.append(name);
         const countryBox = element('div', 'Country', 'preview-country');
         const search = element('input', '', 'country-search form-control terminal-input mb-1');
-        search.type = 'search'; search.placeholder = 'Search ISO / English / 中文'; search.setAttribute('aria-label','Search preview country');
+        search.type = 'search'; search.placeholder = 'Search country / ISO'; search.setAttribute('aria-label','Search preview country');
         const select = element('select', '', 'form-select terminal-select'); select.setAttribute('aria-label','Preview country');
         fillCountries(select, '', record.country); countryBox.append(search, select);
-        const info = element('div', '', 'preview-info'); info.append(element('div', 'Protocol: ' + record.protocol), element('div', 'Status: ' + record.status), element('div', 'Source: ' + record.source), element('small', record.message));
+        const info = element('div', '', 'preview-info'); info.append(element('div', 'Protocol: ' + record.protocol), element('div', 'Status: ' + record.status), element('div', 'Source: ' + record.source), element('small', root.displayMessage(record.message)));
         const action = element('button', 'Apply edit', 'preview-action btn btn-outline-terminal btn-terminal'); action.type = 'button';
         function edit(field, value) {
           root.nodeOverrides[record.key] = {...root.nodeOverrides[record.key], [field]:value};
@@ -124,12 +124,12 @@
         const response = await fetch('/parse-nodes', {method:'POST', body:data, credentials:'same-origin'});
         if (response.redirected || !response.headers.get('content-type')?.includes('application/json')) throw Error('Session or CSRF expired. Draft saved; refresh and log in again.');
         const result = await response.json();
-        if (!response.ok) throw Error(result.error || 'Parse failed.');
+        if (!response.ok) throw Error(root.displayMessage(result.error) || 'Parse failed.');
         if (start !== revision) { summary.textContent = 'Changes not parsed yet'; return; }
         render(result.nodes);
         const count = status => result.nodes.filter(n => n.status === status).length;
         summary.textContent = `${result.nodes.length} nodes detected · ${count('Ready')} ready · ${count('Warning')} warning · ${count('Error')} errors`;
-      } catch (error) {summary.textContent = error.message;}
+      } catch (error) {summary.textContent = root.displayMessage(error.message);}
       finally {parseButton.disabled = false;}
     });
     if (diffButton) diffButton.addEventListener('click', async () => {
@@ -151,7 +151,7 @@
         }
         const result = await response.json();
         if (start !== revision) return;
-        if (!response.ok || !result.ok) throw Error(result.error || 'YAML preview failed.');
+        if (!response.ok || !result.ok) throw Error(root.displayMessage(result.error) || 'YAML preview failed.');
         diffStatus.textContent = result.changed ? 'Changed' : 'No YAML changes.';
         const counts = result.summary;
         diffSummary.textContent = `Old nodes: ${counts.old_node_count} · New nodes: ${counts.new_node_count} · Groups: ${counts.group_count} · Rules: ${counts.rule_count}`;

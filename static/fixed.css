@@ -1,55 +1,54 @@
-.fixed-table { width:100%; table-layout:fixed; font-size:.8rem; }
-.fixed-table th, .fixed-table td { padding:.65rem; border-bottom:1px solid #343434; vertical-align:top; overflow-wrap:anywhere; }
+.fixed-table { width:100%; table-layout:fixed; font-size:var(--font-size-sm); }
+.fixed-table th, .fixed-table td { padding:var(--space-3); border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:anywhere; }
 .fixed-table th:nth-child(6) { width:23%; }
 .fixed-table th:last-child { width:20%; }
-.fixed-actions { display:flex; flex-wrap:wrap; gap:.4rem; }
+.fixed-actions { display:flex; flex-wrap:wrap; gap:var(--space-2); }
 .fixed-actions form { margin:0; }
-.fixed-url { width:100%; min-width:0; text-overflow:ellipsis; margin-bottom:.5rem; }
+.fixed-url { font-family:var(--font-mono); width:100%; min-width:0; text-overflow:ellipsis; margin-bottom:var(--space-2); }
 .copy-status { display:block; overflow-wrap:anywhere; }
 @media (max-width:767px) {
   .fixed-table, .fixed-table tbody, .fixed-table tr, .fixed-table td { display:block; width:100%; }
   .fixed-table thead { display:none; }
-  .fixed-table tr { margin-bottom:1rem; border:1px solid #343434; }
-  .fixed-table td::before { content:attr(data-label); display:block; color:#a0a0a0; margin-bottom:.3rem; }
+  .fixed-table tr { margin-bottom:var(--space-4); border:1px solid var(--line); }
+  .fixed-table td::before { content:attr(data-label); display:block; color:var(--muted); margin-bottom:var(--space-1); }
 }
 .external-source .form-label { display: block; }
 .external-source input, .external-source select { max-width: 100%; min-width: 0; }
-.source-status { color: var(--green, #82e7b3); font-weight: 600; }
-.source-warning { color: #f3ce7b; overflow-wrap: anywhere; }
+.source-status { color: var(--success); font-weight: 600; }
+.source-warning { color: var(--warning); overflow-wrap: anywhere; }
 .health-mode { width: auto; max-width: 100%; min-width: 0; }
-.health-table { width: 100%; table-layout: fixed; font-size: .8rem; }
-.health-table th, .health-table td { padding: .65rem; border-bottom: 1px solid #343434; vertical-align: top; overflow-wrap: anywhere; }
+.health-table { width: 100%; table-layout: fixed; font-size: var(--font-size-sm); }
+.health-table th, .health-table td { padding: var(--space-3); border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
 .health-table th:first-child { width: 23%; }
-.health-badge { font-size: .75rem; border: 1px solid currentColor; border-radius: .25rem; padding: .1rem .3rem; }
-.health-healthy { color: #82e7b3; }
-.health-suspect { color: #f3ce7b; }
-.health-unhealthy { color: #ed9292; }
-.health-unknown { color: #a0a0a0; }
+.health-badge { border-color: currentColor; }
+.health-healthy { color: var(--success); }
+.health-suspect { color: var(--warning); }
+.health-unhealthy { color: var(--danger); }
+.health-unknown { color: var(--muted); }
 .health-unsupported { color: #bba8e8; }
-.health-error { display: block; margin-top: .4rem; }
-.proxy-engine-card { border: 1px solid #343434; padding: 1rem; overflow-wrap: anywhere; }
+.health-error { display: block; margin-top: var(--space-2); }
+.proxy-engine-card { border-radius: var(--radius); background: var(--surface-raised); border: 1px solid var(--line); padding: var(--space-4); overflow-wrap: anywhere; }
 .proxy-engine-card code { overflow-wrap: anywhere; }
-.proxy-settings-grid { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.proxy-settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); }
 .proxy-settings-grid label { min-width: 0; }
-.proxy-health-table { width: 100%; table-layout: fixed; font-size: .72rem; }
-.proxy-health-table th, .proxy-health-table td { padding: .5rem .35rem; border-bottom: 1px solid #343434; vertical-align: top; overflow-wrap: anywhere; }
+.proxy-health-table { width: 100%; table-layout: fixed; font-size: var(--font-size-sm); }
+.proxy-health-table th, .proxy-health-table td { padding: var(--space-3); border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
 .proxy-health-table th:first-child { width: 20%; }
 @media (max-width: 991px) { .proxy-settings-grid { grid-template-columns: 1fr; } }
 @media (max-width: 767px) {
   .health-table, .health-table tbody, .health-table tr, .health-table td { display: block; width: 100%; }
   .health-table thead { display: none; }
-  .health-table tr { border: 1px solid #343434; margin-bottom: 1rem; }
-  .health-table td::before { content: attr(data-label); display: block; color: #a0a0a0; margin-bottom: .3rem; }
+  .health-table tr { border: 1px solid var(--line); margin-bottom: var(--space-4); }
+  .health-table td::before { content: attr(data-label); display: block; color: var(--muted); margin-bottom: var(--space-1); }
   .proxy-health-table, .proxy-health-table tbody, .proxy-health-table tr, .proxy-health-table td { display: block; width: 100%; }
   .proxy-health-table thead { display: none; }
-  .proxy-health-table tr { border: 1px solid #343434; margin-bottom: 1rem; }
-  .proxy-health-table td::before { content: attr(data-label); display: block; color: #a0a0a0; margin-bottom: .3rem; }
+  .proxy-health-table tr { border: 1px solid var(--line); margin-bottom: var(--space-4); }
+  .proxy-health-table td::before { content: attr(data-label); display: block; color: var(--muted); margin-bottom: var(--space-1); }
 }
 .geoip-metadata dd { overflow-wrap:anywhere; }
-.settings-nav { display:flex; flex-wrap:wrap; gap:.5rem; }
-.settings-section { margin-top:1.5rem; scroll-margin-top:1rem; }
-.settings-metadata { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:.6rem 1rem; }
+.settings-section { margin-top:var(--space-5); scroll-margin-top:1rem; }
+.settings-metadata { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:var(--space-3) var(--space-4); }
 .settings-metadata dt, .settings-metadata dd { min-width:0; overflow-wrap:anywhere; margin:0; }
 .settings-probe-form { max-width:960px; }
 .settings-probe-form input, .settings-probe-form select { max-width:100%; min-width:0; }
-@media (max-width:575px) { .settings-metadata { grid-template-columns:minmax(0,1fr); } .settings-metadata dd { margin-bottom:.5rem; } }
+@media (max-width:575px) { .settings-metadata { grid-template-columns:minmax(0,1fr); } .settings-metadata dd { margin-bottom:var(--space-2); } }
