@@ -14,17 +14,24 @@ sources. Multiple sources of each kind are supported (up to 63 external sources)
 Names must be nonblank, 1–128 characters, and distinct within the subscription.
 
 Formats are Auto, Clash / Mihomo YAML, Raw URI List and Base64 URI List. VMess,
-VLESS and Trojan are imported. Raw lists accept blank lines and whole-line `#` comments;
+VLESS, Trojan and Shadowsocks are imported. Raw lists accept blank lines and whole-line `#` comments;
 URI fragments remain node names. Base64 accepts standard/URL-safe alphabets and
 whitespace. Auto detects a YAML mapping with a proxies list, then URI lists, then
 Base64. YAML content types and filename extensions do not decide the format.
 
 Clash imports require nonblank name/type/server, ports 1–65535 (not booleans),
-and UUID for VMess/VLESS or a nonempty string password for Trojan. Trojan passwords
-are never stripped. Existing VMess/VLESS plain options (TLS, WebSocket, Reality,
+and UUID for VMess/VLESS or a nonempty string password for Trojan/SS; SS also requires a nonempty
+string cipher. Passwords and SS ciphers are never stripped or normalized. Existing VMess/VLESS plain options (TLS, WebSocket, Reality,
 ALPN, UDP and fingerprints) are retained unchanged. Trojan imports validate and
 retain the explicit TCP/WS mapping subset documented in [Trojan Protocol](TROJAN_PROTOCOL.md);
 unknown Trojan fields/transports fail, without weakening the general YAML defenses.
+Shadowsocks imports retain unknown plain extra fields and reject plugin/obfs
+fields, including empty values. There is no cipher whitelist or UUID requirement
+for SS; optional UDP must be boolean. URI queries are rejected, with explicit
+plugin errors for Manual inputs and fixed source failures for External inputs.
+See [Shadowsocks Protocol](SHADOWSOCKS_PROTOCOL.md) for SIP002 userinfo and legacy
+whole-authority Base64, percent-decoding and password-preservation rules. SS is
+development functionality on main, not yet included in Stable v1.2.1.
 Unsupported protocols are skipped with a count warning; zero supported nodes is an error. The
 safe YAML loader rejects object construction; structural limits reject cycles,
 deep nesting, non-string keys and oversized alias expansion. Payloads are limited
