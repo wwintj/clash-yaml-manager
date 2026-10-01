@@ -10,6 +10,14 @@ from conftest import ROOT
 from core.state import StateError, read_json
 
 
+def unchanged_metadata(path):
+    # Reads may update filesystem atime; that is not an application write.
+    value = path.lstat()
+    return tuple(getattr(value, field) for field in (
+        'st_mode', 'st_ino', 'st_dev', 'st_nlink', 'st_uid', 'st_gid',
+        'st_size', 'st_mtime_ns', 'st_ctime_ns', 'st_rdev'))
+
+
 @pytest.mark.parametrize('kind', ['fifo', 'directory', 'symlink', 'broken-link', 'corrupt'])
 def test_json_reader_rejects_unsafe_objects_without_mutating_them(tmp_path, kind):
     path = tmp_path / 'state.json'
@@ -23,7 +31,9 @@ def test_json_reader_rejects_unsafe_objects_without_mutating_them(tmp_path, kind
         path.symlink_to(other if kind == 'symlink' else tmp_path / 'missing')
     else:
         path.write_bytes(b'private malformed json')
-    before = path.lstat(), other.read_bytes()
+        # Force a stale access time so reads exercise the original flaky case.
+        os.utime(path, ns=(1, path.stat().st_mtime_ns))
+    before = unchanged_metadata(path), other.read_bytes()
     # A subprocess timeout safely detects a regression to blocking FIFO opens.
     result = subprocess.run([sys.executable, '-c', '''
 from core.state import StateError, read_json
@@ -36,7 +46,7 @@ else:
     raise AssertionError('Unsafe state accepted')
 ''', str(path)], cwd=ROOT, capture_output=True, timeout=3)
     assert result.returncode == 0, result.stderr.decode()
-    assert (path.lstat(), other.read_bytes()) == before
+    assert (unchanged_metadata(path), other.read_bytes()) == before
 
 
 @pytest.mark.parametrize('mode', [0o600, 0o644])
@@ -45,9 +55,9 @@ def test_regular_legacy_json_read_preserves_bytes_permissions_and_inode(tmp_path
     value = {'version': 1, 'value': ' 密码 spaces '}
     path.write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
     path.chmod(mode)
-    before = path.read_bytes(), path.stat()
+    before = path.read_bytes(), unchanged_metadata(path)
     assert read_json(path) == value
-    assert (path.read_bytes(), path.stat()) == before
+    assert (path.read_bytes(), unchanged_metadata(path)) == before
 
 
 @pytest.mark.parametrize('kind', ['fifo', 'broken-link'])
