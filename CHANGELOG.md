@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.3.0 - 2026-10-02
+
 ### Added
 - Preview complete YAML changes before generating, using current inputs and the same output pipeline; private previews do not save files or subscription links.
 - Add optional Generate Merge mode to preserve source nodes and append submitted nodes, with explicit name-conflict errors and saved draft mode; Replace remains the default and Fixed remains Replace only.
