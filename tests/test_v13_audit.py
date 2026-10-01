@@ -154,3 +154,33 @@ def test_v121_update_preserves_runtime_and_copies_new_core_modules(deployment,re
     assert (backup/'.env').read_bytes()==env_before and json.loads((backup/'INSTALLATION.json').read_text())==identity
     assert all((backup/p).read_bytes()==raw for p,raw in before.items() if str(p).startswith(('state/','defaults/')))
     assert all(word not in events.read_text() for word in ('certbot','nginx','telegram','auto_refresh --once','auto_health --once'))
+
+
+def mixed_payload(name):
+    from urllib.parse import quote
+    fragment=quote(name,safe='')
+    return (vmess(ps=name+'-VM')+'\n'+LINK+'#'+fragment+'-VL\n'+TROJAN+'#'+fragment+'-TJ\n'+SS+'#'+fragment+'-SS').encode()
+
+
+@pytest.mark.parametrize('mode', ['before', 'after'])
+def test_mixed_refresh_atomic_commit_failure(store,base,response,clock,monkeypatch,mode):
+    from test_auto_refresh import test_auto_atomic_commit_failure_preserves_revision_and_cache as check
+    response['payload']=mixed_payload('Tokyo-remote')
+    check(store,base,response,clock,monkeypatch,mode)
+    entry=store.list()[0]
+    assert store._payload(entry,entry['sources'][1]['id'])==response['payload']
+    types={node['type'] for node in YAML(typ='safe').load(store.resolve(store.slug(entry)))['proxies']}
+    assert types=={'vmess','vless','trojan','ss'}
+
+
+@pytest.mark.parametrize('mutation', ['read','edit','disable','regenerate','delete','source-disable'])
+def test_mixed_refresh_revision_recheck_outside_lock(store,base,response,clock,monkeypatch,mutation,caplog):
+    import test_auto_refresh as audit
+    response['payload']=mixed_payload('Tokyo-remote')
+    monkeypatch.setattr(audit,'payload',mixed_payload)
+    audit.test_auto_fetch_outside_lock_discards_stale_candidate(store,base,response,clock,monkeypatch,mutation,caplog)
+
+
+def test_empty_source_error_uses_current_protocol_neutral_text():
+    from core.source_errors import SourceError
+    assert str(SourceError('empty'))=='No supported nodes'

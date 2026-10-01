@@ -7,7 +7,7 @@ MESSAGES = {
     'timeout': 'Source request timed out', 'tls': 'TLS verification failed',
     'redirect': 'Invalid or excessive redirects', 'size': 'Response too large',
     'encoding': 'Unsupported response encoding', 'format': 'Unsupported source format',
-    'invalid': 'Invalid source payload', 'empty': 'No supported VMess/VLESS nodes',
+    'invalid': 'Invalid source payload', 'empty': 'No supported nodes',
     'duplicate': 'Duplicate node name', 'config': 'Invalid source configuration',
     'upload': 'Select a node source file',
     'conflict': 'Subscription changed while refreshing. Please retry.',
