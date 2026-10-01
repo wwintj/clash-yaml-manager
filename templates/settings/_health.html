@@ -20,7 +20,7 @@
       <label for="global-probe-status">Expected HTTP Status<input id="global-probe-status" name="global_expected_status" class="form-control terminal-input" type="number" min="100" max="599" value="{{ proxy_defaults.expected_status }}" required></label>
       <label for="global-probe-timeout">Timeout<select id="global-probe-timeout" name="global_timeout_ms" class="form-select terminal-select">{% for value in [proxy_defaults.timeout_ms,3000,5000,8000,10000,15000]|unique %}<option value="{{ value }}" {% if proxy_defaults.timeout_ms == value %}selected{% endif %}>{{ value }} ms</option>{% endfor %}</select></label>
     </div>
-    <button type="submit" class="btn btn-outline-terminal btn-terminal mt-3">Save Global Defaults</button>
+    <button type="submit" class="btn btn-outline-terminal btn-terminal ui-primary mt-3">Save Global Defaults</button>
   </form>
   {% else %}<p class="source-warning" role="status">Proxy health settings unavailable.</p>{% endif %}
   <p class="form-text mt-4">Endpoint Health measures per-subscription TCP reachability. Endpoint/Proxy modes, custom probe settings, automatic intervals and manual checks remain on each Fixed edit page.</p>

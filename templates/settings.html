@@ -3,7 +3,7 @@
 <section class="terminal-panel"><div class="panel-inner">
   <h2 class="panel-title">System Settings</h2>
   <p class="helper-text">Global controls and local status. Subscription-specific settings remain on each Fixed edit page.</p>
-  <nav class="settings-nav ui-nav" aria-label="Settings sections">
+  <nav class="settings-nav ui-nav ui-nav--secondary" aria-label="Settings sections">
     {% for section, label in [('overview','Overview'),('geoip','GeoIP'),('health','Health'),('runtime','Runtime'),('notifications','Notifications')] %}
     <a class="btn btn-outline-terminal btn-terminal" href="#{{ section }}" {% if section == 'overview' %}aria-current="location"{% endif %}>{{ label }}</a>
     {% endfor %}

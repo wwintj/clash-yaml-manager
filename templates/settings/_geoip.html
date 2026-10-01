@@ -12,12 +12,12 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="form-label" for="geoip-file">Choose .mmdb (maximum {{ database_limit }} MiB)</label>
       <input class="form-control terminal-input mb-3" type="file" id="geoip-file" name="geoip_file" accept=".mmdb" required>
-      <button class="btn btn-green btn-terminal" type="submit">Upload / Replace</button>
+      <button class="btn btn-green btn-terminal ui-primary" type="submit">Upload / Replace</button>
     </form>
     {% if database.status != 'Not installed' %}
     <form class="mt-3" method="POST" action="{{ url_for('settings.remove') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-outline-terminal btn-terminal" type="submit">Remove Database</button>
+      <button class="btn btn-danger-terminal btn-terminal btn-sm" type="submit">Remove Database</button>
     </form>{% endif %}
     <p class="form-text mt-3">Uploading or removing a database does not regenerate subscriptions, change URLs or touch Health. New classification occurs on the next save, refresh or normal regeneration.</p>
   </div></section>

@@ -3,7 +3,7 @@
   {% if runtime %}
   <dl class="settings-metadata">
     {% for field, label in [('bind','Application bind'),('port','APP_PORT'),('download_mode','Download URL mode'),('download_base','DOWNLOAD_BASE_URL'),('download_scheme','Download URL scheme'),('https_download','Explicit HTTPS download URL'),('cookie_secure','Secure cookies'),('trust_proxy','Trusted proxy headers'),('upload_retention','Upload retention'),('output_retention','Output retention'),('cleanup_interval','Cleanup interval'),('backup_retention','Backup retention'),('session_lifetime','Session lifetime')] %}
-    <dt>{{ label }}</dt><dd data-runtime="{{ field }}">{{ runtime[field] }}</dd>
+    <dt>{{ label }}</dt><dd{% if field in ['bind','port','download_scheme','upload_retention','output_retention','cleanup_interval','backup_retention','session_lifetime'] %} class="mono"{% endif %} data-runtime="{{ field }}">{{ runtime[field] }}</dd>
     {% endfor %}
     <dt>Managed HTTPS</dt><dd data-runtime="managed_https">{{ runtime.managed_https.status }}</dd>
     {% if runtime.managed_https.domain %}<dt>Managed domain</dt><dd data-runtime="managed_domain">{{ runtime.managed_https.domain }}</dd>{% endif %}

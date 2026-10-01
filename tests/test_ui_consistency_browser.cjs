@@ -35,6 +35,10 @@ async function check(page,name,width,shotSelector) {
     const navs = [...document.querySelectorAll('.ui-nav')].filter(visible).map(nav => {
       const links = [...nav.querySelectorAll('a')];
       return {label:nav.getAttribute('aria-label'),current:links.filter(a => a.hasAttribute('aria-current')).length,
+        containerHeight:nav.getBoundingClientRect().height,gap:parseFloat(getComputedStyle(nav).gap),
+        outerPadding:getComputedStyle(nav).padding,marginBottom:parseFloat(getComputedStyle(nav).marginBottom),
+        parentPadding:getComputedStyle(nav.parentElement).padding,parentHeight:nav.parentElement.getBoundingClientRect().height,
+        marginBefore:parseFloat(getComputedStyle(nav.previousElementSibling).marginBottom),
         height:links.map(a => a.getBoundingClientRect().height),padding:links.map(a => getComputedStyle(a).paddingInline),
         usable:links.every(a => {const r=a.getBoundingClientRect();return r.width>0 && r.left>=0 && r.right<=document.documentElement.clientWidth;})};
     });
@@ -45,10 +49,18 @@ async function check(page,name,width,shotSelector) {
       const range=document.createRange();range.selectNodeContents(e);const text=range.getBoundingClientRect();
       return {label:e.innerText,center:Math.abs((text.top+text.bottom-r.top-r.bottom)/2),
         fits:text.width<=r.width-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)+1,
-        height:r.height,display:s.display,align:s.alignItems,justify:s.justifyContent};
+        height:r.height,paddingX:parseFloat(s.paddingLeft),paddingY:parseFloat(s.paddingTop),
+        role:e.closest('.ui-nav')?(e.closest('.ui-nav--secondary')?'secondary-nav':'main-nav'):
+          e.matches('.btn-sm')?'utility':e.matches('.ui-primary,.btn-lg')?'primary':'standard',
+        display:s.display,align:s.alignItems,justify:s.justifyContent};
     });
     return {overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,fonts,navs,controls,buttons,
       language:document.documentElement.lang,text:document.body.innerText,
+      pageHeight:document.documentElement.scrollHeight,
+      headerHeight:document.querySelector('.app-header')?.getBoundingClientRect().height,
+      panels:[...document.querySelectorAll('.panel-inner')].filter(visible).map(e=>({padding:getComputedStyle(e).padding,height:e.getBoundingClientRect().height,nested:!!e.parentElement.closest('.panel-inner')})),
+      formHeight:document.querySelector('#process-form')?.getBoundingClientRect().height,
+      helpGaps:[...document.querySelectorAll('.form-text:not(p)')].filter(e=>visible(e)&&e.previousElementSibling?.matches('input,select,textarea')).map(e=>parseFloat(getComputedStyle(e).marginTop)),
       shellPadding:parseFloat(getComputedStyle(document.querySelector('.app-shell')).paddingLeft)};
   });
   assert.equal(details.overflow,0,`${name} ${width}: page overflow`);
@@ -60,19 +72,38 @@ async function check(page,name,width,shotSelector) {
     assert.equal(nav.current,1,`${name}: active ${nav.label}`);
     assert(Math.max(...nav.height)-Math.min(...nav.height)<=1,`${name}: nav height`);
     assert.equal(new Set(nav.padding).size,1);assert(nav.usable);
+    const secondary=nav.label==='Settings sections';
+    const expected=width<=575?(secondary?40:42):(secondary?36:40);
+    assert(nav.height.every(height=>Math.abs(height-expected)<=1),`${name}: ${nav.label} density`);
+    assert(nav.gap<=(secondary?6:8),`${name}: compact nav gap`);
+    if(secondary) assert(Math.max(...nav.height)<Math.min(...details.navs.find(n=>n.label==='Main navigation').height),`${name}: secondary nav must be lighter`);
   }
   if(details.controls.length) assert(Math.max(...details.controls)-Math.min(...details.controls)<=1,`${name}: input/select heights`);
   for(const button of details.buttons) {
     assert(button.center<=2,`${name}: text centering ${button.label}: ${button.center}`);
     assert(button.fits,`${name}: button text clipped ${button.label}`);
     assert(['inline-flex','flex'].includes(button.display));assert.equal(button.align,'center');assert.equal(button.justify,'center');
+    assert(button.paddingX>button.paddingY,`${name}: horizontal padding dominates ${button.label}`);
+    if(width<=575) assert(button.height>=40,`${name}: mobile touch target ${button.label}`);
   }
-  audit.push({page:name,width,overflow:details.overflow,navs:details.navs.map(n=>({label:n.label,height:n.height})),controls:details.controls.length,buttons:details.buttons.length});
+  for(const role of ['primary','standard','utility']) {
+    const members=details.buttons.filter(b=>b.role===role);
+    if(!members.length) continue;
+    const heights=members.map(b=>b.height);
+    assert(Math.max(...heights)-Math.min(...heights)<=1,`${name}: ${role} height consistency ${JSON.stringify(members.map(b=>[b.label,b.height]))}`);
+    const expected=role==='primary'?44:role==='utility'?(width<=575?40:32):(width<=575?44:40);
+    assert(heights.every(h=>Math.abs(h-expected)<=1),`${name}: ${role} density`);
+  }
+  assert(details.helpGaps.every(gap=>gap>=4&&gap<=6),`${name}: help stays with its input`);
+  audit.push({page:name,width,overflow:details.overflow,navs:details.navs,controls:details.controls,
+    buttons:details.buttons,pageHeight:details.pageHeight,headerHeight:details.headerHeight,panels:details.panels,formHeight:details.formHeight});
   if([1440,390].includes(width) && shotSelector) {
     await page.screenshot({path:path.join(artifacts,`${name}-${width}-full.png`),fullPage:true});
     const target=page.locator(shotSelector).first();await target.scrollIntoViewIfNeeded();
     if(['generate','fixed-edit','fixed-create','fixed-list'].includes(name)) await page.evaluate(()=>window.scrollTo(0,0));
     await page.screenshot({path:path.join(artifacts,`${name}-${width}.png`)});
+    if(name==='generate') await page.getByRole('navigation',{name:'Main navigation'}).screenshot({path:path.join(artifacts,`main-nav-${width}.png`)});
+    if(name==='settings-overview') await page.getByRole('navigation',{name:'Settings sections'}).screenshot({path:path.join(artifacts,`settings-nav-${width}.png`)});
     // Section detail is readable even when the complete mobile page is very tall.
     await target.screenshot({path:path.join(artifacts,`${name}-${width}-detail.png`)});
   }
@@ -102,6 +133,17 @@ async function check(page,name,width,shotSelector) {
       await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
       await navigate(page,()=>page.locator('#password').press('Enter'));
       await check(page,'generate',width,'#process-form');
+      const mainLinks=page.getByRole('navigation',{name:'Main navigation'}).getByRole('link');
+      const activeLink=mainLinks.first(),inactiveLink=mainLinks.last();
+      const beforeActive=await activeLink.boundingBox();
+      await activeLink.evaluate(e=>e.removeAttribute('aria-current'));
+      const withoutActive=await activeLink.boundingBox();
+      assert(Math.abs(beforeActive.width-withoutActive.width)<=1&&Math.abs(beforeActive.height-withoutActive.height)<=1,'Active styles must not shift geometry');
+      await activeLink.evaluate(e=>e.setAttribute('aria-current','page'));
+      await inactiveLink.focus();assert(await inactiveLink.evaluate(e=>parseFloat(getComputedStyle(e).outlineWidth)>=2));
+      await page.keyboard.press('Tab');assert(await page.evaluate(()=>document.activeElement.matches('button,a,input,select,textarea')));
+      // Compactness must not turn a main form action into an unnecessary full-width block.
+      if(width>=768) assert(await page.locator('#generate-yaml').evaluate(e=>e.getBoundingClientRect().width<e.closest('form').getBoundingClientRect().width*.75));
       const groupLabels=await page.locator('[name=special_groups]').evaluateAll(controls=>controls.map(e=>e.closest('label').innerText.trim()));
       assert.equal(groupLabels.length,8);assert(groupLabels.every(Boolean),'Every policy checkbox must have a visible label');
       // Real Bootstrap modal, keyboard focus, close and non-empty password copy.
@@ -137,6 +179,19 @@ async function check(page,name,width,shotSelector) {
       await page.locator('#subscription-name').fill(`UI audit ${width}`);await upload(page);await page.locator('#batch_nodes').fill(batch);
       await navigate(page,()=>page.locator('#generate-yaml').click());
       const edit=page.url();assert(edit.endsWith('/edit'));await check(page,'fixed-edit',width,'#process-form');
+      // Expand existing local form controls without saving, fetching or probing.
+      assert(await page.locator('#health-settings [data-health-interval]').isHidden());
+      await page.locator('#policy_country_groups_type').selectOption('url-test');
+      await page.locator('#policy_special_groups_type').selectOption('load-balance');
+      await page.locator('#health-mode').selectOption('automatic');
+      await page.locator('#proxy-mode').selectOption('automatic');
+      await page.locator('#proxy-scope').selectOption('custom');
+      assert(await page.locator('#health-interval').isVisible());
+      assert(await page.locator('#proxy-interval').isVisible());
+      await check(page,'fixed-expanded',width,'#process-form');
+      await page.locator('#health-mode').selectOption('off');
+      await page.locator('#proxy-mode').selectOption('off');
+      assert(await page.locator('#health-settings [data-health-interval]').isHidden());
       await page.locator('#add-remote-source').click();await page.locator('#add-uploaded-source').click();
       await check(page,'fixed-source-editor',width,'#external-source-section');
       // Unsaved source cards exercise layout only; never fetch external sources.
@@ -144,6 +199,8 @@ async function check(page,name,width,shotSelector) {
       for(const section of ['#node-health','#proxy-health']) await check(page,section.slice(1),width,section);
       await page.goto(base+'/fixed-subscriptions');await check(page,'fixed-list',width,'.fixed-table');
       const deletion=page.locator('form[data-confirm]').last().locator('button');
+      const editButton=page.getByRole('link',{name:'Edit',exact:true}).last();
+      assert(Math.abs((await deletion.boundingBox()).height-(await editButton.boundingBox()).height)<=1,'Danger utility keeps utility geometry');
       let confirmation;page.once('dialog',async d=>{confirmation=d.message();await d.dismiss();});
       await deletion.click();assert(confirmation?.includes('Delete this fixed subscription?'));
       await page.goto(base+'/settings');
@@ -155,7 +212,7 @@ async function check(page,name,width,shotSelector) {
       }
       assert(await page.locator('#notification-test button').evaluate(e=>e.disabled));
       assert.deepEqual(errors,[]);await context.close();
-      console.log(`PASS UI ${width}: all pages, nav/forms/fonts, active states, button geometry, language, focus, dialogs, no overflow`);
+      console.log(`PASS UI ${width}: all pages, nav/forms/fonts, density hierarchy, active geometry, touch/focus, button geometry, language, focus, dialogs, no overflow`);
     }
     // Server-rendered English authentication/error/help and anchor forms without JS.
     const context=await browser.newContext({javaScriptEnabled:false}),page=await context.newPage();

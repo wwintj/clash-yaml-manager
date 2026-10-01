@@ -46,18 +46,18 @@
 
             <form action="/login" method="POST">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <div class="mb-4">
+              <div class="ui-form-group">
                 <label for="password" class="form-label">ACCESS PASSWORD</label>
                 <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="Enter management password" required autofocus>
-                <div class="form-text mt-2">Enter the management password to continue.</div>
+                <div class="form-text">Enter the management password to continue.</div>
               </div>
-              <button type="submit" class="btn btn-green btn-terminal w-100">Login</button>
+              <button type="submit" class="btn btn-green btn-terminal ui-primary w-100">Login</button>
             </form>
           </div>
         </div>
       </div>
     {% else %}
-      <section class="terminal-panel mb-4">
+      <section class="terminal-panel app-header mb-3">
         <div class="panel-inner">
           <div class="panel-title-row">
             <div>
@@ -65,15 +65,15 @@
               <h1 class="brand-title">Clash YAML Manager</h1>
             </div>
             <div class="ui-actions">
-              <button type="button" class="btn btn-outline-terminal btn-terminal" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</button>
+              <button type="button" class="btn btn-outline-terminal btn-terminal btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</button>
               <form action="/logout" method="POST" class="m-0">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-terminal btn-terminal">Logout</button>
+                <button type="submit" class="btn btn-outline-terminal btn-terminal btn-sm">Logout</button>
               </form>
             </div>
           </div>
 
-          <div class="row g-4">
+          <div class="row g-3">
             <div class="col-6 col-md-3">
               <div class="status-label">Service</div>
               <div class="status-value green">ONLINE</div>
@@ -94,7 +94,7 @@
         </div>
       </section>
 
-      <nav class="ui-nav mb-4" aria-label="Main navigation">
+      <nav class="ui-nav mb-3" aria-label="Main navigation">
         <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Generate YAML</a>
         <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
         <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
@@ -125,11 +125,11 @@
             <span class="panel-subtitle">Upload / Nodes</span>
           </div>
 
-          <div class="ui-actions mb-3"><span id="draft-status" class="form-text" role="status">Draft autosave / 30 days / this browser</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal">Clear Draft</button></div>
+          <div class="ui-actions mb-3"><span id="draft-status" class="form-text" role="status">Draft autosave / 30 days / this browser</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm">Clear Draft</button></div>
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
             {% include '_generator_fields.html' %}
             <label class="form-label">05 / Generate YAML</label>
-            <div class="d-grid">
+            <div class="ui-actions">
               <button type="submit" id="generate-yaml" name="action" value="generate" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
             </div>
           </form>
@@ -161,7 +161,7 @@
             {% endif %}
 
             <p>Expires: <time datetime="{{ result.expires_at }}">{{ result.expires_at }} (UTC)</time></p>
-            <button type="button" class="clear-draft btn btn-outline-terminal btn-terminal mb-3">Clear Draft</button>
+            <button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm mb-3">Clear Draft</button>
             <div class="status-grid mb-4">
               <div class="status-cell">
                 <div class="status-label">Old Nodes Removed</div>
@@ -193,24 +193,24 @@
                     <label class="form-label mb-1" for="download-url">Temporary Link</label>
                     <div class="ui-actions">
                       <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
-                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal">Copy Temporary Link</button>
+                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal btn-sm">Copy Temporary Link</button>
                     </div>
                   </div>
                 </div>
               </div>
             {% endif %}
 
-            <div class="d-flex flex-column flex-md-row gap-3">
+            <div class="ui-actions">
               {% if output_filename %}
-                <a href="{{ file_download_url }}" class="btn btn-green btn-terminal btn-lg flex-fill">Download YAML</a>
+                <a href="{{ file_download_url }}" class="btn btn-green btn-terminal ui-primary">Download YAML</a>
               {% endif %}
 
               {% if upload_filename or output_filename %}
-                <form id="delete-temp-form" action="/delete-temp" method="POST" class="flex-fill">
+                <form id="delete-temp-form" action="/delete-temp" method="POST" class="m-0">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="upload_filename" value="{{ upload_filename }}">
                   <input type="hidden" name="output_filename" value="{{ output_filename }}">
-                  <button type="submit" class="btn btn-danger-terminal btn-terminal btn-lg w-100">Delete Temp Files</button>
+                  <button type="submit" class="btn btn-danger-terminal btn-terminal btn-sm">Delete Temp Files</button>
                 </form>
               {% endif %}
             </div>
@@ -254,7 +254,7 @@
             <span class="panel-subtitle">Usage / Security</span>
           </div>
 
-          <div class="row g-4">
+          <div class="row g-3">
             <div class="col-lg-7">
               <ol class="notes-list">
                 <li>Upload Clash/Mihomo YAML or use the built-in default when no file is selected.</li>
@@ -299,7 +299,7 @@
                 <div class="mb-3">
                   <label class="form-label" for="new_password">New password</label>
                   <input type="password" class="form-control terminal-input" name="new_password" id="new_password" required autocomplete="new-password">
-                  <div class="form-text mt-2">Any non-empty password is accepted. Spaces and Unicode are preserved.</div>
+                  <div class="form-text">Any non-empty password is accepted. Spaces and Unicode are preserved.</div>
                 </div>
                 <div class="mb-2">
                   <label class="form-label" for="confirm_password">Confirm new password</label>
@@ -308,7 +308,7 @@
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-danger-terminal btn-terminal" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-green btn-terminal">Update Password</button>
+                <button type="submit" class="btn btn-green btn-terminal ui-primary">Update Password</button>
               </div>
             </form>
           </div>

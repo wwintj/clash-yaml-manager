@@ -2,16 +2,18 @@
 {% block workspace %}
 <section class="terminal-panel"><div class="panel-inner">
   <div class="panel-title-row"><h2 class="panel-title">{{ 'Edit Fixed Subscription' if entry else 'Create Fixed Subscription' }}</h2></div>
-  {% if entry %}<div class="mb-4"><label class="form-label">Subscription URL</label><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></div>{% endif %}
+  {% if entry %}<div class="ui-form-group"><label class="form-label">Subscription URL</label><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal btn-sm copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></div>{% endif %}
   <form id="process-form" method="POST" enctype="multipart/form-data" data-fixed="true" data-saved-custom="{{ 'true' if saved_custom else 'false' }}">
-    <div class="mb-4"><label class="form-label" for="subscription-name">Name</label><input id="subscription-name" class="form-control terminal-input" name="name" value="{{ fields.name }}" required maxlength="128"></div>
-    <div class="mb-4"><label class="form-label" for="url-prefix">URL Prefix</label><input id="url-prefix" class="form-control terminal-input" name="prefix" value="{{ fields.prefix }}"><div class="form-text">Letters, numbers and hyphens; normalized to 1–64 characters. Changing the prefix invalidates the old URL.</div></div>
+    <div class="ui-form-group"><label class="form-label" for="subscription-name">Name</label><input id="subscription-name" class="form-control terminal-input" name="name" value="{{ fields.name }}" required maxlength="128"></div>
+    <div class="ui-form-group"><label class="form-label" for="url-prefix">URL Prefix</label><input id="url-prefix" class="form-control terminal-input" name="prefix" value="{{ fields.prefix }}"><div class="form-text">Letters, numbers and hyphens; normalized to 1–64 characters. Changing the prefix invalidates the old URL.</div></div>
     {% if saved_custom %}<p class="form-text">Current custom YAML: saved. Leave the upload empty to keep it.</p>{% endif %}
     {% set fixed_editor = true %}
     {% include '_generator_fields.html' %}
     {% include '_health_policy.html' %}
-    <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal">{{ 'Save Changes' if entry else 'Create Fixed Subscription' }}</button>
+    <div class="ui-actions">
+    <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal ui-primary">{{ 'Save Changes' if entry else 'Create Fixed Subscription' }}</button>
     <a href="{{ url_for('fixed.index') }}" class="btn btn-outline-terminal btn-terminal">Back to list</a>
+    </div>
   </form>
   {% if entry %}
   <form id="refresh-all-sources" method="POST" action="{{ url_for('fixed.source_action', key=entry.id) }}" data-source-action><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>

@@ -29,32 +29,32 @@
       <p>Consecutive Failures: {{ saved.consecutive_failures }}</p>
     </div>
     <details class="source-history mb-3"><summary>Recent Refreshes</summary>
-      {% for record in saved.history_display %}<p class="form-text mt-2">{{ record.at_display }} · {{ record.trigger|upper }} · {{ record.result|upper }} · {{ record.node_count }} nodes{% if record.error_display %} · {{ record.error_display }}{% endif %}</p>{% else %}<p class="form-text">No refresh history.</p>{% endfor %}
+      {% for record in saved.history_display %}<p class="form-text">{{ record.at_display }} · {{ record.trigger|upper }} · {{ record.result|upper }} · {{ record.node_count }} nodes{% if record.error_display %} · {{ record.error_display }}{% endif %}</p>{% else %}<p class="form-text">No refresh history.</p>{% endfor %}
     </details>
     {% else %}<p class="form-text">Last successful refresh: {{ saved.success_display }}</p>{% endif %}
     {% if saved.using_cache %}<p class="source-warning">Using last successful data.</p>{% endif %}
     {% if saved.error_display %}<p class="source-warning">{{ saved.error_display }}</p>{% endif %}
     {% for warning in saved.warnings %}<p class="source-warning">{{ warning }}</p>{% endfor %}
     <div class="d-flex flex-wrap gap-2">
-      {% if saved.type == 'remote_url' %}<button type="submit" form="source-{{ saved.id }}-refresh" class="btn btn-outline-terminal btn-terminal" {% if not saved.enabled %}disabled{% endif %}>Refresh</button>{% endif %}
-      <button type="submit" form="source-{{ saved.id }}-{{ 'disable' if saved.enabled else 'enable' }}" class="btn btn-outline-terminal btn-terminal">{{ 'Disable Source' if saved.enabled else 'Enable Source' }}</button>
-      <button type="submit" form="source-{{ saved.id }}-delete" class="btn btn-danger-terminal btn-terminal">Delete Source</button>
+      {% if saved.type == 'remote_url' %}<button type="submit" form="source-{{ saved.id }}-refresh" class="btn btn-outline-terminal btn-terminal btn-sm" {% if not saved.enabled %}disabled{% endif %}>Refresh</button>{% endif %}
+      <button type="submit" form="source-{{ saved.id }}-{{ 'disable' if saved.enabled else 'enable' }}" class="btn btn-outline-terminal btn-terminal btn-sm">{{ 'Disable Source' if saved.enabled else 'Enable Source' }}</button>
+      <button type="submit" form="source-{{ saved.id }}-delete" class="btn btn-danger-terminal btn-terminal btn-sm">Delete Source</button>
     </div>
-    {% else %}{% if error_messages %}<p class="source-warning">No usable saved data. Correct the source and save again.</p>{% endif %}<button type="button" class="remove-source btn btn-danger-terminal btn-terminal">Remove unsaved source</button>{% endif %}
+    {% else %}{% if error_messages %}<p class="source-warning">No usable saved data. Correct the source and save again.</p>{% endif %}<button type="button" class="remove-source btn btn-danger-terminal btn-terminal btn-sm">Remove unsaved source</button>{% endif %}
   </div>
 </section>
 {% endmacro %}
-<div class="mb-4" id="external-source-section">
+<div class="ui-section" id="external-source-section">
   <h3 class="panel-title mb-3">External Node Sources</h3>
   <p class="form-text">VMess / VLESS / Trojan / Shadowsocks. Sources are merged in displayed order. Save fetches enabled remote URLs; failed requests can use unchanged last-good data. Refresh actions use saved settings.</p>
   <div id="external-sources">{% for card in external_cards %}{{ source_card(card.fields, card.saved) }}{% endfor %}</div>
   <input type="hidden" name="sources" id="external-sources-data">
   <div class="d-flex flex-wrap gap-2">
-    <button type="button" id="add-remote-source" class="btn btn-outline-terminal btn-terminal">Add Remote URL</button>
-    <button type="button" id="add-uploaded-source" class="btn btn-outline-terminal btn-terminal">Add Uploaded Source</button>
-    {% if entry %}<button type="submit" form="refresh-all-sources" class="btn btn-outline-terminal btn-terminal">Refresh All Sources</button>{% endif %}
+    <button type="button" id="add-remote-source" class="btn btn-outline-terminal btn-terminal btn-sm">Add Remote URL</button>
+    <button type="button" id="add-uploaded-source" class="btn btn-outline-terminal btn-terminal btn-sm">Add Uploaded Source</button>
+    {% if entry %}<button type="submit" form="refresh-all-sources" class="btn btn-outline-terminal btn-terminal btn-sm">Refresh All Sources</button>{% endif %}
   </div>
-  <p class="form-text mt-2">Auto Refresh is Off by default. A systemd timer checks enabled remote sources every five minutes. Failed refreshes use last-good data and retry with backoff. Refresh actions use saved settings.</p>
+  <p class="form-text">Auto Refresh is Off by default. A systemd timer checks enabled remote sources every five minutes. Failed refreshes use last-good data and retry with backoff. Refresh actions use saved settings.</p>
 </div>
 <template id="remote-source-template">{{ source_card(dict(id='',type='remote_url',name='',url='',format='auto',enabled=true,refresh_interval_seconds=none)) }}</template>
 <template id="uploaded-source-template">{{ source_card(dict(id='',type='uploaded',name='',format='auto',enabled=true)) }}</template>

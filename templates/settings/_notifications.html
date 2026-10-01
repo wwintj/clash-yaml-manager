@@ -14,26 +14,26 @@
   </dl>
   <form id="notification-settings" method="POST" action="{{ url_for('settings.notification_save') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label class="d-block mb-3"><input name="enabled" type="checkbox" {% if notifications.enabled %}checked{% endif %}> Enable Telegram notifications</label>
+    <label class="ui-check-row mb-3"><input name="enabled" type="checkbox" {% if notifications.enabled %}checked{% endif %}> Enable Telegram notifications</label>
     <div class="proxy-settings-grid">
       <label for="telegram-token">Replace Bot Token<input id="telegram-token" name="bot_token" class="form-control terminal-input" type="password" autocomplete="new-password" maxlength="201" value=""><span class="form-text">Blank keeps the saved token. Stored only in private notification state.</span></label>
       <label for="telegram-chat">Replace Chat ID<input id="telegram-chat" name="chat_id" class="form-control terminal-input" type="text" inputmode="numeric" autocomplete="off" maxlength="20" value=""><span class="form-text">Numeric user or negative group ID. Blank keeps the saved destination.</span></label>
     </div>
     <fieldset class="mt-3"><legend class="panel-title">Automatic event categories</legend>
       {% for key,label in [('source_refresh','Source Refresh'),('endpoint_health','Endpoint Health'),('proxy_health','Full Proxy Health'),('scheduler','Scheduler Failures')] %}
-      <label class="d-block mb-2"><input type="checkbox" name="{{ key }}" {% if notifications.events[key] %}checked{% endif %}> {{ label }}</label>
+      <label class="ui-check-row"><input type="checkbox" name="{{ key }}" {% if notifications.events[key] %}checked{% endif %}> {{ label }}</label>
       {% endfor %}
     </fieldset>
-    <button type="submit" class="btn btn-outline-terminal btn-terminal mt-3">Save Settings</button>
+    <button type="submit" class="btn btn-outline-terminal btn-terminal ui-primary mt-3">Save Settings</button>
   </form>
   <form id="notification-test" method="POST" action="{{ url_for('settings.notification_test') }}" class="mt-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-outline-terminal btn-terminal" {% if not notifications.configured %}disabled{% endif %}>Send Test Notification</button>
+    <button type="submit" class="btn btn-outline-terminal btn-terminal btn-sm" {% if not notifications.configured %}disabled{% endif %}>Send Test Notification</button>
     <p class="form-text">Uses saved credentials only, including when disabled. Sends one fixed test message.</p>
   </form>
   <form id="notification-remove" method="POST" action="{{ url_for('settings.notification_remove') }}" class="mt-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-outline-terminal btn-terminal">Remove Credentials</button>
+    <button type="submit" class="btn btn-danger-terminal btn-terminal btn-sm">Remove Credentials</button>
   </form>
   {% else %}<p class="source-warning" role="status">Configuration unavailable. Check private notification state and restore a consistent backup. Other Settings sections remain available.</p>{% endif %}
 </div></section>

@@ -15,7 +15,7 @@
   <div id="global-proxy-summary" class="proxy-engine-card mb-4">
     <h4 class="panel-title">GLOBAL PROXY DEFAULTS</h4>
     <p>Using global defaults: {{ proxy_health.global_settings.url }} · Expected status {{ proxy_health.global_settings.expected_status }} · Timeout {{ proxy_health.global_settings.timeout_ms }} ms</p>
-    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal">Global Defaults in Settings</a>
+    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal btn-sm">Global Defaults in Settings</a>
   </div>
   <form id="proxy-settings" method="POST" action="{{ url_for('fixed.proxy_action', key=entry.id, operation='settings') }}" class="mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

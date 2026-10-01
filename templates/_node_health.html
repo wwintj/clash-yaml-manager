@@ -9,7 +9,7 @@
     <form id="health-settings" action="{{ url_for('fixed.health_action', key=entry.id, operation='settings') }}" method="POST" class="mb-3">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="form-label" for="health-mode">Health Checks</label>
-      <div class="d-flex flex-wrap gap-2">
+      <div class="ui-actions">
         <select id="health-mode" data-health-mode name="mode" class="form-select terminal-select health-mode">
           {% for mode in ['off','manual','automatic'] %}<option value="{{ mode }}" {% if node_health.mode == mode %}selected{% endif %}>{{ mode|capitalize }}</option>{% endfor %}
         </select>

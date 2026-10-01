@@ -16,7 +16,7 @@
         {% endfor %}
       </select>
       <div data-policy-options {% if not automatic %}hidden{% endif %}>
-        <p class="form-text mt-2">Only generated proxy nodes assigned to this managed group become candidates. DIRECT and nested groups are not included. {% if fixed_editor %}Health-aware filtering is separately opt-in; it never ranks candidates.{% else %}Health observations do not rank or remove candidates.{% endif %}</p>
+        <p class="form-text">Only generated proxy nodes assigned to this managed group become candidates. DIRECT and nested groups are not included. {% if fixed_editor %}Health-aware filtering is separately opt-in; it never ranks candidates.{% else %}Health observations do not rank or remove candidates.{% endif %}</p>
         <label class="form-label mt-2" for="{{ prefix }}url">Client test URL</label>
         <input class="form-control terminal-input" name="{{ prefix }}url" id="{{ prefix }}url" type="url" maxlength="2048" value="{{ policy_fields[prefix + 'url'] }}" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
         <div class="form-text">HTTP/HTTPS, including client-local targets. The server never fetches this URL.</div>

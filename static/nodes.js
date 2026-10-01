@@ -103,7 +103,7 @@
         const select = element('select', '', 'form-select terminal-select'); select.setAttribute('aria-label','Preview country');
         fillCountries(select, '', record.country); countryBox.append(search, select);
         const info = element('div', '', 'preview-info'); info.append(element('div', 'Protocol: ' + record.protocol), element('div', 'Status: ' + record.status), element('div', 'Source: ' + record.source), element('small', root.displayMessage(record.message)));
-        const action = element('button', 'Apply edit', 'preview-action btn btn-outline-terminal btn-terminal'); action.type = 'button';
+        const action = element('button', 'Apply edit', 'preview-action btn btn-outline-terminal btn-terminal btn-sm'); action.type = 'button';
         function edit(field, value) {
           root.nodeOverrides[record.key] = {...root.nodeOverrides[record.key], [field]:value};
           root.saveDraft(); dirty();
