@@ -4,14 +4,14 @@
 
 ### Changed
 
-- Unified the Web UI in English, including authentication, Generate help and displayed legacy validation messages, while preserving parser/API/CLI and YAML values.
-- Shared typography, spacing, buttons, forms, panels, alerts and responsive navigation across Login, Generate, Fixed, Health, Diff and Settings.
-- Tightened navigation and control density with separate main navigation, compact tabs, primary actions and inline utilities; reduced oversized panel/form spacing and refined desktop/mobile hierarchy.
+- Unify Web UI labels, help and validation messages in English.
+- Share typography, controls and responsive layouts across Login, Generate, Fixed Subscriptions and Settings.
+- Make navigation, tabs, buttons and forms more compact, with clearer action hierarchy and less panel whitespace.
 
 ### Fixed
 
-- Consistent navigation/control heights within each role, centered button text, visible keyboard focus, labelled password/auxiliary controls and local table/code scrolling on narrow screens.
-- Prevent Endpoint action bars stretching buttons to label height, and let existing hidden attributes govern automatic interval controls without a Bootstrap display override; retain existing check/save logic.
+- Improve button text alignment, keyboard focus, form labels and table/code scrolling on narrow screens.
+- Correct Endpoint automatic interval visibility and prevent action buttons from stretching.
 
 ## v1.3.0 - 2026-10-02
 

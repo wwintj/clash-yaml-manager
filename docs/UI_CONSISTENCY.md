@@ -1,7 +1,8 @@
 # Web UI consistency contract
 
-UI LANGUAGE: ENGLISH. This is main development work for a future patch; VERSION
-and Latest Stable remain 1.3.0 / v1.3.0. No new product capability is introduced.
+UI LANGUAGE: ENGLISH. This contract records the two UI refinement passes.
+VERSION is the version source; README Latest Stable identifies the published
+release. No new business capability is introduced by these presentation changes.
 
 ## Audit and scope
 
