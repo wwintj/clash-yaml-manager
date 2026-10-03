@@ -46,7 +46,7 @@
 {% endmacro %}
 <div class="ui-section" id="external-source-section">
   <h3 class="panel-title mb-3">External Node Sources</h3>
-  <p class="form-text">VMess / VLESS / Trojan / Shadowsocks. Sources are merged in displayed order. Save fetches enabled remote URLs; failed requests can use unchanged last-good data. Refresh actions use saved settings.</p>
+  <p class="form-text">VMess / VLESS / Trojan / Shadowsocks / Hysteria2. Sources are merged in displayed order. Save fetches enabled remote URLs; failed requests can use unchanged last-good data. Refresh actions use saved settings.</p>
   <div id="external-sources">{% for card in external_cards %}{{ source_card(card.fields, card.saved) }}{% endfor %}</div>
   <input type="hidden" name="sources" id="external-sources-data">
   <div class="d-flex flex-wrap gap-2">

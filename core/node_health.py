@@ -56,7 +56,7 @@ def extract(payload, include_config=False):
         proxies = source_parser._plain(data['proxies'])
         nodes = []
         for index, config in enumerate(proxies):
-            if not isinstance(config, dict) or config.get('type') not in ('vmess', 'vless', 'trojan', 'ss'):
+            if not isinstance(config, dict) or config.get('type') not in ('vmess', 'vless', 'trojan', 'ss', 'hysteria2'):
                 continue
             server, port = config.get('server'), config.get('port')
             if not isinstance(server, str) or not server.strip() or type(port) is not int or not 1 <= port <= 65535:
@@ -66,11 +66,14 @@ def extract(payload, include_config=False):
                 name = 'Node ' + str(index + 1)
             # Names are display data, but must not smuggle endpoint/credentials
             # into the observational table. The original YAML is never modified.
-            credential = config.get('password' if config['type'] in ('trojan', 'ss') else 'uuid')
+            credential = config.get('password' if config['type'] in ('trojan', 'ss', 'hysteria2') else 'uuid')
+            obfs_password = config.get('obfs-password') if config['type'] == 'hysteria2' else None
             if (server in name or name.strip() == str(port)
                     or isinstance(credential, str) and credential and (credential in name or
-                        config['type'] in ('trojan', 'ss') and credential.strip() and credential.strip() in name)
-                    or re.search(r'(?i)(?:https?://|vmess://|vless://|trojan://|ss://|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', name)):
+                        config['type'] in ('trojan', 'ss', 'hysteria2') and credential.strip() and credential.strip() in name)
+                    or isinstance(obfs_password, str) and obfs_password and
+                        (obfs_password in name or obfs_password.strip() and obfs_password.strip() in name)
+                    or re.search(r'(?i)(?:https?://|vmess://|vless://|trojan://|ss://|hysteria2://|hy2://|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', name)):
                 name = 'Node ' + str(index + 1)
             node = dict(fingerprint=fingerprint(config), name=name, protocol=config['type'], server=server, port=port)
             if include_config:

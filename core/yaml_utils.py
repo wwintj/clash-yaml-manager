@@ -224,6 +224,12 @@ def validate_new_nodes(new_nodes: Any) -> List[str]:
             errors.append(f"第 {i} 个节点缺失 password 字段。")
         if node.get('type') == 'ss' and (not isinstance(node.get('cipher'), str) or node['cipher'] == ''):
             errors.append(f"第 {i} 个节点缺失 cipher 字段。")
+        if node.get('type') == 'hysteria2':
+            from core.parser import validate_hysteria2_options
+            try:
+                validate_hysteria2_options(node)
+            except ValueError:
+                errors.append(f"第 {i} 个节点 Hysteria2 配置无效。")
 
     return errors
 

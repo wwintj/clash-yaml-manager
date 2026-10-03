@@ -15,7 +15,7 @@ from core.countries import COUNTRY_MAPPING, detect_country
 # ==========================================
 # 辅助函数
 # ==========================================
-SUPPORTED_URI_SCHEMES = ('vmess://', 'vless://', 'trojan://', 'ss://')
+SUPPORTED_URI_SCHEMES = ('vmess://', 'vless://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://')
 
 
 def mask_sensitive(value: str) -> str:
@@ -23,6 +23,9 @@ def mask_sensitive(value: str) -> str:
     if not value:
         return ""
 
+    for scheme in ('hysteria2://', 'hy2://'):
+        if value.lower().startswith(scheme):
+            return scheme + '***'
     if value.lower().startswith("ss://"):
         return "ss://***"
 
@@ -452,6 +455,164 @@ def parse_ss_link(link: str, display_name: str) -> Dict[str, Any]:
         raise SSValidationError() from None
 
 
+class Hysteria2ValidationError(ValueError):
+    """A fixed diagnostic; never carry URI, auth or obfuscation credentials."""
+    def __init__(self):
+        super().__init__('Invalid Hysteria2 URI or configuration. Check supported fields, encoding and ports.')
+
+
+def hysteria2_ports(value: str) -> Tuple[int, str]:
+    """Official comma/range syntax, bounded by the pinned engine's 28 segments."""
+    if not isinstance(value, str) or not value or len(value) > 512:
+        raise Hysteria2ValidationError()
+    segments = value.split(',', 28)
+    if len(segments) > 28:
+        raise Hysteria2ValidationError()
+    normalized, first, total = [], None, 0
+    for segment in segments:
+        if not re.fullmatch(r'[0-9]+(?:-[0-9]+)?', segment):
+            raise Hysteria2ValidationError()
+        ends = segment.split('-', 1)
+        start, end = parse_port(ends[0]), parse_port(ends[-1])
+        if start > end:
+            raise Hysteria2ValidationError()
+        total += end - start + 1
+        if total > 65535:
+            raise Hysteria2ValidationError()
+        if first is None:
+            first = start
+        normalized.append(str(start) + ('-' + str(end) if len(ends) == 2 else ''))
+    return first, ','.join(normalized)
+
+
+def validate_hysteria2_options(node: Dict[str, Any]) -> None:
+    """Explicit safe subset of Mihomo v1.19.31 Hysteria2Option, offline only."""
+    try:
+        allowed = {'name', 'type', 'server', 'port', 'ports', 'hop-interval', 'password',
+                   'udp', 'obfs', 'obfs-password', 'sni', 'skip-cert-verify',
+                   'fingerprint', 'alpn', 'up', 'down'}
+        if (set(node) - allowed or node.get('type') != 'hysteria2'
+                or not isinstance(node.get('name'), str) or not node['name'].strip()
+                or not isinstance(node.get('server'), str) or not _trojan_host(node['server'])):
+            raise ValueError
+        if 'port' in node:
+            if type(node['port']) is not int:
+                raise ValueError
+            parse_port(node['port'])
+        elif 'ports' not in node:
+            raise ValueError
+        if 'ports' in node:
+            hysteria2_ports(node['ports'])
+        if 'password' in node and not isinstance(node['password'], str):
+            raise ValueError
+        for field in ('udp', 'skip-cert-verify'):
+            if field in node and type(node[field]) is not bool:
+                raise ValueError
+        if 'sni' in node and (not isinstance(node['sni'], str) or not _trojan_host(node['sni'])):
+            raise ValueError
+        if 'obfs' in node:
+            if (node['obfs'] not in ('salamander', 'gecko')
+                    or not isinstance(node.get('obfs-password'), str) or node['obfs-password'] == ''):
+                raise ValueError
+        elif 'obfs-password' in node:
+            raise ValueError
+        if 'fingerprint' in node:
+            value = node['fingerprint']
+            if (not isinstance(value, str) or len(value) > 256
+                    or not re.fullmatch(r'[0-9a-fA-F]{64}|(?:[0-9a-fA-F]{2}:){31}[0-9a-fA-F]{2}', value)):
+                raise ValueError
+        if 'alpn' in node and (not isinstance(node['alpn'], list) or not node['alpn']
+                or len(node['alpn']) > 32 or any(not isinstance(v, str) or not v.strip()
+                                               or len(v) > 255 for v in node['alpn'])):
+            raise ValueError
+        if 'hop-interval' in node:
+            value = node['hop-interval']
+            if 'ports' not in node or type(value) not in (str, int):
+                raise ValueError
+            value = str(value)
+            if not re.fullmatch(r'[0-9]{1,5}(?:-[0-9]{1,5})?', value):
+                raise ValueError
+            ends = value.split('-', 1)
+            if not 5 <= int(ends[0]) <= int(ends[-1]) <= 86400:
+                raise ValueError
+        for field in ('up', 'down'):
+            if field in node:
+                value = node[field]
+                if type(value) not in (str, int) or len(str(value)) > 32:
+                    raise ValueError
+                # Go/RE2 \s is ASCII; Python's \s also accepts Unicode spaces,
+                # which the pinned engine would silently treat as zero bandwidth.
+                match = re.fullmatch(r'([0-9]+)(?:[ \t\n\f\r]*([KMGT]?)([Bb])ps)?', str(value))
+                if not match or int(match[1]) <= 0:
+                    raise ValueError
+                multiplier = 1000 ** ('KMGT'.find(match[2]) + 1) if match[2] else 1
+                if match[2] is None:
+                    multiplier = 1000000  # Bare numeric bandwidth is Mbps.
+                if int(match[1]) * multiplier > 2**64 - 1:
+                    raise ValueError
+    except (ValueError, TypeError, UnicodeError):
+        raise Hysteria2ValidationError() from None
+
+
+def parse_hysteria2_link(link: str, display_name: str) -> Dict[str, Any]:
+    """Official Hysteria2/HY2 sharing URI mapped to the pinned Mihomo subset."""
+    try:
+        if (not link.startswith(('hysteria2://', 'hy2://')) or len(link) > 65536
+                or any(c.isspace() or ord(c) < 32 or ord(c) == 127 or c == '\\' for c in link)
+                or re.search(r'%(?![0-9a-fA-F]{2})', link)):
+            raise ValueError
+        link.encode('utf-8')  # Reject lone surrogates without exposing them.
+        parsed = urllib.parse.urlsplit(link)
+        if parsed.path not in ('', '/') or parsed.netloc.count('@') > 1:
+            raise ValueError
+        urllib.parse.unquote(parsed.fragment, errors='strict')
+        userinfo, separator, authority = parsed.netloc.rpartition('@')
+        if not separator:
+            authority = parsed.netloc
+        # Avoid urllib.port, which cannot parse official multi-port addresses.
+        if authority.startswith('['):
+            match = re.fullmatch(r'\[([^\[\]]+)\](?::([^:]+))?', authority)
+            if not match or ':' not in match[1]:
+                raise ValueError
+        else:
+            match = re.fullmatch(r'([^:\[\]]+)(?::([^:]+))?', authority)
+            if not match:
+                raise ValueError
+        server, ports = match.groups()
+        if not _trojan_host(server):
+            raise ValueError
+        port, expression = hysteria2_ports(ports) if ports is not None else (443, '443')
+        node = dict(name=display_name, type='hysteria2', server=server, port=port,
+                    udp=True, **{'skip-cert-verify': False})
+        if separator:
+            node['password'] = urllib.parse.unquote(userinfo, errors='strict')
+        if ports is not None and (',' in ports or '-' in ports):
+            node['ports'] = expression
+        if len(parsed.query) > 16384:
+            raise ValueError
+        query = {}
+        for field in parsed.query.split('&', 5) if parsed.query else []:
+            key, equal, value = field.partition('=')
+            key = urllib.parse.unquote(key, errors='strict')
+            value = urllib.parse.unquote(value, errors='strict')
+            if (not equal or key not in ('obfs', 'obfs-password', 'sni', 'insecure', 'pinSHA256')
+                    or key in query or value == '' or len(value) > 4096):
+                raise ValueError
+            query[key] = value
+        for uri_key, yaml_key in (('sni', 'sni'), ('obfs', 'obfs'),
+                                  ('obfs-password', 'obfs-password'), ('pinSHA256', 'fingerprint')):
+            if uri_key in query:
+                node[yaml_key] = query[uri_key]
+        if 'insecure' in query:
+            if query['insecure'] not in ('0', '1'):
+                raise ValueError
+            node['skip-cert-verify'] = query['insecure'] == '1'
+        validate_hysteria2_options(node)
+        return node
+    except (ValueError, TypeError, UnicodeError):
+        raise Hysteria2ValidationError() from None
+
+
 # ==========================================
 # 批量处理层
 # ==========================================
@@ -479,7 +640,7 @@ def split_node_input(line: str, line_num: int):
         link = parts[0]
         name = ''
         try:
-            if link.startswith(('trojan://', 'ss://')):
+            if link.startswith(('trojan://', 'ss://', 'hysteria2://', 'hy2://')):
                 name = urllib.parse.unquote(urllib.parse.urlsplit(link).fragment, errors='strict')
             elif link.startswith('vless://'):
                 name = urllib.parse.unquote(urllib.parse.urlsplit(link).fragment)
@@ -521,8 +682,9 @@ def parse_node_line(line: str, line_num: int = 1, override=None, country_lookup=
         node = (parse_vmess_link(link.split('#', 1)[0], display_name) if link.startswith('vmess://')
                 else parse_ss_link(link, display_name) if link.startswith('ss://')
                 else parse_trojan_link(link, display_name) if link.startswith('trojan://')
+                else parse_hysteria2_link(link, display_name) if link.startswith(('hysteria2://', 'hy2://'))
                 else parse_vless_link(link, display_name))
-    except SSValidationError as error:
+    except (SSValidationError, Hysteria2ValidationError) as error:
         raise ValueError(str(error)) from None
     except Exception:
         raise ValueError('节点解析失败，请检查链接格式、必填字段及端口范围。') from None
@@ -538,7 +700,7 @@ def parse_node_line(line: str, line_num: int = 1, override=None, country_lookup=
 
 def preview_name(name: str, credential: str = '') -> str:
     """Do not echo a credential even if it was embedded in a user-provided remark."""
-    name = re.sub(r'(?i)(?:vmess|vless|trojan|ss)://\S+', '[link hidden]', name)
+    name = re.sub(r'(?i)(?:vmess|vless|trojan|ss|hysteria2|hy2)://\S+', '[link hidden]', name)
     if credential:
         name = name.replace(credential, '[password hidden]')
         if credential.strip() and credential.strip() != credential:
@@ -561,9 +723,12 @@ def parse_batch_nodes(text: str, overrides=None, country_lookup=None) -> Dict[st
                       status='Error', source='Unknown', message='')
         try:
             display_name, node, info = parse_node_line(line, idx, overrides.get(key), country_lookup)
-            credential = node.get('password', '') if node['type'] in ('trojan', 'ss') else ''
-            record.update(name=preview_name(info['raw_name'], credential), country=info['code'],
-                          protocol=node['type'].upper(), source=info['source'])
+            credential = node.get('password', '') if node['type'] in ('trojan', 'ss', 'hysteria2') else ''
+            shown_name = preview_name(info['raw_name'], credential)
+            if node['type'] == 'hysteria2':
+                shown_name = preview_name(shown_name, node.get('obfs-password', ''))
+            record.update(name=shown_name, country=info['code'],
+                          protocol='Hysteria2' if node['type'] == 'hysteria2' else node['type'].upper(), source=info['source'])
             if display_name in seen_names:
                 raise ValueError('节点名称重复，请修改名称以防止冲突。')
             seen_names.add(display_name)

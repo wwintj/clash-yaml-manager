@@ -87,14 +87,21 @@ def _clash(data, country_lookup=None):
     for node in data['proxies']:
         if not isinstance(node, dict) or not isinstance(node.get('type'), str):
             raise SourceError('invalid')
-        if node['type'] not in ('vmess', 'vless', 'trojan', 'ss'):
+        if node['type'] not in ('vmess', 'vless', 'trojan', 'ss', 'hysteria2'):
             skipped += 1
             continue
         if any(not isinstance(node.get(field), str) or not node[field].strip()
-               for field in (('name', 'server') if node['type'] in ('trojan', 'ss') else ('name', 'server', 'uuid'))):
+               for field in (('name', 'server') if node['type'] in ('trojan', 'ss', 'hysteria2') else ('name', 'server', 'uuid'))):
             raise SourceError('invalid')
         try:
-            node['port'] = parser.parse_port(node.get('port'))
+            if node['type'] == 'hysteria2':
+                parser.validate_hysteria2_options(node)
+                if 'port' not in node:
+                    # Engine accepts ports-only. Supply its first port for the
+                    # existing TCP observation and generated-node contracts.
+                    node['port'] = parser.hysteria2_ports(node['ports'])[0]
+            else:
+                node['port'] = parser.parse_port(node.get('port'))
             if node['type'] == 'trojan':
                 parser.validate_trojan_options(node)
             elif node['type'] == 'ss':

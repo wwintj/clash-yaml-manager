@@ -1,4 +1,4 @@
-"""Short-lived, controller-only Mihomo checks of committed VMess/VLESS/Trojan/Shadowsocks proxies."""
+"""Short-lived Mihomo checks of committed VMess/VLESS/Trojan/SS/Hysteria2 proxies."""
 from concurrent.futures import ThreadPoolExecutor
 import http.client
 import io
