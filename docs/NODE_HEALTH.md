@@ -68,7 +68,7 @@ uninstall backup includes `node_health.json` with the rest of private state.
 
 ## TCP probe and SSRF controls
 
-Only VMess/VLESS proxies in the current committed YAML are targets. Extraction
+Only VMess/VLESS/Trojan/Shadowsocks/Hysteria2 proxies in the current committed YAML are targets. Hysteria2 checks observe TCP reachability of the representative port; they do not validate QUIC, port hopping or Hysteria2. Extraction
 requires a nonempty server and integer port 1–65535 (boolean is not an integer);
 future unsupported proxy types are ignored. No browser draft, provider response,
 source payload or re-aggregation supplies check targets. Proxies are parsed with

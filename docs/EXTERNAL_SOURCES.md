@@ -17,7 +17,7 @@ sources. Multiple sources of each kind are supported (up to 63 external sources)
 Names must be nonblank, 1–128 characters, and distinct within the subscription.
 
 Formats are Auto, Clash / Mihomo YAML, Raw URI List and Base64 URI List. VMess,
-VLESS, Trojan and Shadowsocks are imported. Raw lists accept blank lines and whole-line `#` comments;
+VLESS, Trojan, Shadowsocks and Hysteria2 are imported. Hysteria2 validates an explicit pinned subset, including optional string auth; see [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md). Raw lists accept blank lines and whole-line `#` comments;
 URI fragments remain node names. Base64 accepts standard/URL-safe alphabets and
 whitespace. Auto detects a YAML mapping with a proxies list, then URI lists, then
 Base64. YAML content types and filename extensions do not decide the format.

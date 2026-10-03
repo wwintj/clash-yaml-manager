@@ -3,7 +3,7 @@
 Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
 
 Before its Stable publication, test with explicit `--channel main`. It checks whether a saved
-VMess/VLESS proxy can carry Mihomo's HTTPS URL probe to one configured target,
+VMess/VLESS/Trojan/Shadowsocks/Hysteria2 proxy can carry Mihomo's HTTPS URL probe to one configured target,
 including the proxy protocol's authentication and transport path. It is not a
 throughput benchmark, general website guarantee, exit-IP check, ranking or
 policy engine. TCP Endpoint Health remains an independent observation.
@@ -159,7 +159,7 @@ Fixed URL and YAML must remain unchanged throughout this engine-only acceptance
 
 Check Now snapshots the internal Fixed ID, current selected revision and
 `current.yaml` bytes under the Fixed registry lock, then releases it before
-starting Mihomo or network work. Only committed VMess/VLESS configs from that
+starting Mihomo or network work. Only committed VMess/VLESS/Trojan/Shadowsocks/Hysteria2 configs from that
 snapshot are included; no source refresh, provider fetch, unsaved browser draft
 or re-aggregation occurs. More than **256** supported nodes abort before a
 probe or health write. Up to **64** nodes enter each sequential batch, with at
