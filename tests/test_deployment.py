@@ -75,6 +75,10 @@ def deployment(tmp_path):
     (source / 'defaults/default.yaml').write_text('new: template\n')
     (source / '.venv').mkdir()
     (source / '.venv/unwanted').touch()
+    # copy2 preserves old repository timestamps; host temp cleaners must not
+    # mistake these newly-created fixture inputs for stale temporary files.
+    for path in source.rglob('*'):
+        os.utime(path, None)
     (installed / 'app.py').write_text('VERSION = "old"\n')
     (installed / '.env').write_text('APP_PASSWORD_B64=dGVzdA==\nAPP_PORT=8899\nSECRET_KEY=old-key\n')
     for name in ('uploads', 'outputs', 'backups', 'logs', 'defaults'):
@@ -143,6 +147,12 @@ echo 'clashyaml:x:998:998:Clash YAML Manager service:/nonexistent:/usr/sbin/nolo
         script = script.replace('/root/${SERVICE_NAME}-update-backup-', str(tmp_path / 'upgrade-backup-'))
         script = script.replace('/root/${SERVICE_NAME}-backup-', str(tmp_path / 'uninstall-backup-'))
         script = script.replace('${SCRIPT_DIR}/scripts/deploy-common.sh', str(ROOT / 'scripts/deploy-common.sh'))
+        # Whole-deployment doubles use logical time: host suspend/scheduling
+        # must not exhaust readiness while fake commands are instantaneous.
+        # Direct-source deadline tests below keep the real Bash elapsed clock.
+        script = script.replace('set -euo pipefail\n',
+                                'set -euo pipefail\nunset SECONDS\nSECONDS=0\n'
+                                'sleep() { SECONDS=$((SECONDS + $1)); }\n', 1)
         path = tmp_path / ('run-' + script_name)
         path.write_text(script)
         return subprocess.run(['bash', str(path)], cwd=cwd or source, env=env,
@@ -717,3 +727,47 @@ def test_uninstall_legacy_metadata_without_assistant_keeps_external_ownership(de
     assert 'Traceback' not in result.stderr and 'nginx' not in events.read_text() and 'certbot' not in events.read_text()
     backup=next(installed.parent.glob('uninstall-backup-*'))
     assert (backup/'HTTPS_DEPLOYMENT.json').read_bytes()==b'RETAINED_METADATA'
+
+
+def test_deployment_flow_uses_logical_time_when_fake_commands_are_paused(deployment, monkeypatch):
+    """Scheduling/suspend time must not consume a simulated deployment's budget."""
+    _, source, _, events, env, run = deployment
+    # A one-second test-copy budget and a delayed successful double reproduce
+    # the suspend failure without putting the host to sleep or waiting 30s.
+    (source / 'update.sh').write_text((ROOT / 'update.sh').read_text().replace(
+        'wait_for_application 30', 'wait_for_application 1'))
+    monkeypatch.setattr(sys.modules[__name__], 'ROOT', source)
+    commands = Path(env['PATH'].split(os.pathsep)[0])
+    executable(commands / 'curl', '''echo "curl $*" >> "$TEST_EVENTS"
+/bin/sleep 2
+echo 200
+''')
+    result = run()
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'Health check attempt 1/1: PASS' in result.stdout
+    assert 'systemctl is-active --quiet clash-yaml-manager\n' in events.read_text()
+
+
+def test_deployment_copies_survive_age_based_temp_cleanup(tmp_path, monkeypatch, request):
+    """New test inputs must not inherit age eligibility from repository files."""
+    import time
+    inputs = tmp_path / 'aged-inputs'
+    inputs.mkdir()
+    for folder in ('core', 'scripts'):
+        shutil.copytree(ROOT / folder, inputs / folder)
+    for name in ('VERSION', 'mihomoctl.sh', 'httpsctl.sh', 'mihomo-manifest.json',
+                 'requirements.txt', 'update.sh'):
+        shutil.copy2(ROOT / name, inputs / name)
+    old = time.time() - 7 * 86400
+    for path in inputs.rglob('*'):
+        os.utime(path, (old, old))
+    monkeypatch.setattr(sys.modules[__name__], 'ROOT', inputs)
+    _, source, _, _, _, run = request.getfixturevalue('deployment')
+    # Model dirhelper's age predicate only in this fixture's owned source tree.
+    cutoff = time.time() - 3 * 86400
+    for path in source.rglob('*'):
+        if path.is_file() and path.stat().st_atime < cutoff and path.stat().st_mtime < cutoff:
+            path.unlink()
+    result = run()
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'Health check attempt 1/30: PASS' in result.stdout
