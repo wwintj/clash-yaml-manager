@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.3.2 - 2026-10-04
+
 ### Fixed
 
 - Prevent Linux access-time updates from falsely failing the unsafe-auth-object release audit; object identity, structure and symlink targets remain checked.

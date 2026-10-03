@@ -5,7 +5,7 @@
 可上傳現有 YAML，也可直接使用內建預設 YAML。新節點輸入支援 VMess / VLESS / Trojan / Shadowsocks（`vmess://` / `vless://` / `trojan://` / `ss://`）；Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
-**Latest Stable: [v1.3.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.3.1)**
+**Latest Stable: [v1.3.2](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.3.2)**
 <!-- RELEASE:END -->
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。只有明確指定 `--channel main` 才使用開發通道，測試命令見下方 Development / Testing。
