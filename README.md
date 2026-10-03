@@ -10,6 +10,8 @@
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。只有明確指定 `--channel main` 才使用開發通道，測試命令見下方 Development / Testing。
 
+Hysteria2 / HY2 目前僅在 main，輸入契約已凍結為 v1.4.0 候選範圍，尚未包含在 Stable v1.3.2；驗證與實測限制見 [Hysteria2 Final Audit](docs/HYSTERIA2_FINAL_AUDIT_REPORT.md)。
+
 正式版本以頁首 Latest Stable 為準；功能驗收過程與限制見 [開發報告](docs/V1_1_DEVELOPMENT.md)。
 
 ## 功能與文件
@@ -219,7 +221,7 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 - 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。
 - Generate 預設 Replace 刪除舊節點；明確 Merge 保留來源節點並追加新節點。
 - Replace 清理舊節點引用；Merge 保留已有引用，同名或無效引用會拒絕。
-- 新輸入支援 `vmess://`、`vless://`、`trojan://` 和 `ss://`；保留來源其他 proxy 類型不等於支援其 URI 輸入。
+- 新輸入支援 `vmess://`、`vless://`、`trojan://`、`ss://`，main 另支援尚未發布的 `hysteria2://` / `hy2://`；保留來源其他 proxy 類型不等於支援其 URI 輸入。
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。

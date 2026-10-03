@@ -1,12 +1,14 @@
 # Node Health: Endpoint Reachability
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Endpoint Health is included in Stable v1.3.2. Its Hysteria2 targets are main-only,
+frozen for the v1.4.0 candidate; see [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+The [v1.2 Final Audit](FINAL_AUDIT_REPORT.md) preserves historical acceptance.
 
 **This is endpoint reachability, not end-to-end proxy validation.** The result
 answers only whether this VPS can open a TCP connection to the saved node's
-`server:port`. It does not authenticate VMess/VLESS, negotiate TLS/WebSocket/Reality,
-forward traffic, measure throughput or prove that an internet destination works.
-Before Stable publication, use explicit `--channel main` to test.
+`server:port`. It does not authenticate a proxy, negotiate TLS/WebSocket/Reality
+or QUIC, forward traffic, measure throughput or prove that an internet destination works.
+Use explicit `--channel main` to test the unreleased Hysteria2 targets.
 
 ## Use and meaning
 
@@ -125,7 +127,7 @@ systemctl status clash-yaml-manager --no-pager -l
 curl -i http://127.0.0.1:8899/healthz
 ```
 
-The preceding Automatic Refresh build `7051a8a` was verified on a real VPS for
+Historical Node Health phase evidence: the preceding Automatic Refresh build `7051a8a` was verified on a real VPS for
 web readiness, timer/oneshot activation, `systemd-analyze verify` and an empty
 scan. No real scheduled provider refresh was observed there. This Node Health
 phase is verified with controlled fixture probes until a new real-VPS acceptance

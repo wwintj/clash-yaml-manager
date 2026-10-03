@@ -1,6 +1,8 @@
 # Hysteria2 input protocol MVP
 
-Development Phase 1 on main. VERSION and Latest Stable remain **1.3.2 / v1.3.2**;
+**FROZEN: v1.4.0 candidate input contract on main.** No new protocol fields,
+grammar, Health architecture or UI workflow are admitted during the freeze.
+VERSION and Latest Stable remain **1.3.2 / v1.3.2**;
 this feature is not included in that stable release. This is a supported input
 subset, not a general validator for all Clash proxy types.
 
@@ -126,8 +128,11 @@ Realm schemes (`hysteria2+realm://`, `hysteria2+realm+http://`), `realm-opts`, E
 client certificates, advanced QUIC/common fields and arbitrary subscription-only
 extensions are explicitly rejected even where newer engines support them.
 
-This stage does not claim live server, QUIC, latency or real VPS acceptance.
-See the [acceptance report](HYSTERIA2_PROTOCOL_REPORT.md).
+Live Hysteria2 server QUIC, authentication, forwarding, hopping and latency remain
+unverified. The user supplied separate real Ubuntu VPS main-deployment, service,
+healthz and five-unit systemd acceptance; this does not prove Hysteria2 forwarding.
+See the [final freeze audit](HYSTERIA2_FINAL_AUDIT_REPORT.md) and the historical
+[Phase 1 acceptance report](HYSTERIA2_PROTOCOL_REPORT.md).
 
 ## Primary compatibility references
 

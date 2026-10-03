@@ -1,5 +1,9 @@
 # Hysteria2 local pre-push audit
 
+Historical pre-push record. The subsequent feature-freeze audit, fresh validation
+and separately attributed user VPS evidence are in
+[Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+
 Audit date: 2026-10-04. Development main only. VERSION and Latest Stable remain
 **1.3.2 / v1.3.2**. No version bump, release command, tag, GitHub Release,
 candidate workflow dispatch, managed engine installation or real VPS update.

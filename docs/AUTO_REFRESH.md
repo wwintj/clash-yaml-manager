@@ -1,8 +1,10 @@
 # Fixed Subscriptions — Automatic Refresh
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Automatic Refresh is included in Stable v1.3.2. Its Hysteria2 inputs are main-only,
+frozen for the v1.4.0 candidate; see [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+The [v1.2 Final Audit](FINAL_AUDIT_REPORT.md) preserves historical acceptance.
 
-Before Stable publication, use explicit `--channel main` to test. This source worker does not perform health or policy probing; independent
+Use explicit `--channel main` to test the unreleased Hysteria2 inputs. This source worker does not perform health or policy probing; independent
 opt-in health scheduling and policy generation are documented separately.
 
 ## Management
@@ -143,7 +145,7 @@ curl -i http://127.0.0.1:8899/healthz
 ```
 
 Expected: web active (running), timer loaded/enabled/active (waiting), `/healthz`
-HTTP 200 and web build `v1.1.1-dev+<resolved-main-sha>` / DEV. `/healthz` represents
+HTTP 200 and web build `v1.3.2-dev+<resolved-main-sha>` / DEV before v1.4.0 publication. `/healthz` represents
 web readiness only; it does not depend on provider availability or timer state.
 For a manual worker run use `sudo systemctl start clash-yaml-manager-refresh.service`.
 To pause automatic refresh globally use `sudo systemctl stop clash-yaml-manager-refresh.timer`;
@@ -160,3 +162,6 @@ Reload systemd and start the units that belong to the restored deployment.
 Tests use temporary installations and command doubles. Real Ubuntu timer execution
 and this new main SHA on an operator's VPS require the above deployment; local
 fixture/static unit checks do not claim a real VPS result.
+The user-attested deployment of `b68a84b` and timer activation are recorded
+separately in [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md); they do not
+establish a real Hysteria2 provider refresh or proxy forwarding.

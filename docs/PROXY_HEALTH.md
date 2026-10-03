@@ -1,8 +1,10 @@
 # Full Proxy Validation MVP
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Full Proxy Health is included in Stable v1.3.2. Its Hysteria2 targets are main-only,
+frozen for the v1.4.0 candidate; see [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+The [v1.2 Final Audit](FINAL_AUDIT_REPORT.md) preserves historical acceptance.
 
-Before its Stable publication, test with explicit `--channel main`. It checks whether a saved
+Test the unreleased Hysteria2 targets with explicit `--channel main`. It checks whether a saved
 VMess/VLESS/Trojan/Shadowsocks/Hysteria2 proxy can carry Mihomo's HTTPS URL probe to one configured target,
 including the proxy protocol's authentication and transport path. It is not a
 throughput benchmark, general website guarantee, exit-IP check, ranking or

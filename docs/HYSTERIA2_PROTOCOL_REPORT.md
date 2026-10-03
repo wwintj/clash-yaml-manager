@@ -1,5 +1,10 @@
 # Hysteria2 Protocol MVP Acceptance Report
 
+Historical Phase 1 record. Current freeze/readiness and separately attributed
+user VPS evidence are in [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+The original Node inventory of 22 below was a documentation count error;
+the pre-push correction and fresh freeze inventory both count 23 JS/CJS files.
+
 Audit date: 2026-10-04. Development Phase 1 only, on main. No stable release,
 version bump, tag, engine upgrade or real VPS update.
 
