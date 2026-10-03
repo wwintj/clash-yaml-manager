@@ -213,3 +213,86 @@ def test_release_validation_covers_all_deployment_entrypoints(monkeypatch):
     assert any(call[1:] == ['-m', 'pip', 'check'] for call in calls)
     assert any(call[1:] == ['-m', 'pytest', '-q', '-p', 'no:cacheprovider'] for call in calls)
     assert calls[-1] == ['git', 'diff', '--check']
+
+
+def test_validate_only_runs_full_validation_without_mutation(clean_repository, monkeypatch, capsys):
+    root, git = clean_repository
+    (root / 'README.md').write_bytes((ROOT / 'README.md').read_bytes())
+    (root / 'CHANGELOG.md').write_text('# Changelog\n\n## Unreleased\n')
+    (root / 'app.py').write_text('VALUE = 1\n')
+    (root / 'defaults').mkdir()
+    (root / 'defaults/default.yaml').write_bytes((ROOT / 'defaults/default.yaml').read_bytes())
+    git('add', '.')
+    git('commit', '-m', 'validation inputs; no proposed version or release notes')
+    git('tag', '-a', 'v1.0.0', '-m', 'Existing stable')
+    release = dict(tag_name='v1.0.0', body='Immutable existing release')
+    def snapshot():
+        return (git('rev-parse', 'HEAD'), git('show-ref'), git('status', '--porcelain'),
+                {str(path.relative_to(root)): path.read_bytes() for path in root.rglob('*')
+                 if path.is_file() and '.git' not in path.relative_to(root).parts}, dict(release))
+    before = snapshot()
+    def forbidden(*args, **kwargs):
+        pytest.fail('validate-only attempted release planning or publication')
+    for name in ('plan_release', 'execute_release', 'publish_tag', 'api', 'releases'):
+        monkeypatch.setattr(r, name, forbidden)
+    calls = []
+    def validation_command(args, *a, **kw):
+        assert (args[:2] == ['bash', '-n'] or args[0] == 'shellcheck'
+                or args[1:] == ['scripts/build_bootstraps.py', '--check']
+                or args[1:] == ['-m', 'pip', 'check']
+                or args[1:] == ['-m', 'pytest', '-q', '-p', 'no:cacheprovider']
+                or args == ['git', 'diff', '--check']), args
+        calls.append(args)
+        return ''
+    monkeypatch.setattr(r, 'run', validation_command)
+    monkeypatch.setattr(r.shutil, 'which', lambda name: '/test/shellcheck')
+    validation = r.validate
+    monkeypatch.setattr(r, 'validate', lambda: validation(root))
+    r.main(['--validate-only'])
+    assert snapshot() == before
+    assert len([call for call in calls if call[:2] == ['bash', '-n']]) == 8
+    assert ['shellcheck', *r.SHELL_SCRIPTS] in calls
+    assert any(call[1:] == ['scripts/build_bootstraps.py', '--check'] for call in calls)
+    assert any(call[1:] == ['-m', 'pip', 'check'] for call in calls)
+    assert any(call[1:] == ['-m', 'pytest', '-q', '-p', 'no:cacheprovider'] for call in calls)
+    assert calls[-1] == ['git', 'diff', '--check']
+    assert 'Validation: PASS' in capsys.readouterr().out
+
+
+def test_validate_only_returns_nonzero_when_validation_fails(monkeypatch, capsys):
+    def fail():
+        raise r.ReleaseError('Synthetic validation failure')
+    monkeypatch.setattr(r, 'validate', fail)
+    monkeypatch.setattr(r, 'plan_release', lambda *a: pytest.fail('planned a version'))
+    with pytest.raises(SystemExit) as error:
+        r.main(['--validate-only'])
+    assert error.value.code == 1
+    assert 'Synthetic validation failure' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('arguments', [['patch'], ['--version', '1.9.0'],
+                                     ['--dry-run'], ['--publish-tag', 'v1.0.0']])
+def test_validate_only_rejects_all_publication_modes(arguments, monkeypatch):
+    monkeypatch.setattr(r, 'validate', lambda: pytest.fail('ambiguous mode ran validation'))
+    with pytest.raises(SystemExit) as error:
+        r.main(['--validate-only', *arguments])
+    assert error.value.code == 2
+
+
+def test_release_candidate_workflow_is_manual_read_only_and_reuses_validation():
+    from ruamel.yaml import YAML
+    workflow = YAML(typ='safe').load((ROOT / '.github/workflows/release-candidate.yml').read_text())
+    assert set(workflow['on']) == {'workflow_dispatch'}
+    assert workflow['on']['workflow_dispatch']['inputs']['ref']['default'] == 'main'
+    assert workflow['permissions'] == {'contents': 'read'}
+    job = workflow['jobs']['validate']
+    assert job['runs-on'] == 'ubuntu-latest'
+    steps = job['steps']
+    assert steps[0]['with'] == {'ref': "${{ inputs.ref || 'main' }}", 'fetch-depth': 0,
+                                'persist-credentials': False}
+    assert 'Validated commit SHA:' in steps[1]['run'] and 'git rev-parse HEAD' in steps[1]['run']
+    assert 'shellcheck --version' in steps[1]['run']
+    assert steps[2]['with']['python-version'] == '3.12'
+    assert steps[3]['run'] == 'python -m pip install -r requirements-dev.txt'
+    assert steps[4]['run'] == 'python scripts/release.py --validate-only'
+    assert not any('GH_TOKEN' in step.get('env', {}) for step in steps)

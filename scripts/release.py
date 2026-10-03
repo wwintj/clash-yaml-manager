@@ -300,12 +300,18 @@ def main(argv=None):
     parser.add_argument('bump', nargs='?', choices=('patch', 'minor', 'major'))
     parser.add_argument('--version')
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--validate-only', action='store_true',
+                        help='Run full validation only; never plan or publish a release')
     parser.add_argument('--publish-tag', help='Verify an existing annotated tag and publish; used by Actions/recovery')
     args = parser.parse_args(argv)
+    if args.validate_only and (args.bump or args.version or args.dry_run or args.publish_tag):
+        parser.error('--validate-only cannot be combined with release modes.')
     if args.bump and args.version or args.publish_tag and (args.bump or args.version or args.dry_run):
         parser.error('Choose one version mode.')
     try:
-        if args.publish_tag:
+        if args.validate_only:
+            validate()
+        elif args.publish_tag:
             validate()
             print('GitHub Release: ' + publish_tag(args.publish_tag), flush=True)
         else:

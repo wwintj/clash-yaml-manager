@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+
+- Prevent Linux access-time updates from falsely failing the unsafe-auth-object release audit; object identity, structure and symlink targets remain checked.
+
+### Deployment
+
+- Add manual Ubuntu release-candidate validation before stable publication, using the same full checks through a validation-only command.
+
 ## v1.3.1 - 2026-10-03
 
 ### Changed

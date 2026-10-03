@@ -1,0 +1,33 @@
+name: Release candidate validation
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit or ref to validate before publication
+        required: false
+        default: main
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || 'main' }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Show validated commit and available check tools
+        run: |
+          echo "Validated commit SHA: $(git rev-parse HEAD)"
+          shellcheck --version
+          if command -v systemd-analyze >/dev/null 2>&1; then
+            systemd-analyze --version
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Validate without publication
+        run: python scripts/release.py --validate-only
