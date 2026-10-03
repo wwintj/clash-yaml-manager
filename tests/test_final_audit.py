@@ -2,6 +2,7 @@
 import base64
 import json
 import os
+import stat
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +14,17 @@ from test_deployment import deployment
 
 STABLE = '6ff864df84be74755d907032bd9be0f2cd8821de'
 PASSWORD = ' 密码 Ω surrounding spaces '
+
+
+STABLE_STAT_FIELDS = ('st_mode', 'st_ino', 'st_dev', 'st_nlink', 'st_uid',
+                      'st_gid', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+
+
+def stable_lstat(path):
+    """Preserve object identity/structure and link target, excluding access time."""
+    metadata = path.lstat()
+    target = os.readlink(path) if stat.S_ISLNK(metadata.st_mode) else None
+    return tuple(getattr(metadata, field) for field in STABLE_STAT_FIELDS), target
 
 
 def isolated(root, program, env):
@@ -194,12 +206,38 @@ def test_unsafe_auth_object_aborts_update_before_service_or_data_changes(deploym
         other=installed.parent/'outside-auth.json'
         if kind=='symlink':other.write_bytes(b'{"password_hash":"synthetic","auth_version":1}')
         path.symlink_to(other)
-    before=(installed/'.env').read_bytes(),service.read_bytes(),path.lstat()
+    before=(installed/'.env').read_bytes(),service.read_bytes(),stable_lstat(path)
     result=run()
     assert result.returncode!=0
     assert '升级预检失败' in result.stderr
     assert not events.exists()
-    assert ((installed/'.env').read_bytes(),service.read_bytes(),path.lstat())==before
+    assert ((installed/'.env').read_bytes(),service.read_bytes(),stable_lstat(path))==before
+
+
+def test_unsafe_object_snapshot_ignores_only_symlink_access_time(tmp_path, monkeypatch):
+    """Model an atime-only observation without utime also changing ctime."""
+    from types import SimpleNamespace
+    path = tmp_path / 'broken-link'
+    path.symlink_to('missing-auth.json')
+    metadata = path.lstat()
+    observed = {field: getattr(metadata, field) for field in
+                (*STABLE_STAT_FIELDS, 'st_atime', 'st_atime_ns')}
+    original_lstat = Path.lstat
+    monkeypatch.setattr(Path, 'lstat', lambda item: SimpleNamespace(**observed)
+                        if item == path else original_lstat(item))
+    before = stable_lstat(path)
+    observed['st_atime'] += 1
+    observed['st_atime_ns'] += 1_000_000_000
+    assert stable_lstat(path) == before
+    # Every structural field remains protected, including nanosecond times.
+    for field in STABLE_STAT_FIELDS:
+        observed[field] += 1
+        assert stable_lstat(path) != before, field
+        observed[field] -= 1
+    original_readlink = os.readlink
+    monkeypatch.setattr(os, 'readlink', lambda item: 'different-auth.json'
+                        if item == path else original_readlink(item))
+    assert stable_lstat(path) != before
 
 
 def test_complete_route_inventory_auth_and_csrf_boundaries(web, logged_in):
