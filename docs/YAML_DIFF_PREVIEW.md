@@ -60,9 +60,11 @@ generated-side UTF-8 bytes match subsequent Generate output exactly. Preview is
 not a reserved transaction or frozen server snapshot: an administrator replacing
 the default/MMDB or changing inputs between requests can change the result.
 
-Generate retains default Replace and VMess/VLESS/Trojan/Shadowsocks new input, filenames, backups, counts, redirects,
+Generate retains default Replace and shared supported-protocol input, filenames, backups, counts, redirects,
 cleanup, expiry, downloads and `/t/` behavior. Fixed callers still use the same
 shared transformer; no Fixed schema, sources, refresh or policy persistence change.
+Main's [Hysteria2/HY2 subset](HYSTERIA2_PROTOCOL.md) uses this same Diff path and
+is not included in Stable v1.3.2.
 
 ## Default and Custom YAML
 

@@ -46,8 +46,10 @@ const source='proxies: [{name: old-a, type: ss, server: old.example, port: 443, 
    });
    await page.goto(base);await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
    await Promise.all([page.waitForNavigation(),page.locator('#password').press('Enter')]);
-   assert((await page.locator('#batch_nodes').locator('..').innerText()).includes('VMess / VLESS / Trojan / Shadowsocks'));
-   assert((await page.locator('.aux-link').first().getAttribute('placeholder')).includes('ss://'));
+   assert((await page.locator('.status-protocols').innerText()).includes('HYSTERIA2'));
+   assert((await page.locator('#batch_nodes').locator('..').innerText()).includes('VMess / VLESS / Trojan / Shadowsocks / Hysteria2'));
+   const auxPlaceholder=await page.locator('.aux-link').first().getAttribute('placeholder');
+   assert(auxPlaceholder.includes('hysteria2://') && auxPlaceholder.includes('hy2://'));
    await page.locator('#batch_nodes').fill(vmess+'\n'+trojan+'#Tokyo-TJ\nSG|VL|'+vless+'\n'+hy2+'#'+encodeURIComponent(password)+'\n'+hy2+'#'+encodeURIComponent(sentinel)+'\n'+oldSS+'#London-SS');
    await page.locator('.aux-country').first().selectOption('TW');
    await page.locator('.aux-name').first().fill('Aux-HY2');

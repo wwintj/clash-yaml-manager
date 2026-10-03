@@ -61,6 +61,8 @@ only to decimal numbers. `443,5000-6000` becomes `port: 443` and
 for existing generator and TCP observation contracts; the engine uses `ports`
 for hopping. v1.19.31 accepts ports-only configurations without `port`; Clash
 import adds that representative port when it was omitted.
+When Clash supplies both `port` and `ports`, its explicit `port` is preserved;
+Endpoint observes that port, without claiming to validate the hopping range.
 
 Limits: 512 characters, 28 segments, at most 65535 expanded entries. Empty
 segments, reversed ranges, zero, overflow, negatives, slash-separated engine

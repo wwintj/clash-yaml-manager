@@ -97,7 +97,9 @@ rollback path. Runtime directories/files are 0700/0600; lock symlinks, nonregula
 files and unsafe permissions fail closed.
 
 Fetch retains the External Sources SSRF, DNS/IP pinning, redirect, HTTPS CA, direct
-connection, bounded time/body and VMess/VLESS-only parser protections. No proxy
+connection, bounded time/body and supported-protocol parser protections. Main's
+Hysteria2 input subset is documented in [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md)
+and is not included in Stable v1.3.2. No proxy
 environment, cookies, authorization or Referer is forwarded. History contains only
 `at`, `trigger`, `result`, `node_count` and an allowlisted `error` code. Worker logs
 contain counts, internal subscription IDs and results; no source URLs, query tokens,

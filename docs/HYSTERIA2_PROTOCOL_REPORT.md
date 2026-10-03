@@ -3,6 +3,13 @@
 Audit date: 2026-10-04. Development Phase 1 only, on main. No stable release,
 version bump, tag, engine upgrade or real VPS update.
 
+This report preserves the original Phase 1 results and its pending scope decision.
+The subsequent Local 3-Commit Pre-Push Audit request authorizes retaining the
+existing refresh/revision contract while auditing and, after all gates pass,
+pushing main. That decision supersedes the pending decision below; it does not
+change the historical results or claim that source refresh retains its revision.
+Current pre-push results are recorded in [Pre-Push Audit](HYSTERIA2_PRE_PUSH_AUDIT.md).
+
 ## Starting and ending evidence
 
 - START HEAD: `32a77e6777e1fb7706d9ab2afb45d3103363fe14`.

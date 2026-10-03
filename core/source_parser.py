@@ -1,4 +1,4 @@
-"""Offline, bounded imports of VMess/VLESS/Trojan/Shadowsocks nodes; never import base YAML settings."""
+"""Offline, bounded imports of supported nodes; never import base YAML settings."""
 import base64
 import binascii
 import math
