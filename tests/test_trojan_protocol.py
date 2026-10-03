@@ -155,7 +155,7 @@ def test_external_fixed_errors(format,text):
 def test_clash_allowed_mapping_and_skip(format):
     node=parser.parse_trojan_link(TROJAN+'?type=ws&sni=tls.example&host=cdn.example&path=%2Fws','Tokyo')
     node.update(alpn=['http/1.1'], **{'client-fingerprint':'chrome'})
-    result=source_parser.parse(yaml_bytes([node,{'type':'hysteria2','name':'Unsupported'}]),format)
+    result=source_parser.parse(yaml_bytes([node,{'type':'tuic','name':'Unsupported'}]),format)
     assert result['warnings']==['1 unsupported proxies skipped']
     assert result['nodes'][0]==dict(node,name='🇯🇵 Tokyo')
 
