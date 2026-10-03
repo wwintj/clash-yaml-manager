@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.3.1 - 2026-10-03
+
 ### Changed
 
 - Unify Web UI labels, help and validation messages in English.
