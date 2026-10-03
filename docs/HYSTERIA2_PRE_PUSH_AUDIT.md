@@ -101,7 +101,7 @@ measurement is not a live application-startup or throughput benchmark.
 | Final Hysteria2 browser | 1440px and 390px PASS |
 | Final UI consistency/density | 140 live page/width checks PASS |
 | Python compileall / 3.10 syntax | PASS, 103 files; runtime tests use Python 3.12.14 |
-| Node syntax | PASS, 22 files; amended browser file checked again |
+| Node syntax | PASS, 23 files; amended browser file checked again |
 | pip check | PASS |
 | bash -n / ShellCheck 0.11.0 | PASS, all eight shell entrypoints |
 | Bootstrap synchronization / diff checks | PASS |
