@@ -200,7 +200,8 @@ async function check(page,name,width,shotSelector) {
       await page.goto(base+'/fixed-subscriptions');await check(page,'fixed-list',width,'.fixed-table');
       const deletion=page.locator('form[data-confirm]').last().locator('button');
       const editButton=page.getByRole('link',{name:'Edit',exact:true}).last();
-      assert(Math.abs((await deletion.boundingBox()).height-(await editButton.boundingBox()).height)<=1,'Danger utility keeps utility geometry');
+      assert(Math.abs((await deletion.boundingBox()).height-(width<=575?40:32))<=1,'Delete keeps utility geometry');
+      assert(Math.abs((await editButton.boundingBox()).height-(width<=575?44:40))<=1,'Edit keeps standard action geometry');
       let confirmation;page.once('dialog',async d=>{confirmation=d.message();await d.dismiss();});
       await deletion.click();assert(confirmation?.includes('Delete this fixed subscription?'));
       await page.goto(base+'/settings');
