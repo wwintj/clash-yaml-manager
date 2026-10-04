@@ -115,7 +115,37 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
     @views.route('')
     @login_required
     def index():
-        return render_template('fixed_list.html', **context(), entries=[display(r) for r in store.list()])
+        entries = store.list()
+        endpoint = health.summary_many(entries)
+        proxy = proxy_health.summary_many(entries) if proxy_health else {}
+
+        def summary_display(summary):
+            if summary is None or summary['status'] == 'unavailable':
+                return dict(status='unavailable', text='Unavailable')
+            if summary['mode'] == 'off' and summary['status'] == 'off':
+                return dict(status='off', text='Off')
+            counts = summary['counts']
+            parts = [f'{counts.get(state, 0)} {state}' for state in
+                     ('unhealthy', 'suspect', 'unsupported', 'healthy', 'unknown') if counts.get(state, 0)]
+            mode = summary['mode'].capitalize()
+            return dict(status=summary['status'], text=' · '.join(
+                ([mode] if mode != 'Off' else []) + (parts or ['Unknown'])))
+
+        # The overview has its own small projection: no source settings or node
+        # credentials are added to its context or client-side management index.
+        rows = []
+        for entry in entries:
+            row = {key: entry[key] for key in ('id', 'name', 'prefix', 'status', 'node_count')}
+            row.update(public_url=public_url(store.slug(entry)),
+                       external_source_count=len(entry['sources']) - 1,
+                       updated_at_sort=entry['updated_at'],
+                       endpoint_summary=summary_display(endpoint[entry['id']]),
+                       proxy_summary=summary_display(proxy.get(entry['id'])))
+            for field in ('updated_at', 'last_access_at'):
+                row[field + '_display'] = ('Never' if entry[field] is None else
+                    datetime.fromtimestamp(entry[field], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
+            rows.append(row)
+        return render_template('fixed_list.html', **context(), entries=rows)
 
     def form_page(key=None):
         entry = store.get(key) if key else None

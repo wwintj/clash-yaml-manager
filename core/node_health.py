@@ -14,7 +14,7 @@ from core import notification_events, health_schedule, node_probe, source_parser
 from core.node_identity import fingerprint
 from core.refresh_schedule import timestamp
 from core.source_errors import SourceError
-from core.state import StateError, atomic_write, file_lock, read_private_bytes, write_json
+from core.state import LockBusyError, StateError, atomic_write, file_lock, read_private_bytes, write_json
 
 MAX_NODES = 256
 MAX_WORKERS = 16
@@ -141,6 +141,61 @@ def empty_entry():
     return dict(mode='off',last_check_at=None,nodes={},**health_schedule.defaults())
 
 
+def _summary(statuses, *, mode='off', status=None, counts=None):
+    counts = counts if counts is not None else dict.fromkeys(statuses, 0)
+    if status is None:
+        status = ('off' if mode == 'off' else next((state for state in
+            ('unhealthy', 'suspect', 'unsupported', 'healthy', 'unknown')
+            if counts.get(state)), 'unknown'))
+    return dict(mode=mode, counts=counts, status=status)
+
+
+def _summary_many(fixed, entries, locked, read, unavailable, statuses):
+    """Read one auxiliary snapshot against currently selected Fixed revisions.
+
+    Missing observations default to Off. Stale list revisions or unmatchable
+    node configs are Unknown; unavailable auxiliary state is Unavailable.
+    Authoritative Fixed read errors still propagate. No state is pruned/written.
+    """
+    expected = {entry['id']: entry['revision'] for entry in entries}
+    if not expected:
+        return {}
+    summaries = {key: _summary(statuses, status='unknown') for key in expected}
+    # Preserve the existing Fixed -> Health lock order. Keep Fixed locked until
+    # selected YAML bytes are consumed, so revision collection cannot race us.
+    with fixed._locked():
+        registry = fixed._read()['subscriptions']
+        current = {key: registry[key] for key, revision in expected.items()
+                   if key in registry and registry[key]['revision'] == revision}
+        if not current:
+            return summaries
+        try:
+            with locked():
+                data, _ = read()
+        except (OSError, StateError, LockBusyError, unavailable):
+            for key in current:
+                summaries[key] = _summary(statuses, status='unavailable')
+            return summaries
+        for key, snapshot in current.items():
+            observation = data['subscriptions'].get(key, {'mode': 'off', 'nodes': {}})
+            mode = observation['mode']
+            if mode == 'off':
+                summaries[key] = _summary(statuses)
+                continue
+            payload = fixed._content(snapshot, 'current.yaml')
+            try:
+                nodes = extract(payload)
+            except HealthError:
+                summaries[key] = _summary(statuses, mode=mode, status='unknown')
+                continue
+            counts = dict.fromkeys(statuses, 0)
+            for node in nodes:
+                record = observation['nodes'].get(node['fingerprint'])
+                counts[record['status'] if record is not None else 'unknown'] += 1
+            summaries[key] = _summary(statuses, mode=mode, counts=counts)
+    return summaries
+
+
 class NodeHealth(health_schedule.ScheduledHealth):
     notification_kind = 'endpoint_health'
     def __init__(self, fixed, clock=None, probe=None):
@@ -194,6 +249,11 @@ class NodeHealth(health_schedule.ScheduledHealth):
         stale = set(data['subscriptions']) - ids
         for key in stale: del data['subscriptions'][key]
         return bool(stale)
+
+    def summary_many(self, entries):
+        """Return only modes/counts/statuses; never probe or mutate observations."""
+        return _summary_many(self.fixed, entries, lambda: self._locked(blocking=False),
+            self._read, HealthError, ('healthy', 'suspect', 'unhealthy', 'unknown'))
 
     def describe(self, key):
         snapshot, payload = self.fixed.snapshot(key)

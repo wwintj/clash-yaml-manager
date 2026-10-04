@@ -233,6 +233,12 @@ class ProxyHealth(health_schedule.ScheduledHealth):
             del data['subscriptions'][key]
         return bool(stale)
 
+    def summary_many(self, entries):
+        """Strictly local aggregate read; no pruning, engine access or writes."""
+        return node_health._summary_many(self.fixed, entries,
+            lambda: self._locked(self.lock, blocking=False), self._read,
+            ProxyHealthError, ('healthy', 'suspect', 'unhealthy', 'unknown', 'unsupported'))
+
     def describe(self, key):
         snapshot, payload = self.fixed.snapshot(key)
         nodes = node_health.extract(payload)

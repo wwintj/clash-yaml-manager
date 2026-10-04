@@ -4,17 +4,77 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', event => { if (!confirm(form.dataset.confirm)) event.preventDefault(); });
   });
   document.querySelectorAll('.copy-fixed-url').forEach(button => {
+    const input = button.parentElement.querySelector('.fixed-url');
+    const status = button.parentElement.querySelector('.copy-status');
+    const idleText = button.textContent;
+    let resetTimer;
+    let copying = false;
     button.addEventListener('click', async () => {
-      const input = button.parentElement.querySelector('.fixed-url');
-      const status = button.parentElement.querySelector('.copy-status');
+      if (copying) return;
+      copying = true;
+      clearTimeout(resetTimer);
       try {
         await navigator.clipboard.writeText(input.value);
-        status.textContent = 'Copied';
+        button.textContent = 'Copied';
+        status.textContent = 'URL copied.';
+        resetTimer = setTimeout(() => {
+          button.textContent = idleText;
+          status.textContent = '';
+        }, 2000);
       } catch (_) {
-        input.focus(); input.select(); status.textContent = 'Copy unavailable. Select and copy this URL manually.';
+        button.textContent = idleText;
+        input.focus(); input.select();
+        status.textContent = 'Copy failed — select the URL and copy manually.';
+      } finally {
+        copying = false;
       }
     });
   });
+  const toolbar = document.getElementById('fixed-toolbar');
+  if (toolbar) {
+    const search = document.getElementById('fixed-search');
+    const status = document.getElementById('fixed-status');
+    const sort = document.getElementById('fixed-sort');
+    const clear = document.getElementById('fixed-clear');
+    const result = document.getElementById('fixed-result-count');
+    const empty = document.getElementById('fixed-no-results');
+    const region = document.querySelector('.fixed-list-region');
+    const body = region.querySelector('tbody');
+    // Keep the management index deliberately separate from bearer URL inputs.
+    const rows = [...body.rows].map((row, index) => ({
+      row, index, name: row.dataset.name.toLowerCase(), prefix: row.dataset.prefix.toLowerCase(),
+      status: row.dataset.status, nodes: Number(row.dataset.nodeCount), updated: Number(row.dataset.updated)
+    }));
+    function apply() {
+      const query = search.value.trim().toLowerCase();
+      const [field, direction] = sort.value.split('-');
+      const ordered = [...rows].sort((a, b) => {
+        const compared = field === 'name' ? (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) : a[field] - b[field];
+        return (direction === 'desc' ? -compared : compared) || a.index - b.index;
+      });
+      const fragment = document.createDocumentFragment();
+      let visible = 0;
+      for (const item of ordered) {
+        item.row.hidden = !(status.value === 'all' || item.status === status.value) ||
+          !(item.name.includes(query) || item.prefix.includes(query));
+        if (!item.row.hidden) visible++;
+        fragment.append(item.row);
+      }
+      body.append(fragment);
+      result.textContent = `${visible === rows.length ? visible : `${visible} of ${rows.length}`} ${rows.length === 1 ? 'subscription' : 'subscriptions'}`;
+      empty.hidden = visible !== 0;
+      region.hidden = visible === 0;
+      clear.disabled = !search.value && status.value === 'all' && sort.value === 'updated-desc';
+    }
+    search.addEventListener('input', apply);
+    status.addEventListener('change', apply);
+    sort.addEventListener('change', apply);
+    clear.addEventListener('click', () => {
+      search.value = ''; status.value = 'all'; sort.value = 'updated-desc'; apply(); search.focus();
+    });
+    apply();
+    toolbar.hidden = false;
+  }
   document.querySelectorAll('form[data-source-action]').forEach(action => {
     action.addEventListener('submit', event => {
       if (event.defaultPrevented) return;

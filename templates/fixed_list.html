@@ -7,22 +7,40 @@
     <a href="{{ url_for('fixed.create') }}" class="btn btn-green btn-terminal ui-primary">Create Fixed Subscription</a>
   </div>
   <p class="helper-text">Saved subscriptions keep their URL until you change the prefix, regenerate the link, or delete them.</p>
+  {% if entries %}
+  <div id="fixed-toolbar" class="fixed-toolbar" role="group" aria-label="Subscription list controls" hidden>
+    <div class="fixed-search-control"><label for="fixed-search" class="form-label">Search subscriptions</label><input id="fixed-search" type="search" class="form-control terminal-input" placeholder="Search subscriptions..." autocomplete="off"></div>
+    <div class="fixed-status-control"><label for="fixed-status" class="form-label">Status</label><select id="fixed-status" class="form-select terminal-select"><option value="all">All Status</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
+    <div class="fixed-sort-control"><label for="fixed-sort" class="form-label">Sort</label><select id="fixed-sort" class="form-select terminal-select">
+      <option value="updated-desc">Updated — Newest</option><option value="updated-asc">Updated — Oldest</option>
+      <option value="name-asc">Name — A to Z</option><option value="name-desc">Name — Z to A</option>
+      <option value="nodes-desc">Nodes — High to Low</option><option value="nodes-asc">Nodes — Low to High</option>
+    </select></div>
+    <button id="fixed-clear" type="button" class="btn btn-outline-terminal btn-terminal btn-sm" disabled>Clear filters</button>
+  </div>
+  {% endif %}
+  <p id="fixed-result-count" class="helper-text fixed-result-count" role="status" aria-live="polite" aria-atomic="true">{{ entries | length }} {{ 'subscription' if entries | length == 1 else 'subscriptions' }}</p>
   {% if not entries %}
     <p>No fixed subscriptions yet.</p><p>Create your first fixed subscription.</p>
   {% else %}
-  <div class="table-scroll" role="region" aria-label="Subscription status table" tabindex="0"><table class="fixed-table"><thead><tr>{% for title in ['Name','Status','Nodes','Updated','Last Access','Subscription URL','Actions'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
-  <tbody>{% for entry in entries %}<tr>
-    <td data-label="Name">{{ entry.name }}</td>
-    <td data-label="Status"><span class="badge text-bg-secondary">{{ entry.status | upper }}</span></td>
-    <td data-label="Nodes">{{ entry.node_count }}</td>
+  <p id="fixed-no-results" class="fixed-no-results" hidden>No subscriptions match your filters.</p>
+  <div class="table-scroll fixed-list-region" role="region" aria-label="Subscription status table" tabindex="0"><table class="fixed-table"><thead><tr>{% for title in ['Name','Status','Nodes / Sources','Health','Updated','Last Access','Subscription URL','Actions'] %}<th scope="col">{{ title }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for entry in entries %}<tr data-name="{{ entry.name }}" data-prefix="{{ entry.prefix }}" data-status="{{ entry.status }}" data-node-count="{{ entry.node_count }}" data-updated="{{ entry.updated_at_sort }}">
+    <td data-label="Name"><span class="fixed-name">{{ entry.name }}</span><span class="fixed-prefix">Prefix: {{ entry.prefix }}</span></td>
+    <td data-label="Status"><span class="badge fixed-status-{{ entry.status }}">{{ entry.status | capitalize }}</span></td>
+    <td data-label="Nodes / Sources"><span>{{ entry.node_count }} {{ 'node' if entry.node_count == 1 else 'nodes' }}</span><span class="fixed-source-count">External Sources: {{ entry.external_source_count }}</span></td>
+    <td data-label="Health" class="fixed-health-summary">
+      <div class="fixed-endpoint-summary"><span class="fixed-health-label">Endpoint</span><span class="fixed-health-value health-{{ entry.endpoint_summary.status }}">{{ entry.endpoint_summary.text }}</span></div>
+      <div class="fixed-proxy-summary"><span class="fixed-health-label">Proxy</span><span class="fixed-health-value health-{{ entry.proxy_summary.status }}">{{ entry.proxy_summary.text }}</span></div>
+    </td>
     <td data-label="Updated">{{ entry.updated_at_display }}</td>
     <td data-label="Last Access">{{ entry.last_access_at_display }}</td>
     <td data-label="Subscription URL"><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal btn-sm copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></td>
     <td data-label="Actions"><div class="fixed-actions ui-actions">
-      <a class="btn btn-outline-terminal btn-terminal btn-sm" href="{{ url_for('fixed.edit',key=entry.id) }}">Edit</a>
+      <a class="btn btn-secondary-terminal btn-terminal" href="{{ url_for('fixed.edit',key=entry.id) }}">Edit</a>
       {% for action, label, confirmation in [('disable' if entry.status == 'active' else 'enable', 'Disable' if entry.status == 'active' else 'Enable', ''), ('regenerate','Regenerate Link','This will invalidate the old subscription URL.'), ('delete','Delete','Delete this fixed subscription? Its URL will stop working permanently.')] %}
       <form method="POST" action="{{ url_for('fixed.action',key=entry.id,action=action) }}" {% if confirmation %}data-confirm="{{ confirmation }}"{% endif %}>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn {{ 'btn-danger-terminal' if action == 'delete' else 'btn-outline-terminal' }} btn-terminal btn-sm" type="submit">{{ label }}</button>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn {{ 'btn-danger-terminal' if action == 'delete' else 'btn-outline-terminal' }}{{ ' fixed-warning-action' if action == 'regenerate' else '' }} btn-terminal btn-sm" type="submit">{{ label }}</button>
       </form>{% endfor %}
     </div></td>
   </tr>{% endfor %}</tbody></table></div>
