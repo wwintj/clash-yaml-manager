@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.4.0 - 2026-10-04
+
 ### Added
 
 - Add Hysteria2 / HY2 inputs to Generate, Fixed Subscriptions and External Raw/Base64/Clash sources, with strict pinned-Mihomo fields and credential-safe previews.
