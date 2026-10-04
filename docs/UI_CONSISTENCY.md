@@ -61,8 +61,9 @@ breakpoints; pages select component roles rather than defining private sizes.
 Form groups use 16px; label-to-control 8px; help follows inputs at 4px; sections
 use 24px. Nested Policy/source panels, Health summaries and metadata rows are
 compact, while textarea editing space and Login remain comfortable. Generate,
-Save/Create and Download remain prominent; Copy/Edit/Refresh/Remove/Test/Apply
-are utilities. Destructive color does not imply a larger size. Generate and
+Save/Create and Download remain prominent; Copy/Refresh/Remove/Test/Apply
+are utilities. The Fixed overview uses standard Edit and utility state/link/delete
+actions, as specified in [Fixed UX](FIXED_SUBSCRIPTIONS_UX.md). Destructive color does not imply a larger size. Generate and
 result actions follow content width and wrap. The existing Preview mobile Apply
 button intentionally follows the row width.
 

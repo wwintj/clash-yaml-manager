@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Improve Fixed Subscriptions management with search, status filtering, sorting, compact source/health summaries, and clearer responsive actions.
+
 ## v1.4.1 - 2026-10-04
 
 ### Fixed

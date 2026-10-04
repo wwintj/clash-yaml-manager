@@ -1,12 +1,31 @@
 # Fixed Subscriptions
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Fixed Subscriptions is a Stable feature. The [README Latest Stable](../README.md)
+and its Release Notes identify the published version. The [Final Audit](FINAL_AUDIT_REPORT.md)
+is a historical record of the earlier feature rollout and acceptance.
 
 External node sources extend this MVP; see [External Sources](EXTERNAL_SOURCES.md)
 for formats, SSRF, cache, migration and refresh behavior.
 
-VERSION and Latest Stable remain 1.1.1. Test this feature only with explicit
-`--channel main`; this development work creates no tag or Release.
+The list-management improvements described in [Fixed Subscriptions UX](FIXED_SUBSCRIPTIONS_UX.md)
+are v1.5.0 development Phase 1. VERSION and Latest Stable remain 1.4.1 / v1.4.1;
+these improvements have not been published as a Stable release. Development testing
+uses explicit `--channel main` when authorized.
+
+## List management overview
+
+The authenticated list supports immediate name/prefix search, Active/Disabled
+filtering, and stable sorting by Updated, Name or Nodes. It shows external-source
+counts (excluding Manual) and separate, read-only Endpoint and Proxy Health
+aggregates. Opening the list never starts probes or refreshes sources. Health
+configuration and detailed actions remain on Edit.
+
+Copy URL gives temporary feedback and a visible manual-copy fallback. Existing
+Create/Edit links and Enable/Disable/Regenerate/Delete forms retain their contracts;
+destructive actions retain their existing confirmation messages. Desktop tables
+become stacked rows on mobile. See the [UX contract](FIXED_SUBSCRIPTIONS_UX.md)
+for privacy, matching, accessibility and no-JS boundaries and the
+[acceptance report](FIXED_SUBSCRIPTIONS_UX_REPORT.md) for validation evidence.
 
 ## Configuration and storage
 

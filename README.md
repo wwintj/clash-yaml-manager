@@ -21,7 +21,7 @@ Stable v1.4.0 在 v1.3 的 Diff Preview、Generate Merge、Trojan 與 Shadowsock
 | 功能 | 行為與文件 |
 | --- | --- |
 | Generate / Preview | [Replace（預設）／Merge](docs/MERGE_MODE.md)、VMess/VLESS/Trojan/Shadowsocks/Hysteria2 新輸入、可編輯國家／名稱預覽、[Full YAML Diff Preview](docs/YAML_DIFF_PREVIEW.md)、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
-| [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md) | 保存 Default / Custom YAML 與節點；一般保存保持 `/s/<prefix>-fs_<secret>`，不受臨時清理影響 |
+| [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md) | 保存 Default / Custom YAML 與節點；一般保存保持 `/s/<prefix>-fs_<secret>`，不受臨時清理影響；開發中的搜尋／篩選管理總覽見 [Fixed UX](docs/FIXED_SUBSCRIPTIONS_UX.md) |
 | [External Sources](docs/EXTERNAL_SOURCES.md) | 合併 Manual、Remote URL、Uploaded；Clash YAML / Raw / Base64，last-good cache |
 | [Automatic Refresh](docs/AUTO_REFRESH.md) | Remote Source 預設 Off，七檔間隔、獨立 timer、失敗退避及有限歷史 |
 | [Endpoint Health](docs/NODE_HEALTH.md) | 預設 Off；Manual / Automatic TCP reachability，三次失敗為 Unhealthy，保留 YAML 節點 |
