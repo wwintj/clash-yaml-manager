@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.4.1 - 2026-10-04
+
 ### Fixed
 
 - Correct post-v1.4.0 documentation that still described Hysteria2 as main-only or unreleased.
