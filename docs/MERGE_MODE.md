@@ -26,8 +26,8 @@ Replace:    new-c, new-d
 
 Existing Trojan, SS, Hysteria, WireGuard or unknown proxy mappings can be retained,
 including opaque extra fields. New input uses the shared supported-protocol
-parser. Main additionally accepts the [Hysteria2/HY2 subset](HYSTERIA2_PROTOCOL.md),
-which is not included in Stable v1.3.2. Normal source structure/name checks still apply;
+parser, including the frozen [Hysteria2/HY2 subset](HYSTERIA2_PROTOCOL.md) released
+in Stable v1.4.0. Normal source structure/name checks still apply;
 this is not a complete Mihomo schema/protocol validator.
 
 ## Collision rules

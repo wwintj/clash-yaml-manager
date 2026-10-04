@@ -10,13 +10,13 @@
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。只有明確指定 `--channel main` 才使用開發通道，測試命令見下方 Development / Testing。
 
-Hysteria2 / HY2 目前僅在 main，輸入契約已凍結為 v1.4.0 候選範圍，尚未包含在 Stable v1.3.2；驗證與實測限制見 [Hysteria2 Final Audit](docs/HYSTERIA2_FINAL_AUDIT_REPORT.md)。
+Hysteria2 / HY2 已包含在 Stable v1.4.0，支援範圍保持凍結；目前的輸入契約與實測限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，發布前驗收記錄見 [Hysteria2 Final Audit](docs/HYSTERIA2_FINAL_AUDIT_REPORT.md)。
 
 正式版本以頁首 Latest Stable 為準；功能驗收過程與限制見 [開發報告](docs/V1_1_DEVELOPMENT.md)。
 
 ## 功能與文件
 
-v1.3.0 發布範圍包括 Diff Preview、Generate Merge、Trojan 與 Shadowsocks。普通安裝／升級使用 Latest Stable；正式可用範圍以其 Release Notes 為準。受控發布前驗收與延後的真機項目見 [v1.3 Final Audit](docs/V1_3_FINAL_AUDIT_REPORT.md)，[v1.2 歷史審計](docs/FINAL_AUDIT_REPORT.md) 保留當時記錄。
+Stable v1.4.0 在 v1.3 的 Diff Preview、Generate Merge、Trojan 與 Shadowsocks 功能之上，加入 Hysteria2 / HY2 輸入，支援 Generate、Fixed Subscriptions 與 External Raw/Base64/Clash sources。普通安裝／升級使用 Latest Stable；正式可用範圍以其 Release Notes 為準。[Hysteria2 Final Audit](docs/HYSTERIA2_FINAL_AUDIT_REPORT.md)、[v1.3 Final Audit](docs/V1_3_FINAL_AUDIT_REPORT.md) 與 [v1.2 歷史審計](docs/FINAL_AUDIT_REPORT.md) 保留各階段的驗收記錄。
 
 | 功能 | 行為與文件 |
 | --- | --- |
@@ -171,7 +171,7 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。main 的 Hysteria2/HY2 開發支援、端口跳躍、obfs 及導入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md) 與 [驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md)；尚未發布到 Stable。這是 supported input protocols，不是所有 Clash proxy types。
+節點輸入支援三種格式混用。手工 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。Stable v1.4.0 的 Hysteria2/HY2 輸入、端口跳躍、obfs 及導入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，[歷史驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md) 保留發布前記錄。這是 supported input protocols，不是所有 Clash proxy types。
 
 Generate 頁新增 **Preview YAML Changes**。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不保存 diff 草稿。Custom YAML 需仍選有實際檔案；過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
@@ -221,7 +221,7 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 - 可以上傳現有 Clash/Mihomo YAML，也可以不上傳，直接使用內建預設 YAML。
 - Generate 預設 Replace 刪除舊節點；明確 Merge 保留來源節點並追加新節點。
 - Replace 清理舊節點引用；Merge 保留已有引用，同名或無效引用會拒絕。
-- 新輸入支援 `vmess://`、`vless://`、`trojan://`、`ss://`，main 另支援尚未發布的 `hysteria2://` / `hy2://`；保留來源其他 proxy 類型不等於支援其 URI 輸入。
+- 新輸入支援 `vmess://`、`vless://`、`trojan://`、`ss://`，Stable v1.4.0 也包含 `hysteria2://` / `hy2://` 的凍結輸入子集；保留來源其他 proxy 類型不等於支援其 URI 輸入。
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。

@@ -1,10 +1,11 @@
-# Hysteria2 input protocol MVP
+# Hysteria2 input protocol
 
-**FROZEN: v1.4.0 candidate input contract on main.** No new protocol fields,
+**FROZEN: supported Hysteria2 / HY2 input subset released in Stable v1.4.0.**
+The published v1.4.0 release has VERSION **1.4.0** and Latest Stable **v1.4.0**;
+see [VERSION](../VERSION) and [README Latest Stable](../README.md) for current release metadata.
+No new protocol fields,
 grammar, Health architecture or UI workflow are admitted during the freeze.
-VERSION and Latest Stable remain **1.3.2 / v1.3.2**;
-this feature is not included in that stable release. This is a supported input
-subset, not a general validator for all Clash proxy types.
+This is the supported v1.4.0 input subset, not a general validator for all Clash proxy types.
 
 ## Sharing URI contract
 
@@ -129,8 +130,9 @@ client certificates, advanced QUIC/common fields and arbitrary subscription-only
 extensions are explicitly rejected even where newer engines support them.
 
 Live Hysteria2 server QUIC, authentication, forwarding, hopping and latency remain
-unverified. The user supplied separate real Ubuntu VPS main-deployment, service,
-healthz and five-unit systemd acceptance; this does not prove Hysteria2 forwarding.
+**NOT RUN**. The user reports real Stable v1.4.0 VPS deployment acceptance as **PASS**;
+the earlier Ubuntu main-deployment, service, healthz and five-unit systemd acceptance
+is preserved in the historical audit. Deployment acceptance does not prove Hysteria2 forwarding.
 See the [final freeze audit](HYSTERIA2_FINAL_AUDIT_REPORT.md) and the historical
 [Phase 1 acceptance report](HYSTERIA2_PROTOCOL_REPORT.md).
 

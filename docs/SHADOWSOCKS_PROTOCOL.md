@@ -3,7 +3,8 @@
 This feature is included in the v1.3.0 release scope. Ordinary install/update uses Latest Stable; see the
 [published release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest)
 for availability. Explicit `--channel main` is only for development testing.
-Supported **new input protocols** are VMess / VLESS / Trojan / Shadowsocks.
+Supported **new input protocols** are VMess / VLESS / Trojan / Shadowsocks / Hysteria2;
+the frozen [Hysteria2 / HY2 subset](HYSTERIA2_PROTOCOL.md) is included in Stable v1.4.0.
 This is not support for every Clash proxy type. Generate Merge can separately
 retain arbitrary existing proxy mappings, including Hysteria2 and WireGuard.
 
@@ -64,7 +65,7 @@ ss://chacha20-ietf-poly1305:TEST_ONLY@[2001:db8::1]:443#%E6%9D%B1%E4%BA%AC
 
 ## Shared generation and Fixed workflows
 
-Batch accepts URI alone, `NAME|URI` and `COUNTRY|NAME|URI`; all four protocols can
+Batch accepts URI alone, `NAME|URI` and `COUNTRY|NAME|URI`; all five protocols can
 mix while preserving input order. Auxiliary links use automatic dispatch; no
 protocol selector was added. Parse name/country edits use the existing node keys.
 Duplicate final display names still fail.

@@ -1,8 +1,8 @@
 # Fixed Subscriptions: External Sources
 
-Current release scope, supported migrations and deferred real acceptance:
+Historical migration and acceptance evidence is recorded in the
 [v1.3 Final Audit](V1_3_FINAL_AUDIT_REPORT.md). Earlier embedded acceptance records
-below retain their historical versions; published availability follows
+below retain their historical versions; current published availability follows
 [Latest Stable release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest).
 
 Ordinary installs use the default Stable channel. Base YAML remains Default / Custom and is
@@ -17,10 +17,10 @@ sources. Multiple sources of each kind are supported (up to 63 external sources)
 Names must be nonblank, 1–128 characters, and distinct within the subscription.
 
 Formats are Auto, Clash / Mihomo YAML, Raw URI List and Base64 URI List. VMess,
-VLESS, Trojan, Shadowsocks and Hysteria2 are imported. Hysteria2 is main-only,
-frozen for the v1.4.0 candidate and absent from Stable v1.3.2. It validates an
+VLESS, Trojan, Shadowsocks and Hysteria2 are imported. Hysteria2 / HY2 is included
+in Stable v1.4.0 with its input contract frozen. It validates an
 explicit pinned subset, including optional string auth; see [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md)
-and [Final Freeze Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md). Raw lists accept blank lines and whole-line `#` comments;
+and the historical [Final Freeze Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md). Raw lists accept blank lines and whole-line `#` comments;
 URI fragments remain node names. Base64 accepts standard/URL-safe alphabets and
 whitespace. Auto detects a YAML mapping with a proxies list, then URI lists, then
 Base64. YAML content types and filename extensions do not decide the format.

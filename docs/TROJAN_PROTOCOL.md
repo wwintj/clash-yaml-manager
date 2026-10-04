@@ -3,9 +3,10 @@
 This feature is included in the v1.3.0 release scope. Ordinary install/update uses Latest Stable; see the
 [published release notes](https://github.com/wwintj/clash-yaml-manager/releases/latest)
 for availability. Explicit `--channel main` is only for development testing.
-Current new input protocols are VMess / VLESS / Trojan / Shadowsocks. SS is
-documented separately in [Shadowsocks Protocol](SHADOWSOCKS_PROTOCOL.md). Merge
-can retain arbitrary existing proxy mappings; that does not enable new Hysteria2,
+Current new input protocols are VMess / VLESS / Trojan / Shadowsocks / Hysteria2.
+SS is documented separately in [Shadowsocks Protocol](SHADOWSOCKS_PROTOCOL.md);
+the frozen [Hysteria2 / HY2 subset](HYSTERIA2_PROTOCOL.md) is included in Stable v1.4.0.
+Merge can retain arbitrary existing proxy mappings; that does not enable new
 TUIC, WireGuard, SOCKS, HTTP proxy or SSR input.
 
 ## URI contract

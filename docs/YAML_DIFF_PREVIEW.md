@@ -63,8 +63,8 @@ the default/MMDB or changing inputs between requests can change the result.
 Generate retains default Replace and shared supported-protocol input, filenames, backups, counts, redirects,
 cleanup, expiry, downloads and `/t/` behavior. Fixed callers still use the same
 shared transformer; no Fixed schema, sources, refresh or policy persistence change.
-Main's [Hysteria2/HY2 subset](HYSTERIA2_PROTOCOL.md) uses this same Diff path and
-is not included in Stable v1.3.2.
+The frozen [Hysteria2/HY2 subset](HYSTERIA2_PROTOCOL.md), released in Stable
+v1.4.0, uses this same Diff path.
 
 ## Default and Custom YAML
 

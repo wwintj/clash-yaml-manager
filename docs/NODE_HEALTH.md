@@ -1,14 +1,14 @@
 # Node Health: Endpoint Reachability
 
-Endpoint Health is included in Stable v1.3.2. Its Hysteria2 targets are main-only,
-frozen for the v1.4.0 candidate; see [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+Endpoint Health, including compatibility with the frozen Hysteria2 input subset,
+is included in Stable v1.4.0; see the current [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md).
 The [v1.2 Final Audit](FINAL_AUDIT_REPORT.md) preserves historical acceptance.
 
 **This is endpoint reachability, not end-to-end proxy validation.** The result
 answers only whether this VPS can open a TCP connection to the saved node's
 `server:port`. It does not authenticate a proxy, negotiate TLS/WebSocket/Reality
 or QUIC, forward traffic, measure throughput or prove that an internet destination works.
-Use explicit `--channel main` to test the unreleased Hysteria2 targets.
+Ordinary install/update uses the default Stable channel.
 
 ## Use and meaning
 
@@ -118,11 +118,11 @@ Health-aware Policy are separate owners; see [Proxy Health](PROXY_HEALTH.md),
 [Automatic Health](AUTOMATIC_HEALTH.md) and [Health-aware Policy](HEALTH_AWARE_POLICY.md).
 Endpoint itself does not execute Mihomo, score/rank nodes or select a fastest node.
 
-Operator update uses the existing explicit main channel:
+Operator update uses the default Stable channel:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh \
-  | sudo bash -s -- --channel main
+  | sudo bash
 systemctl status clash-yaml-manager --no-pager -l
 curl -i http://127.0.0.1:8899/healthz
 ```

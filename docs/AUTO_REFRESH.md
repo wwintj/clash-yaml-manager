@@ -1,10 +1,10 @@
 # Fixed Subscriptions — Automatic Refresh
 
-Automatic Refresh is included in Stable v1.3.2. Its Hysteria2 inputs are main-only,
-frozen for the v1.4.0 candidate; see [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+Automatic Refresh, including the frozen Hysteria2 input subset, is included in
+Stable v1.4.0; see the current [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md).
 The [v1.2 Final Audit](FINAL_AUDIT_REPORT.md) preserves historical acceptance.
 
-Use explicit `--channel main` to test the unreleased Hysteria2 inputs. This source worker does not perform health or policy probing; independent
+Ordinary install/update uses the default Stable channel. This source worker does not perform health or policy probing; independent
 opt-in health scheduling and policy generation are documented separately.
 
 ## Management
@@ -99,9 +99,9 @@ rollback path. Runtime directories/files are 0700/0600; lock symlinks, nonregula
 files and unsafe permissions fail closed.
 
 Fetch retains the External Sources SSRF, DNS/IP pinning, redirect, HTTPS CA, direct
-connection, bounded time/body and supported-protocol parser protections. Main's
+connection, bounded time/body and supported-protocol parser protections. The frozen
 Hysteria2 input subset is documented in [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md)
-and is not included in Stable v1.3.2. No proxy
+and is included in Stable v1.4.0. No proxy
 environment, cookies, authorization or Referer is forwarded. History contains only
 `at`, `trigger`, `result`, `node_count` and an allowlisted `error` code. Worker logs
 contain counts, internal subscription IDs and results; no source URLs, query tokens,
@@ -132,11 +132,11 @@ Uninstall stops/disables the timer, stops the oneshot, then handles web and remo
 all three units; choosing to keep the installation keeps state. Runtime backups
 include the complete private state required to restore fixed subscriptions.
 
-Test VPS update (development only):
+Stable VPS update:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh \
-  | sudo bash -s -- --channel main
+  | sudo bash
 systemctl status clash-yaml-manager --no-pager -l
 systemctl status clash-yaml-manager-refresh.timer --no-pager -l
 systemctl list-timers clash-yaml-manager-refresh.timer
@@ -145,7 +145,8 @@ curl -i http://127.0.0.1:8899/healthz
 ```
 
 Expected: web active (running), timer loaded/enabled/active (waiting), `/healthz`
-HTTP 200 and web build `v1.3.2-dev+<resolved-main-sha>` / DEV before v1.4.0 publication. `/healthz` represents
+HTTP 200 and web build `v1.4.0` / STABLE. Explicit `--channel main` remains available
+for development testing and displays `v1.4.0-dev+<resolved-main-sha>` / DEV. `/healthz` represents
 web readiness only; it does not depend on provider availability or timer state.
 For a manual worker run use `sudo systemctl start clash-yaml-manager-refresh.service`.
 To pause automatic refresh globally use `sudo systemctl stop clash-yaml-manager-refresh.timer`;
@@ -159,9 +160,10 @@ restores authentication/subscriptions to that backup time. Check password versio
 tokens and revisions together before restarting. Never expose backup credentials.
 Reload systemd and start the units that belong to the restored deployment.
 
-Tests use temporary installations and command doubles. Real Ubuntu timer execution
-and this new main SHA on an operator's VPS require the above deployment; local
-fixture/static unit checks do not claim a real VPS result.
-The user-attested deployment of `b68a84b` and timer activation are recorded
-separately in [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md); they do not
-establish a real Hysteria2 provider refresh or proxy forwarding.
+Tests use temporary installations and command doubles; local fixture/static unit
+checks do not claim a real VPS result. The user reports real Stable v1.4.0 VPS
+deployment acceptance as PASS. Earlier user-attested main deployment of `b68a84b`
+and timer activation remain recorded in the historical
+[Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md). Neither deployment result
+establishes a real Hysteria2 provider refresh or proxy forwarding; live Hysteria2
+QUIC, authentication, forwarding, port hopping and latency remain **NOT RUN**.

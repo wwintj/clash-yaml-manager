@@ -1,3 +1,6 @@
+> **Historical pre-release record.** Stable v1.4.0 was published on 2026-10-04.
+> Current contract: [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md).
+
 # Hysteria2 local pre-push audit
 
 Historical pre-push record. The subsequent feature-freeze audit, fresh validation

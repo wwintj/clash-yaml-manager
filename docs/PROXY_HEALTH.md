@@ -1,14 +1,16 @@
 # Full Proxy Validation MVP
 
-Full Proxy Health is included in Stable v1.3.2. Its Hysteria2 targets are main-only,
-frozen for the v1.4.0 candidate; see [Hysteria2 Final Audit](HYSTERIA2_FINAL_AUDIT_REPORT.md).
+Full Proxy Health, including compatibility with the frozen Hysteria2 input subset,
+is included in Stable v1.4.0; see the current [Hysteria2 Protocol](HYSTERIA2_PROTOCOL.md).
 The [v1.2 Final Audit](FINAL_AUDIT_REPORT.md) preserves historical acceptance.
 
-Test the unreleased Hysteria2 targets with explicit `--channel main`. It checks whether a saved
+It checks whether a saved
 VMess/VLESS/Trojan/Shadowsocks/Hysteria2 proxy can carry Mihomo's HTTPS URL probe to one configured target,
 including the proxy protocol's authentication and transport path. It is not a
 throughput benchmark, general website guarantee, exit-IP check, ranking or
 policy engine. TCP Endpoint Health remains an independent observation.
+Real Hysteria2 QUIC, authentication, forwarding, port hopping and latency acceptance
+remains **NOT RUN**.
 
 ## Operator workflow
 
@@ -16,11 +18,11 @@ Mihomo is optional. The Web app never downloads or installs it, and a normal
 project install/update never installs or upgrades it. Generate, public Fixed
 subscriptions, External Sources, Automatic Refresh, Endpoint Health and
 `/healthz` work without it. On an Ubuntu Linux amd64 or arm64 VPS, first
-deploy the development build, then use SSH and sudo:
+deploy the Stable build, then use SSH and sudo:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wwintj/clash-yaml-manager/main/remote-update.sh \
-  | sudo bash -s -- --channel main
+  | sudo bash
 sudo bash /opt/clash-yaml-manager/mihomoctl.sh status
 sudo bash /opt/clash-yaml-manager/mihomoctl.sh install
 sudo bash /opt/clash-yaml-manager/mihomoctl.sh status
