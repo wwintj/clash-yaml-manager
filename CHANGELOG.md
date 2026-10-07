@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.6.0 - 2026-10-07
+
 ### Changed
 
 - Simplify the built-in YAML template with dynamic country groups and place real nodes first in the Default primary selector, followed by only the country groups actually present.
