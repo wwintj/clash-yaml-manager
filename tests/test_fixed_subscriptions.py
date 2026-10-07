@@ -101,7 +101,7 @@ def test_atomic_failure_preserves_previous_bytes_and_source(store, base, monkeyp
     original_replace, original_json = state.os.replace, fixed.write_json
     with monkeypatch.context() as injection:
         if failure == 'generation':
-            injection.setattr(generator, 'generate', lambda *a: {'success': False})
+            injection.setattr(generator, 'generate', lambda *a, **kwargs: {'success': False})
         elif failure in ('metadata', 'metadata_after_replace'):
             def fail_json(path, value):
                 if failure == 'metadata_after_replace':
@@ -129,7 +129,7 @@ def test_invalid_custom_save_does_not_damage_old(store, base, bad):
 
 
 def test_failed_create_leaves_no_record_or_files(store, base, monkeypatch):
-    monkeypatch.setattr(generator, 'generate', lambda *a: {'success': False})
+    monkeypatch.setattr(generator, 'generate', lambda *a, **kwargs: {'success': False})
     with pytest.raises(fixed.GenerationError): save(store, base)
     assert store.list() == [] and list(store.directory.iterdir()) == []
 

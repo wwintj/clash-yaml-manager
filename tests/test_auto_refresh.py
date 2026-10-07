@@ -297,7 +297,7 @@ def test_auto_atomic_commit_failure_preserves_revision_and_cache(store, base, re
 
 def test_generation_failure_records_safe_backoff_without_new_revision(store, base, response, clock, monkeypatch):
     entry = scheduled(store, base, clock); clock.now += 900
-    monkeypatch.setattr(fixed.generator, 'generate', lambda *a:dict(success=False))
+    monkeypatch.setattr(fixed.generator, 'generate', lambda *a, **kwargs:dict(success=False))
     assert auto_refresh.run_once(store, base, clock) == 0
     new = store.get(entry['id']); item = new['sources'][1]
     assert new['revision'] == entry['revision'] and item['last_error'] == 'generation'

@@ -322,7 +322,7 @@ def test_new_disabled_remote_never_fetches_then_enable_fetches(store,base,respon
 
 def test_failed_generation_blocks_source_deletion(store,base,response,monkeypatch):
     entry=external_save(store,base,sources=[remote()]); before=store.path.read_bytes()
-    monkeypatch.setattr(fixed.generator,'generate',lambda *a:dict(success=False))
+    monkeypatch.setattr(fixed.generator,'generate',lambda *a, **kwargs:dict(success=False))
     with pytest.raises(fixed.GenerationError): store.source_action(entry['id'],'delete',base,entry['sources'][1]['id'])
     assert store.path.read_bytes()==before and b'Tokyo-remote' in store._content(entry,'current.yaml')
 

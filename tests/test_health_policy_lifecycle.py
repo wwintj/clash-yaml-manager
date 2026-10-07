@@ -224,7 +224,7 @@ def test_reconcile_failure_keeps_successful_observations_and_previous_yaml(store
     key=scenario['entry']['id'];worker=scenario['worker']
     worker.settings(key,'automatic',True,interval_seconds=900)
     worker.check(key);worker.check(key);old=store.snapshot(key)[1];revision=store.get(key)['revision']
-    if failure=='generation':monkeypatch.setattr(generator,'generate',lambda *args:{'success':False})
+    if failure=='generation':monkeypatch.setattr(generator,'generate',lambda *args, **kwargs:{'success':False})
     elif failure=='hook-error':monkeypatch.setattr(store,'reconcile_health_policy',lambda *a,**kw:(_ for _ in ()).throw(RuntimeError('PRIVATE')))
     else:
         original=fixed_subscriptions.write_json

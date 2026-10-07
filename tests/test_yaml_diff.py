@@ -18,8 +18,8 @@ from test_geoip import readers
 
 SOURCE = '# retained header\ndns: {enable: true, nameserver: ["1.1.1.1"]}\nproxies: [{name: old, type: vless, server: old.example, port: 443, uuid: fake}]\nproxy-groups: [{name: custom, type: select, proxies: [old, DIRECT]}]\nrules: [MATCH,DIRECT]\nx-private: "<script>alert(1)</script> & Ω"\n'
 # Custom keeps its original golden; Default reflects the approved country cleanup.
-# Default bytes independently reproduced with frozen 8bab3bf runtime and new template.
-APPROVED_HASHES = {'custom': '77812738ec3a51c8f160cacedc24dc97a9e9d3eeabc7bb0c2db78cc2dd222fda', 'default': '7b7ba93e842b9e24c133544248d9cc7c8d5f241ff819875ca62d70db9ea79c64'}
+# Phase 2 review: frozen 2dde882 output differs only in the primary selector projection.
+APPROVED_HASHES = {'custom': '77812738ec3a51c8f160cacedc24dc97a9e9d3eeabc7bb0c2db78cc2dd222fda', 'default': 'de3ace715e55eb3f2842034f9b3620ddb0bae884229cc859c0dba76926f2209f'}
 ROUTE = '/api/preview-yaml-diff'
 
 

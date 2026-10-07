@@ -123,7 +123,7 @@ def test_refresh_cache_and_transaction_failures_keep_policy_payload_and_last_goo
     from core import fixed_subscriptions as fixed, generator
     if failure=='timeout':response['error']='timeout'
     elif failure=='invalid':response['payload']=b'PRIVATE INVALID'
-    elif failure=='generation':monkeypatch.setattr(generator,'generate',lambda *args:{'success':False})
+    elif failure=='generation':monkeypatch.setattr(generator,'generate',lambda *args, **kwargs:{'success':False})
     else:
         def fail(*args):raise OSError('PRIVATE disk details')
         monkeypatch.setattr(fixed,'write_json',fail)

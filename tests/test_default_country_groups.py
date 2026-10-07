@@ -50,7 +50,8 @@ def rows(*codes):
 
 def generate(tmp_path, nodes, special=(), source=DEFAULT, mode='replace'):
     result = generator.generate(source, tmp_path / 'outputs', tmp_path / 'backups',
-                                nodes, list(special), node_update_mode=mode)
+                                nodes, list(special), node_update_mode=mode,
+                                template_profile='default' if source == DEFAULT else 'custom')
     assert result['success'], result['errors']
     data = yaml.load_yaml(result['output_path'])
     assert not yaml.validate_proxy_references(data)
@@ -155,10 +156,11 @@ def test_selected_special_group_and_unselected_groups_keep_contract(tmp_path, se
     assert_countries(data, nodes)
 
 
-def test_three_node_selector_append_order_is_preserved(tmp_path):
+def test_three_node_default_selector_projects_nodes_then_countries(tmp_path):
     nodes = parsed(rows('US', 'SG', 'DE'))
     data = generate(tmp_path, nodes)
-    assert groups(data)['🚀 节点选择']['proxies'] == ['🚀 手动切换', 'DIRECT'] + nodes['node_names']
+    assert groups(data)['🚀 节点选择']['proxies'] == nodes['node_names'] + [
+        '🇺🇸 美国节点', '🇸🇬 狮城节点', '🇩🇪 德国节点', '🚀 手动切换', 'DIRECT']
 
 
 def test_custom_replace_keeps_existing_country_groups_and_valid_refs(tmp_path):
