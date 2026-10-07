@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Simplify the built-in YAML template by creating country strategy groups only for countries actually present in parsed nodes, instead of predefining HK/TW/SG/JP/US/KR placeholders.
+
 ### Fixed
 
 - Update README and current Fixed Subscriptions documentation to reflect the v1.5.0 Stable management experience, and require README narrative review during feature completion and release audits.
