@@ -4,6 +4,8 @@ UI LANGUAGE: ENGLISH. This contract records the two UI refinement passes.
 VERSION is the version source; README Latest Stable identifies the published
 release. No new business capability is introduced by these presentation changes.
 
+v1.7.0 開發階段新增登入介面精修：僅未登入頁面使用 login 專用 flex 排版、400px 卡片與置中的 `Clash YAML Manager` 標題，移除 terminal dashboard 式標記、分隔線及多餘提示。欄位為 `Password`／`Enter password`，按鈕為 `Sign in`（沿用 44px primary control）；保留 `password` form contract、autofocus、`autocomplete="current-password"`、CSRF hidden input，以及經 `ui_message` 處理的 alert／status 訊息。CSRF notice 在登入卡片內顯示，共用動態版本 footer 不變。未修改共用 component 定義、登入後介面或認證行為；Latest Stable 仍為 v1.6.0。
+
 ## Audit and scope
 
 All routed pages inherit `index.html`. The former inline stylesheet supplied a
@@ -107,3 +109,7 @@ Bootstrap 5.3.3 CSS and bundle through `BOOTSTRAP_CSS_PATH` and
 Set `UI_ARTIFACT_DIR` to retain screenshots and `geometry.json` outside runtime
 state. Run all suites, or `--suite ui_consistency` for the full UI matrix. Fixture
 controls remain loopback-only and never change production network policy.
+
+UI consistency 與 Fixed UX 截圖對既有 subscription／temporary URL 欄位加上 capture mask，避免將 bearer URL 留在驗證圖片；遮罩不修改頁面或影響版面量測。
+
+`--suite login` 沿用同一 disposable Flask harness，驗證 320×568、375×667、390×844、768×1024、1440×900、1920×1080 的登入與訊息版面、autofocus、Enter、Tab／Shift+Tab、focus-visible，以及實際 wrong-password、CSRF、rate-limit 與 Change Password 成功回到登入頁的路徑。另以半 CSS viewport／雙 pixel density 檢查 200% 桌面 zoom 的 reflow 等效情境；這不是瀏覽器原生 zoom 設定驗證。截圖與 `login-geometry.json` 存於 `UI_ARTIFACT_DIR`，不含 fixture 密碼或 session secrets。
