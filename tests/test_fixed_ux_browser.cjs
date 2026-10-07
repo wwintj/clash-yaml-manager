@@ -61,12 +61,13 @@ async function clear(page) {
 async function shot(page, name, width) {
   await page.setViewportSize({width,height:900});
   await page.evaluate(() => window.scrollTo(0,0));
-  await page.screenshot({path:path.join(artifacts,`${name}-${width}.png`)});
-  await page.screenshot({path:path.join(artifacts,`${name}-${width}-full.png`),fullPage:true});
+  const mask=[page.locator('.fixed-url')];
+  await page.screenshot({mask,path:path.join(artifacts,`${name}-${width}.png`)});
+  await page.screenshot({mask,path:path.join(artifacts,`${name}-${width}-full.png`),fullPage:true});
   if (await rows(page).count() && !await page.locator('.fixed-list-region').isHidden()) {
     const target = name==='fixed-health-warning' ? row(page,gamma) : row(page,longPrefix);
     if (await target.isVisible())
-      await target.screenshot({path:path.join(artifacts,`${name}-${width}-row.png`)});
+      await target.screenshot({mask,path:path.join(artifacts,`${name}-${width}-row.png`)});
   }
 }
 async function privacy(page, fixture) {

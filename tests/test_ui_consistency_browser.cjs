@@ -98,14 +98,15 @@ async function check(page,name,width,shotSelector) {
   audit.push({page:name,width,overflow:details.overflow,navs:details.navs,controls:details.controls,
     buttons:details.buttons,pageHeight:details.pageHeight,headerHeight:details.headerHeight,panels:details.panels,formHeight:details.formHeight});
   if([1440,390].includes(width) && shotSelector) {
-    await page.screenshot({path:path.join(artifacts,`${name}-${width}-full.png`),fullPage:true});
+    const mask=[page.locator('.fixed-url, #download-url')];
+    await page.screenshot({mask,path:path.join(artifacts,`${name}-${width}-full.png`),fullPage:true});
     const target=page.locator(shotSelector).first();await target.scrollIntoViewIfNeeded();
     if(['generate','fixed-edit','fixed-create','fixed-list'].includes(name)) await page.evaluate(()=>window.scrollTo(0,0));
-    await page.screenshot({path:path.join(artifacts,`${name}-${width}.png`)});
+    await page.screenshot({mask,path:path.join(artifacts,`${name}-${width}.png`)});
     if(name==='generate') await page.getByRole('navigation',{name:'Main navigation'}).screenshot({path:path.join(artifacts,`main-nav-${width}.png`)});
     if(name==='settings-overview') await page.getByRole('navigation',{name:'Settings sections'}).screenshot({path:path.join(artifacts,`settings-nav-${width}.png`)});
     // Section detail is readable even when the complete mobile page is very tall.
-    await target.screenshot({path:path.join(artifacts,`${name}-${width}-detail.png`)});
+    await target.screenshot({mask,path:path.join(artifacts,`${name}-${width}-detail.png`)});
   }
 }
 (async()=>{
@@ -125,11 +126,11 @@ async function check(page,name,width,shotSelector) {
           return route.fulfill({path:process.env.BOOTSTRAP_JS_PATH,contentType:'text/javascript'});
         return route.abort();
       });
-      await page.goto(base);assert(await page.getByText('Enter the management password to continue.').isVisible());
+      await page.goto(base);assert(await page.getByRole('button',{name:'Sign in',exact:true}).isVisible());
       await check(page,'login',width,'.login-panel');
       await page.locator('#password').fill('UI_INCORRECT_PASSWORD');
       await navigate(page,()=>page.locator('#password').press('Enter'));
-      assert(await page.getByText('Login failed. Incorrect password.').isVisible());await check(page,'login-error',width);
+      assert(await page.getByText('Login failed. Incorrect password.').isVisible());await check(page,'login-error',width,'.login-panel');
       await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
       await navigate(page,()=>page.locator('#password').press('Enter'));
       await check(page,'generate',width,'#process-form');
