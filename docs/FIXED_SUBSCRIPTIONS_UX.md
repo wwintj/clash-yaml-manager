@@ -1,11 +1,11 @@
 # Fixed Subscriptions list UX
 
-The v1.5.0 Fixed Subscriptions management scope is frozen pending formal
-publication. VERSION remains 1.4.1 and README Latest Stable remains v1.4.1.
-Fixed Subscriptions is already a Stable feature; these overview improvements
-are not yet published. The [final audit](V1_5_FINAL_AUDIT_REPORT.md) records the
-subsequent real VPS acceptance and restoration to Stable. The original
-[Phase 1 report](FIXED_SUBSCRIPTIONS_UX_REPORT.md) remains historical evidence.
+Fixed Subscriptions 管理改善已隨
+[Stable v1.5.0](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.5.0)
+正式發布；目前 VERSION 為 1.5.0，README Latest Stable 為 v1.5.0。
+[發布前最終審計](V1_5_FINAL_AUDIT_REPORT.md) 記錄當時的功能凍結、真實 VPS 驗收
+及恢復至 v1.4.1 Stable 的結果；[Phase 1 報告](FIXED_SUBSCRIPTIONS_UX_REPORT.md)
+同樣保留為歷史驗收證據，不代表目前尚未發布。
 
 ## Search, filter and order
 

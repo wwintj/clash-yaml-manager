@@ -47,11 +47,29 @@ notes instead of inventing features from filenames or pasting raw commit subject
 The orchestrator promotes those reviewed notes to `## vX.Y.Z - YYYY-MM-DD`, retains an empty
 Unreleased heading for future development, and uses only that version's body as Release Notes.
 Allowed categories are Added, Changed, Fixed, Security and Deployment; empty categories are omitted
-when preparing notes. README changes are confined to RELEASE/INSTALL/UPDATE marker pairs.
+when preparing notes. Automated README edits are confined to RELEASE/INSTALL/UPDATE marker pairs.
 
 For a feature-freeze audit, use `python3 scripts/release.py minor --dry-run` only
 after committing/pushing a clean main. A passing audit does not authorize publication;
 VERSION, tags and Releases remain unchanged until an explicit release instruction.
+
+## README 正文審核
+
+每次使用者可見功能完成、feature freeze 與 Stable 發布時，都必須由維護者或
+agent 審閱 README 的目前功能與狀態敘述，並核對相關使用者文件、CHANGELOG 和
+Release Notes。README 與一般使用者文件正文優先使用繁體中文；精確 UI 標籤、
+命令、識別字、協定／API 名稱及外部引文保留原文，Web UI 維持既有英文介面。
+
+`release.py` 自動更新 Latest Stable 及安裝／升級 marker，不會理解或更新自然
+語言正文。不能只因 marker 已更新，就視為 README 同步完成。以目前 Stable 為
+功能介紹基準，尚未發布的功能應明確標示開發狀態；發布後不應再稱為
+development-only、main-only 或 unreleased。歷史版本事實可以保留，例如
+Hysteria2 / HY2 自 v1.4.0 起提供，不能把舊版本號一律替換為最新版本。
+
+必要的正文修改應隨功能／文件提交，在最終候選 RC 前完成；通過 RC 後若又修改
+候選內容，必須對新的精確 SHA 重新驗證。發布後再核對正文是否與已發布功能一致；
+需要修正時新增文件維護 commit，不改寫已發布的 tag、Release 或歷史驗收報告，
+也不因文件維護而自動發布下一版。
 
 ## Preflight and dry-run
 
@@ -62,7 +80,7 @@ Required checks before mutation:
    releases are queried. Both local and remote tags and all GitHub Releases are checked for
    conflicts. Existing versions are immutable; no overwrite, deletion or force push.
 3. GitHub repository write access, fixed default branch main, complete README markers and
-   reviewed Unreleased notes.
+   reviewed Unreleased notes, plus the semantic README narrative audit described above.
 4. Full pytest (including 10,410-rule round trip), Python compilation in memory, pip check,
    bash -n for exactly eight shell files (`install.sh`, `remote-install.sh`,
    `update.sh`, `remote-update.sh`, `uninstall.sh`, `httpsctl.sh`, `mihomoctl.sh`,

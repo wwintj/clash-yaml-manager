@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Update README and current Fixed Subscriptions documentation to reflect the v1.5.0 Stable management experience, and require README narrative review during feature completion and release audits.
+
 ## v1.5.0 - 2026-10-07
 
 ### Changed

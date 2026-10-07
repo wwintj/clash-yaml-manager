@@ -20,7 +20,8 @@ be resolved. Never expose credentials.
    that diff rather than its size. Document the choice.
 3. Maintain reviewed human-readable `CHANGELOG.md` Unreleased notes from the diff using
    Added/Changed/Fixed/Security/Deployment categories. Never paste raw git log. The agent
-   performs this editorial step; the user does not have to edit release metadata.
+   performs this editorial step and the README narrative audit below; the user does not
+   have to edit release metadata.
 4. Commit feature work and notes first. Keep a clean main. Run
    `python3 scripts/release.py patch --dry-run` (or the selected bump / `--version X.Y.Z`).
 5. On success, run the same command without `--dry-run`. The orchestrator validates,
@@ -30,6 +31,24 @@ be resolved. Never expose credentials.
    and both remote lifecycle `--resolve-only` commands. Report the exact version, SHAs,
    URLs and validation limits. Recover interrupted publication using the documented
    existing-tag flow; never delete or overwrite published objects.
+
+## Documentation maintenance
+
+- Review README.md whenever a user-visible feature is completed and whenever Stable is
+  published. Any user-visible feature reaching Stable must update its README description
+  in the same development/release cycle.
+- README prose and general user-facing repository documentation should prefer Traditional
+  Chinese. Preserve exact UI labels, commands, identifiers, protocol/API names and quoted
+  external text. This documentation preference does not change the English Web UI contract.
+- During feature freeze and stable release audits, explicitly review README and current
+  feature documents for stale version/status wording: development-only, main-only,
+  unreleased, or descriptions of a previous Stable as the current baseline. Keep accurate
+  historical version facts and acceptance reports; never replace version numbers blindly.
+- README Latest Stable metadata is automated, but narrative feature descriptions require
+  semantic review and must stay aligned with CHANGELOG/Release Notes. Commit narrative
+  changes before the final candidate validation; any later candidate change needs a new RC.
+  Post-release documentation corrections use new commits without changing published tags,
+  Releases or historical reports, and do not authorize another release by themselves.
 
 ## Development constraints
 

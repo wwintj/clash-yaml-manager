@@ -7,10 +7,9 @@ is a historical record of the earlier feature rollout and acceptance.
 External node sources extend this MVP; see [External Sources](EXTERNAL_SOURCES.md)
 for formats, SSRF, cache, migration and refresh behavior.
 
-The list-management improvements described in [Fixed Subscriptions UX](FIXED_SUBSCRIPTIONS_UX.md)
-are the frozen v1.5.0 development scope. VERSION and Latest Stable remain 1.4.1 / v1.4.1;
-these improvements have not been published as a Stable release. Development testing
-uses explicit `--channel main` when authorized.
+[Fixed Subscriptions UX](FIXED_SUBSCRIPTIONS_UX.md) 的管理改善已隨
+[Stable v1.5.0](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.5.0)
+正式發布。一般安裝與升級使用 Stable；只有明確授權的開發測試才使用 `--channel main`。
 
 ## List management overview
 
