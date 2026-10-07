@@ -2,7 +2,7 @@
 
 Fixed Subscriptions 管理改善已隨
 [Stable v1.5.0](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.5.0)
-正式發布；目前 VERSION 為 1.5.0，README Latest Stable 為 v1.5.0。
+正式發布；目前正式可用版本以 [README Latest Stable](../README.md) 為準。
 [發布前最終審計](V1_5_FINAL_AUDIT_REPORT.md) 記錄當時的功能凍結、真實 VPS 驗收
 及恢復至 v1.4.1 Stable 的結果；[Phase 1 報告](FIXED_SUBSCRIPTIONS_UX_REPORT.md)
 同樣保留為歷史驗收證據，不代表目前尚未發布。
