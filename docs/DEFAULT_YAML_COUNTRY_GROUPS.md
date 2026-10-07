@@ -55,7 +55,9 @@ Custom YAML，也保留其來源排序與節點追加契約；Merge 保留來源
 
 既有 Fixed revision 已儲存 `base.yaml`／已提交輸出，built-in default 改動
 不會重寫其 snapshot。新建 Default-source Fixed 使用當時安裝的 default；
-明確重新儲存 Default-source Fixed 時，才按既有契約選用當時的 default。
+Default-source Fixed 的 explicit Save／source refresh 按既有契約選用當時安裝的
+default；cached regeneration／Health Policy reconciliation 則沿用已提交的
+`base.yaml`，不重新讀取安裝目錄的模板。
 Default-source Fixed 的 create、explicit save、source refresh、cached regeneration
 及 Health Policy reconciliation 均套用相同排序；Custom-source Fixed 保持原排序。
 既有 Regenerate 只輪換 token／URL，不重新生成 YAML，仍保留原 revision 位元組。
