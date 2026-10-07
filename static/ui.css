@@ -575,7 +575,20 @@ input[type=checkbox], input[type=radio] { width: 1rem; height: 1rem; vertical-al
 
 /* Header, nested sections and login are distinct density roles. */
 .app-header .panel-inner { padding: var(--padding-panel-small) var(--padding-card); }
-.app-header .panel-title-row { margin-bottom: var(--space-3); padding-bottom: var(--space-3); }
+.app-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.app-header-main > * { min-width: 0; max-width: 100%; }
+.app-header-actions { flex-shrink: 0; }
+.app-header-nav {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line-soft);
+}
 .panel-inner .panel-inner { padding: var(--padding-panel-small); }
 .login-panel .panel-inner { padding: var(--space-5); }
 .source-schedule p { margin-bottom: var(--space-1); }
@@ -583,6 +596,8 @@ input[type=checkbox], input[type=radio] { width: 1rem; height: 1rem; vertical-al
 .ui-section { margin-bottom: var(--gap-section); }
 .ui-check-row { display: flex; align-items: center; gap: var(--space-2); min-height: 32px; }
 @media (max-width: 575px) {
+  .app-header-main { align-items: flex-start; }
+  .app-header-main .brand-title { flex-basis: 100%; }
   .login-panel .panel-inner { padding: var(--space-5) var(--space-4); }
   .ui-check-row { min-height: 40px; }
 }

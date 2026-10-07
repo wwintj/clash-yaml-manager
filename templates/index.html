@@ -54,14 +54,11 @@
         </div>
       </div>
     {% else %}
-      <section class="terminal-panel app-header mb-3">
+      <header class="terminal-panel app-header mb-3">
         <div class="panel-inner">
-          <div class="panel-title-row">
-            <div>
-              <div class="brand-meta mb-2">YAML NODE MANAGEMENT</div>
-              <h1 class="brand-title">Clash YAML Manager</h1>
-            </div>
-            <div class="ui-actions">
+          <div class="app-header-main">
+            <h1 class="brand-title">Clash YAML Manager</h1>
+            <div class="ui-actions app-header-actions">
               <button type="button" class="btn btn-outline-terminal btn-terminal btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</button>
               <form action="/logout" method="POST" class="m-0">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -70,32 +67,14 @@
             </div>
           </div>
 
-          <div class="row g-3">
-            <div class="col-6 col-md-3">
-              <div class="status-label">Service</div>
-              <div class="status-value green">ONLINE</div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="status-label">Mode</div>
-              <div class="status-value">YAML</div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="status-label">Parser</div>
-              <div class="status-value status-protocols">VMESS / VLESS / TROJAN / SHADOWSOCKS / HYSTERIA2</div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="status-label">Backend</div>
-              <div class="status-value">FLASK</div>
-            </div>
-          </div>
+          <nav class="ui-nav app-header-nav" aria-label="Main navigation">
+            <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Generate YAML</a>
+            <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
+            <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
+          </nav>
         </div>
-      </section>
+      </header>
 
-      <nav class="ui-nav mb-3" aria-label="Main navigation">
-        <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Generate YAML</a>
-        <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
-        <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
-      </nav>
       {% if error_messages %}
         <div class="terminal-alert error mb-4" role="alert">
           <div class="panel-subtitle mb-2">ERROR LOG</div>
