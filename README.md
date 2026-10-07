@@ -44,7 +44,7 @@ Fixed 舊 registry v1–v5 只在記憶體補入新功能預設，合法修改�
 
 Web UI 維持英文介面，使用共用字型、控制項與響應式排版，並區分主導覽、次要 tabs、主要操作與緊湊工具按鈕。可用版本以頁首 Latest Stable 為準；[設計契約](docs/UI_CONSISTENCY.md)、[第一輪驗證](docs/UI_CONSISTENCY_REPORT.md)與[密度精修驗證](docs/UI_DENSITY_REFINEMENT_REPORT.md)記錄範圍及限制。
 
-v1.7.0 開發中的登入介面精修：未登入畫面改為緊湊的單一密碼入口，使用 `Password`／`Sign in`，保留可見的錯誤與狀態訊息，並支援密碼管理器。認證、CSRF、rate limiting、session 與登入後介面維持原有行為；此改動尚未發布，Latest Stable 仍為 v1.6.0。
+v1.7.0 開發階段持續精簡管理介面：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；這些改動尚未發布，Latest Stable 仍為 v1.6.0。
 
 ## 一鍵安裝
 
