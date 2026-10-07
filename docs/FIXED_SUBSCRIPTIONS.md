@@ -8,7 +8,7 @@ External node sources extend this MVP; see [External Sources](EXTERNAL_SOURCES.m
 for formats, SSRF, cache, migration and refresh behavior.
 
 The list-management improvements described in [Fixed Subscriptions UX](FIXED_SUBSCRIPTIONS_UX.md)
-are v1.5.0 development Phase 1. VERSION and Latest Stable remain 1.4.1 / v1.4.1;
+are the frozen v1.5.0 development scope. VERSION and Latest Stable remain 1.4.1 / v1.4.1;
 these improvements have not been published as a Stable release. Development testing
 uses explicit `--channel main` when authorized.
 
@@ -25,7 +25,8 @@ Create/Edit links and Enable/Disable/Regenerate/Delete forms retain their contra
 destructive actions retain their existing confirmation messages. Desktop tables
 become stacked rows on mobile. See the [UX contract](FIXED_SUBSCRIPTIONS_UX.md)
 for privacy, matching, accessibility and no-JS boundaries and the
-[acceptance report](FIXED_SUBSCRIPTIONS_UX_REPORT.md) for validation evidence.
+[Phase 1 acceptance report](FIXED_SUBSCRIPTIONS_UX_REPORT.md) and subsequent
+[final audit](V1_5_FINAL_AUDIT_REPORT.md) for validation evidence and limitations.
 
 ## Configuration and storage
 

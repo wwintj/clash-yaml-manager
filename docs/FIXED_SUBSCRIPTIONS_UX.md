@@ -1,9 +1,11 @@
 # Fixed Subscriptions list UX
 
-This is v1.5.0 development Phase 1. VERSION remains 1.4.1 and README Latest Stable
-remains v1.4.1. Fixed Subscriptions is already a Stable feature; the overview
-improvements here are awaiting a future release. No production VPS update is
-part of this phase.
+The v1.5.0 Fixed Subscriptions management scope is frozen pending formal
+publication. VERSION remains 1.4.1 and README Latest Stable remains v1.4.1.
+Fixed Subscriptions is already a Stable feature; these overview improvements
+are not yet published. The [final audit](V1_5_FINAL_AUDIT_REPORT.md) records the
+subsequent real VPS acceptance and restoration to Stable. The original
+[Phase 1 report](FIXED_SUBSCRIPTIONS_UX_REPORT.md) remains historical evidence.
 
 ## Search, filter and order
 
@@ -118,5 +120,7 @@ is added to the list. Detailed source and Health actions remain on Edit. Storage
 generation, policies, probes, authentication, deployment and release lifecycle
 retain their existing contracts.
 
-Validation and real-environment limits are recorded in the
-[Fixed UX acceptance report](FIXED_SUBSCRIPTIONS_UX_REPORT.md).
+Controlled Phase 1 validation is recorded in the
+[Fixed UX acceptance report](FIXED_SUBSCRIPTIONS_UX_REPORT.md). Subsequent real
+VPS acceptance, its observation limits and the final candidate gates are recorded
+in the [v1.5 final audit](V1_5_FINAL_AUDIT_REPORT.md).
