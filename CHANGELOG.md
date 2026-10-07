@@ -6,6 +6,7 @@
 
 - Simplify the login screen into a compact password-only sign-in experience with password-manager support, without changing authentication behavior or the authenticated interface.
 - Simplify the authenticated application header by integrating the main navigation and removing static dashboard metadata, while preserving routes and account actions.
+- Simplify authenticated success and error feedback by removing dashboard-style headings while preserving message semantics and accessibility.
 
 ## v1.6.0 - 2026-10-07
 

@@ -8,6 +8,8 @@ v1.7.0 Phase 1 的登入介面精修：僅未登入頁面使用 login 專用 fle
 
 v1.7.0 Phase 2 僅精修登入後的 chrome：語義化 `header.app-header` 第一列保留唯一 h1 `Clash YAML Manager`、utility role 的 `Change Password` 與帶 CSRF 的 POST `Logout`，第二列整合 `nav[aria-label="Main navigation"]`。移除靜態 Service／ONLINE、Mode／YAML、Parser／protocol list、Backend／FLASK 與 `YAML NODE MANAGEMENT`，不移動到其他頁面。Desktop title 左、actions 右；Mobile title 獨立一列，actions 與 content-width 導覽自然 wrap，保留 href、aria-current、active geometry 及 focus-visible。Login、authenticated alerts、workspace、Settings 內容、modal 與 backend 均不變。
 
+v1.7.0 Phase 3 僅精簡登入後的全域 feedback：沿用 `.terminal-alert` 與原 error／success 顏色，移除 `ERROR LOG`／`SUCCESS` 呈現標題。單條錯誤使用段落，多條使用同一 alert 內的清單；成功訊息直接顯示。保留 `error_messages`／`success_message`、`ui_message`、Jinja autoescape，以及容器的 `role="alert"`／`role="status"`，不逐條新增 role，不新增 icon、toast、animation 或 auto-dismiss。`Generation Complete`、`Temporary Link`、`YAML Changes`、`Generate Result` 等 contextual headings、登入頁、Phase 2 header 與 backend 均不變；Latest Stable 仍為 v1.6.0。
+
 ## Audit and scope
 
 All routed pages inherit `index.html`. The former inline stylesheet supplied a
@@ -117,3 +119,5 @@ UI consistency 與 Fixed UX 截圖對既有 subscription／temporary URL 欄位�
 `--suite login` 沿用同一 disposable Flask harness，驗證 320×568、375×667、390×844、768×1024、1440×900、1920×1080 的登入與訊息版面、autofocus、Enter、Tab／Shift+Tab、focus-visible，以及實際 wrong-password、CSRF、rate-limit 與 Change Password 成功回到登入頁的路徑。另以半 CSS viewport／雙 pixel density 檢查 200% 桌面 zoom 的 reflow 等效情境；這不是瀏覽器原生 zoom 設定驗證。截圖與 `login-geometry.json` 存於 `UI_ARTIFACT_DIR`，不含 fixture 密碼或 session secrets。
 
 `--suite header` 驗證 Generate／Fixed／Settings 三個頁面的 scoped header contract、唯一 h1、整合導覽與 active state，涵蓋 320×568、375×667、390×844、768×1024、1024×768、1440×900、1920×1080。檢查 title／actions 不互相擠壓、link text 不裁切、modal Enter／Tab／Escape 與 focus return、Logout POST＋CSRF，以及 page overflow；截圖沿用 bearer URL capture mask，量測保存於 `header-geometry.json`。
+
+`--suite feedback` 透過實際 Generate／Delete Temp Files 表單驗證單條錯誤、多條 parser 錯誤、成功清理訊息與原 contextual result headings，涵蓋 1440×900、390×844、320×568；另使用 inert rendered-HTML fixture 檢查長訊息與已 escaped markup 的換行／溢出，server escaping 由 Flask／Jinja 邊界測試驗證。確認訊息維持顯示，重新載入後仍遵循原有 server 一次性 notice 行為。截圖遮罩 bearer URL 與節點輸入，量測保存於 `feedback-geometry.json`。
