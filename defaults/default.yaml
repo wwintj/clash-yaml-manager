@@ -55,12 +55,6 @@ proxy-groups:
   - name: 🚀 节点选择
     type: select
     proxies:
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
       - DIRECT
   - name: 🚀 手动切换
@@ -70,36 +64,18 @@ proxy-groups:
     type: select
     proxies:
       - 🚀 节点选择
-      - 🇸🇬 狮城节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
       - DIRECT
   - name: 💬 Ai平台
     type: select
     proxies:
       - 🚀 节点选择
-      - 🇸🇬 狮城节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
       - DIRECT
   - name: 📹 油管视频
     type: select
     proxies:
       - 🚀 节点选择
-      - 🇸🇬 狮城节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
       - DIRECT
   - name: 🎥 奈飞视频
@@ -107,18 +83,11 @@ proxy-groups:
     proxies:
       - 🎥 奈飞节点
       - 🚀 节点选择
-      - 🇸🇬 狮城节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
       - DIRECT
   - name: 📺 巴哈姆特
     type: select
     proxies:
-      - 🇹🇼 台湾节点
       - 🚀 节点选择
       - 🚀 手动切换
       - DIRECT
@@ -126,100 +95,52 @@ proxy-groups:
     type: select
     proxies:
       - 🎯 全球直连
-      - 🇹🇼 台湾节点
-      - 🇭🇰 香港节点
   - name: 🌍 国外媒体
     type: select
     proxies:
       - 🚀 节点选择
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
       - DIRECT
   - name: 🌏 国内媒体
     type: select
     proxies:
       - DIRECT
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
       - 🚀 手动切换
   - name: 📢 谷歌FCM
     type: select
     proxies:
       - DIRECT
       - 🚀 节点选择
-      - 🇺🇸 美国节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
   - name: Ⓜ️ 微软Bing
     type: select
     proxies:
       - DIRECT
       - 🚀 节点选择
-      - 🇺🇸 美国节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
   - name: Ⓜ️ 微软云盘
     type: select
     proxies:
       - DIRECT
       - 🚀 节点选择
-      - 🇺🇸 美国节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
   - name: Ⓜ️ 微软服务
     type: select
     proxies:
       - DIRECT
       - 🚀 节点选择
-      - 🇺🇸 美国节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
   - name: 🍎 苹果服务
     type: select
     proxies:
       - DIRECT
       - 🚀 节点选择
-      - 🇺🇸 美国节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
   - name: 🎮 游戏平台
     type: select
     proxies:
       - DIRECT
       - 🚀 节点选择
-      - 🇺🇸 美国节点
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
   - name: 🎶 网易音乐
     type: select
@@ -246,36 +167,7 @@ proxy-groups:
     proxies:
       - 🚀 节点选择
       - DIRECT
-      - 🇭🇰 香港节点
-      - 🇹🇼 台湾节点
-      - 🇸🇬 狮城节点
-      - 🇯🇵 日本节点
-      - 🇺🇸 美国节点
-      - 🇰🇷 韩国节点
       - 🚀 手动切换
-  - name: 🇭🇰 香港节点
-    type: select
-    proxies:
-      - DIRECT
-  - name: 🇯🇵 日本节点
-    type: select
-    proxies:
-      - DIRECT
-  - name: 🇺🇸 美国节点
-    type: select
-    proxies:
-      - DIRECT
-  - name: 🇸🇬 狮城节点
-    type: select
-    proxies:
-      - DIRECT
-  - name: 🇹🇼 台湾节点
-    type: select
-    proxies: []
-  - name: 🇰🇷 韩国节点
-    type: select
-    proxies:
-      - DIRECT
   - name: 🎥 奈飞节点
     type: select
     proxies:

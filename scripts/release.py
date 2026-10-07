@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 from core.version import bump_version, normalize_tag, parse_version, read_version
 
 REPO = 'wwintj/clash-yaml-manager'
-DEFAULT_SHA256 = 'a30bd14fd5b5873d8eaa6c56e3205ddcf8fc39f4efa30675fdb88c8cec9ecf9b'
+DEFAULT_SHA256 = 'bc24dc51c528f7410c7e566f91c82883d2a2574ae3b359847e7ecfd854190576'
 PRIVATE_EMAIL = 'wwintj' + '@gmail.com'
 RAW = f'https://raw.githubusercontent.com/{REPO}/main'
 SHELL_SCRIPTS = ('install.sh', 'remote-install.sh', 'update.sh', 'remote-update.sh',
