@@ -16,7 +16,7 @@ Hysteria2 / HY2 自 Stable v1.4.0 起提供，維持既定支援範圍；目前�
 
 ## 功能與文件
 
-Stable v1.5.0 在既有 Full YAML Diff Preview、Generate Merge、Trojan、Shadowsocks、Hysteria2 / HY2、External Sources、Automatic Refresh、Health、Policy、GeoIP、Settings、HTTPS 輔助工具與 Telegram Notifications 的基礎上，加入 Fixed Subscriptions 管理體驗改善。
+Stable v1.6.0 在既有 Full YAML Diff Preview、Generate Merge、Trojan、Shadowsocks、Hysteria2 / HY2、External Sources、Automatic Refresh、Health、Policy、GeoIP、Settings、HTTPS 輔助工具、Telegram Notifications 與 Fixed Subscriptions 管理體驗的基礎上，加入動態國家組與 Default 主選擇器排序改善。
 
 固定訂閱管理支援搜尋、Active / Disabled 狀態篩選、六種排序與結果數量，顯示外部來源數量、Endpoint Health 與 Proxy Health 摘要，並提供清楚的 Copy URL 回饋及響應式行動版排版。普通安裝／升級使用 Latest Stable；正式可用範圍以其 Release Notes 為準。
 
