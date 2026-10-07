@@ -421,8 +421,22 @@ p.form-text, p.helper-text { margin-bottom: var(--space-3); }
   border-color: var(--green);
 }
 
+.login-page {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-page .app-shell {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  padding-block: var(--space-5);
+}
+
 .login-wrap {
-  min-height: calc(100vh - 120px);
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -430,7 +444,20 @@ p.form-text, p.helper-text { margin-bottom: var(--space-3); }
 
 .login-panel {
   width: 100%;
-  max-width: 520px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.login-heading {
+  margin-bottom: var(--space-5);
+}
+
+.login-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+  text-align: center;
 }
 
 .notes-list {

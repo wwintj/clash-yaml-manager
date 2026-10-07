@@ -9,26 +9,25 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='ui.css') }}">
   {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body{% if not logged_in %} class="login-page"{% endif %}>
   <main class="app-shell">
-    {% if csrf_notice %}
+    {% if logged_in and csrf_notice %}
       <p class="form-text mb-3" role="status">{{ csrf_notice | ui_message }}</p>
     {% endif %}
     {% if not logged_in %}
       <div class="login-wrap">
         <div class="terminal-panel login-panel">
           <div class="panel-inner">
-            <div class="panel-title-row">
-              <div>
-                <div class="brand-meta mb-2">Private VPS Tool</div>
-                <h1 class="brand-title">Clash YAML Manager</h1>
-              </div>
-              <div class="green">ONLINE</div>
+            <div class="login-heading">
+              <h1 class="login-title">Clash YAML Manager</h1>
             </div>
+
+            {% if csrf_notice %}
+              <p class="form-text mb-3" role="status">{{ csrf_notice | ui_message }}</p>
+            {% endif %}
 
             {% if error_messages %}
               <div class="terminal-alert error mb-4" role="alert">
-                <div class="panel-subtitle mb-2">ERROR LOG</div>
                 <ul class="mb-0 ps-3">
                   {% for error in error_messages %}
                     <li>{{ error | ui_message }}</li>
@@ -39,7 +38,6 @@
 
             {% if success_message %}
               <div class="terminal-alert success mb-4" role="status">
-                <div class="panel-subtitle mb-1">SUCCESS</div>
                 <p class="mb-0">{{ success_message | ui_message }}</p>
               </div>
             {% endif %}
@@ -47,11 +45,10 @@
             <form action="/login" method="POST">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="ui-form-group">
-                <label for="password" class="form-label">ACCESS PASSWORD</label>
-                <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="Enter management password" required autofocus>
-                <div class="form-text">Enter the management password to continue.</div>
+                <label for="password" class="form-label">Password</label>
+                <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="Enter password" autocomplete="current-password" required autofocus>
               </div>
-              <button type="submit" class="btn btn-green btn-terminal ui-primary w-100">Login</button>
+              <button type="submit" class="btn btn-green btn-terminal ui-primary w-100">Sign in</button>
             </form>
           </div>
         </div>
