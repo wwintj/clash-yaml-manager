@@ -1,11 +1,17 @@
 # Policy Engine MVP
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Policy Engine 已隨 v1.2.0 提供；正式可用版本以 [README Latest Stable](../README.md) 為準。
+[Final Audit](FINAL_AUDIT_REPORT.md) 保留早期推出、migration 與 deferred 驗收的歷史記錄。
 
 Policy Engine controls the type of generated Mihomo proxy groups in both
 Generate YAML and Fixed Subscriptions. It is opt-in: **Preserve / Preserve**
 is the default, and retains the existing YAML generator's behavior.
-Before Stable publication, use explicit `--channel main` for testing.
+只有明確授權的開發部署使用 `--channel main`。
+
+v1.6.0 的 [Default profile](DEFAULT_YAML_COUNTRY_GROUPS.md) 在 Policy／Health
+處理後，將主 selector 排為真實節點、首次出現的國家組、`🚀 手动切换`、DIRECT。
+它保留 managed group 的候選成員與 Policy metadata，不攤平 automatic groups；
+Custom 與特殊組排序維持既有契約。
 
 ## Managed scope and candidates
 

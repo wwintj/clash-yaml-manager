@@ -1,10 +1,13 @@
 # Health-aware Policy Integration MVP
 
-Current release scope, supported migrations and deferred real acceptance: [Final Audit](FINAL_AUDIT_REPORT.md). New functionality is intended for the next Stable; before publication use explicit `--channel main`.
+Health-aware Policy 已隨 v1.2.0 提供；正式可用版本以
+[README Latest Stable](../README.md) 為準。[Final Audit](FINAL_AUDIT_REPORT.md)
+保留早期推出、migration 與 deferred 驗收的歷史記錄。只有明確授權的開發部署
+使用 `--channel main`。
 
-Before Stable publication, use explicit `--channel main` for testing.
-Use only explicit `--channel main` for development deployments. The Flask/Python
-architecture, default template, pinned Mihomo, dependencies and unit files remain.
+v1.6.0 的 [Default profile](DEFAULT_YAML_COUNTRY_GROUPS.md) 在 Health transform
+之後投影主 selector 的引用，不重建已過濾的 country／special group 成員或改寫
+Policy metadata。Custom 排序、Health 的 freshness／minimum／fail-open 契約不變。
 
 ## Settings and scope
 

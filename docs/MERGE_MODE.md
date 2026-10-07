@@ -98,9 +98,13 @@ With the same source/form/mode/local country data, the diff's generated side
 matches actual subsequent Generate YAML bytes. A later edit invalidates the old
 diff and discards any in-flight stale response. Preview is optional.
 
-Default and Custom use the same Merge semantics. The current repository default
-has zero proxies, so both modes produce the same proxy list for that particular
-template; a default containing proxies is preserved exactly like Custom in Merge.
+Default 與 Custom 的 Merge 均保留來源 proxy objects／順序並追加新節點。
+內建 Default 的 proxies 為空，因此同一輸入的 Replace／Merge 產生相同結果。
+v1.6.0 的 [Default profile](DEFAULT_YAML_COUNTRY_GROUPS.md) 明確依來源選擇套用
+主 selector 排序；Custom 仍保留原引用順序並追加新節點，不以檔名或內容猜測 profile。
+使用者自訂且含 proxies 的 Default 在 Merge 保留來源 proxy objects，但主 selector
+仍套用 Default profile；不能將空 built-in template 的 Replace／Merge 等價保證
+延伸至這類來源。
 The real `defaults/default.yaml` is never edited or backed up by preview.
 Custom still requires an actual selected file; after refresh it must be selected
 again. No silent Default fallback is permitted.

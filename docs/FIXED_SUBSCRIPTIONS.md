@@ -50,6 +50,14 @@ Directories are 0700 and files 0600. A custom base is persisted separately from
 uploads; leaving the edit upload empty reuses it. Default-source subscriptions snapshot
 the current built-in template when saved; existing v1 default revisions remain readable.
 
+v1.6.0 的 [Default profile](DEFAULT_YAML_COUNTRY_GROUPS.md) 依 `yaml_source`
+明確套用於 create、explicit Save、source refresh、cached regeneration 與
+Health Policy reconciliation；Custom-source 維持原排序。既有 revision 不會自動
+重寫；**Regenerate Link 只輪換 public token／URL，不重新生成 YAML revision**。
+一般升級仍保留安裝目錄的 Default；Default-source explicit Save／source refresh
+使用當時安裝的 Default，而 cached regeneration／Health reconciliation 沿用
+已提交的 `base.yaml`，不重新讀取安裝目錄的模板。
+
 ## Atomic save and concurrency
 
 All registry reads/mutations and public reads use the existing `core.state.file_lock`
