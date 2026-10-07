@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Simplify the built-in YAML template by creating country strategy groups only for countries actually present in parsed nodes, instead of predefining HK/TW/SG/JP/US/KR placeholders.
+- Simplify the built-in YAML template with dynamic country groups and place real nodes first in the Default primary selector, followed by only the country groups actually present.
 
 ### Fixed
 

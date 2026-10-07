@@ -20,7 +20,7 @@ Hysteria2 / HY2 自 Stable v1.4.0 起提供，維持既定支援範圍；目前�
 
 固定訂閱管理支援搜尋、Active / Disabled 狀態篩選、六種排序與結果數量，顯示外部來源數量、Endpoint Health 與 Proxy Health 摘要，並提供清楚的 Copy URL 回饋及響應式行動版排版。普通安裝／升級使用 Latest Stable；正式可用範圍以其 Release Notes 為準。
 
-main／下一個 Stable 開發中：內建預設 YAML 不再預建 HK/TW/SG/JP/US/KR 六個國家組，改由實際解析到的節點動態建立國家策略組。升級仍保留既有 `defaults/default.yaml`，不會自動換用新模板；詳見 [預設 YAML 國家組](docs/DEFAULT_YAML_COUNTRY_GROUPS.md)。
+main／下一個 Stable 開發中：內建預設 YAML 不再預建 HK/TW/SG/JP/US/KR 六個國家組，改由實際節點動態建立；Default 的主選擇器將真實節點置前，緊接實際存在的國家組，再列手動切換與 DIRECT。Custom 排序保持原契約。升級仍保留既有 `defaults/default.yaml`，不會自動換用新模板；詳見 [預設 YAML 國家組](docs/DEFAULT_YAML_COUNTRY_GROUPS.md)。
 
 [Hysteria2 Final Audit](docs/HYSTERIA2_FINAL_AUDIT_REPORT.md)、[v1.3 Final Audit](docs/V1_3_FINAL_AUDIT_REPORT.md) 與 [v1.2 歷史審計](docs/FINAL_AUDIT_REPORT.md) 保留各階段的歷史驗收記錄。
 
