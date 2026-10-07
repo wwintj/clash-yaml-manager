@@ -4,11 +4,11 @@ UI LANGUAGE: ENGLISH. This contract records the two UI refinement passes.
 VERSION is the version source; README Latest Stable identifies the published
 release. No new business capability is introduced by these presentation changes.
 
-v1.7.0 Phase 1 的登入介面精修：僅未登入頁面使用 login 專用 flex 排版、400px 卡片與置中的 `Clash YAML Manager` 標題，移除 terminal dashboard 式標記、分隔線及多餘提示。欄位為 `Password`／`Enter password`，按鈕為 `Sign in`（沿用 44px primary control）；保留 `password` form contract、autofocus、`autocomplete="current-password"`、CSRF hidden input，以及經 `ui_message` 處理的 alert／status 訊息。CSRF notice 在登入卡片內顯示，共用動態版本 footer 不變。未修改共用 component 定義、登入後介面或認證行為；Latest Stable 仍為 v1.6.0。
+v1.7.0 Phase 1 的登入介面精修：僅未登入頁面使用 login 專用 flex 排版、400px 卡片與置中的 `Clash YAML Manager` 標題，移除 terminal dashboard 式標記、分隔線及多餘提示。欄位為 `Password`／`Enter password`，按鈕為 `Sign in`（沿用 44px primary control）；保留 `password` form contract、autofocus、`autocomplete="current-password"`、CSRF hidden input，以及經 `ui_message` 處理的 alert／status 訊息。CSRF notice 在登入卡片內顯示，共用動態版本 footer 不變。未修改共用 component 定義、登入後介面或認證行為；正式發布狀態以 README Latest Stable 為準。
 
 v1.7.0 Phase 2 僅精修登入後的 chrome：語義化 `header.app-header` 第一列保留唯一 h1 `Clash YAML Manager`、utility role 的 `Change Password` 與帶 CSRF 的 POST `Logout`，第二列整合 `nav[aria-label="Main navigation"]`。移除靜態 Service／ONLINE、Mode／YAML、Parser／protocol list、Backend／FLASK 與 `YAML NODE MANAGEMENT`，不移動到其他頁面。Desktop title 左、actions 右；Mobile title 獨立一列，actions 與 content-width 導覽自然 wrap，保留 href、aria-current、active geometry 及 focus-visible。Login、authenticated alerts、workspace、Settings 內容、modal 與 backend 均不變。
 
-v1.7.0 Phase 3 僅精簡登入後的全域 feedback：沿用 `.terminal-alert` 與原 error／success 顏色，移除 `ERROR LOG`／`SUCCESS` 呈現標題。單條錯誤使用段落，多條使用同一 alert 內的清單；成功訊息直接顯示。保留 `error_messages`／`success_message`、`ui_message`、Jinja autoescape，以及容器的 `role="alert"`／`role="status"`，不逐條新增 role，不新增 icon、toast、animation 或 auto-dismiss。`Generation Complete`、`Temporary Link`、`YAML Changes`、`Generate Result` 等 contextual headings、登入頁、Phase 2 header 與 backend 均不變；Latest Stable 仍為 v1.6.0。
+v1.7.0 Phase 3 僅精簡登入後的全域 feedback：沿用 `.terminal-alert` 與原 error／success 顏色，移除 `ERROR LOG`／`SUCCESS` 呈現標題。單條錯誤使用段落，多條使用同一 alert 內的清單；成功訊息直接顯示。保留 `error_messages`／`success_message`、`ui_message`、Jinja autoescape，以及容器的 `role="alert"`／`role="status"`，不逐條新增 role，不新增 icon、toast、animation 或 auto-dismiss。`Generation Complete`、`Temporary Link`、`YAML Changes`、`Generate Result` 等 contextual headings、登入頁、Phase 2 header 與 backend 均不變；正式發布狀態以 README Latest Stable 為準。
 
 ## Audit and scope
 

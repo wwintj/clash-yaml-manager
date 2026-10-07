@@ -16,7 +16,7 @@ Hysteria2 / HY2 自 Stable v1.4.0 起提供，維持既定支援範圍；目前�
 
 ## 功能與文件
 
-Stable v1.6.0 在既有 Full YAML Diff Preview、Generate Merge、Trojan、Shadowsocks、Hysteria2 / HY2、External Sources、Automatic Refresh、Health、Policy、GeoIP、Settings、HTTPS 輔助工具、Telegram Notifications 與 Fixed Subscriptions 管理體驗的基礎上，加入動態國家組與 Default 主選擇器排序改善。
+v1.6.0 在既有 Full YAML Diff Preview、Generate Merge、Trojan、Shadowsocks、Hysteria2 / HY2、External Sources、Automatic Refresh、Health、Policy、GeoIP、Settings、HTTPS 輔助工具、Telegram Notifications 與 Fixed Subscriptions 管理體驗的基礎上，加入動態國家組與 Default 主選擇器排序改善。
 
 固定訂閱管理支援搜尋、Active / Disabled 狀態篩選、六種排序與結果數量，顯示外部來源數量、Endpoint Health 與 Proxy Health 摘要，並提供清楚的 Copy URL 回饋及響應式行動版排版。普通安裝／升級使用 Latest Stable；正式可用範圍以其 Release Notes 為準。
 
@@ -44,7 +44,7 @@ Fixed 舊 registry v1–v5 只在記憶體補入新功能預設，合法修改�
 
 Web UI 維持英文介面，使用共用字型、控制項與響應式排版，並區分主導覽、次要 tabs、主要操作與緊湊工具按鈕。可用版本以頁首 Latest Stable 為準；[設計契約](docs/UI_CONSISTENCY.md)、[第一輪驗證](docs/UI_CONSISTENCY_REPORT.md)與[密度精修驗證](docs/UI_DENSITY_REFINEMENT_REPORT.md)記錄範圍及限制。
 
-v1.7.0 開發階段持續精簡管理介面：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊；Phase 3 精簡登入後的全域回饋，移除 `ERROR LOG`／`SUCCESS` 呈現標題，單條錯誤直接顯示、多條保留清單，維持訊息語義、escaping 與 accessibility。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；這些改動尚未發布，Latest Stable 仍為 v1.6.0。
+v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊；Phase 3 精簡登入後的全域回饋，移除 `ERROR LOG`／`SUCCESS` 呈現標題，單條錯誤直接顯示、多條保留清單，維持訊息語義、escaping 與 accessibility。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；正式可用版本以頁首 Latest Stable 為準。
 
 ## 一鍵安裝
 
