@@ -61,7 +61,7 @@ def private_yaml_engine():
     return yaml_utils.private_yaml_engine()
 
 
-def transform(source, parsed, special_groups, policy, *, node_update_mode='replace'):
+def transform(source, parsed, special_groups, policy, *, node_update_mode='replace', template_profile='custom'):
     """Return the exact would-be bytes and existing counts, never publish them."""
     if len(source.encode('utf-8')) > MAX_YAML_BYTES or len(source.splitlines()) > MAX_LINES or len(parsed['nodes']) > MAX_NODES:
         raise PreviewLimitError(TOO_LARGE)
@@ -69,7 +69,7 @@ def transform(source, parsed, special_groups, policy, *, node_update_mode='repla
         data = yaml_utils.load_yaml_text(source, engine=private_yaml_engine())
         if isinstance(data, dict) and isinstance(data.get('proxy-groups'), list) and len(data['proxy-groups']) > MAX_SOURCE_GROUPS:
             raise PreviewLimitError(TOO_LARGE)
-        result = yaml_utils.transform_yaml_config(data, parsed['nodes'], parsed['countries'], special_groups, policy, node_update_mode=node_update_mode)
+        result = yaml_utils.transform_yaml_config(data, parsed['nodes'], parsed['countries'], special_groups, policy, node_update_mode=node_update_mode, template_profile=template_profile)
         if not result['success']:
             raise PreviewValidationError(' '.join(result['errors']))
         generated = yaml_utils.serialize_yaml(result['data'], max_bytes=MAX_YAML_BYTES)
@@ -83,7 +83,7 @@ def transform(source, parsed, special_groups, policy, *, node_update_mode='repla
     return generated, summary
 
 
-def preview(source, parsed, special_groups, policy, *, node_update_mode='replace'):
-    generated, summary = transform(source, parsed, special_groups, policy, node_update_mode=node_update_mode)
+def preview(source, parsed, special_groups, policy, *, node_update_mode='replace', template_profile='custom'):
+    generated, summary = transform(source, parsed, special_groups, policy, node_update_mode=node_update_mode, template_profile=template_profile)
     diff = unified(source, generated)
     return dict(changed=source != generated, diff=diff, summary=summary)

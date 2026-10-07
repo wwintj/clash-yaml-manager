@@ -445,7 +445,28 @@ def fill_empty_proxy_groups(data: Dict[str, Any], new_node_names: List[str]) -> 
 # ==========================================
 # 主入口
 # ==========================================
-def transform_yaml_config(data, new_nodes, countries, special_groups=None, policy_config=None, group_transform=None, *, node_update_mode='replace'):
+def validate_template_profile(template_profile):
+    if template_profile not in ('custom', 'default'):
+        raise ConfigValidationError('Template profile is invalid.')
+
+
+def project_default_primary_selector(data, new_nodes, countries):
+    """Project only the Default primary selector after policy/health transforms."""
+    groups = {group['name']: group for group in data['proxy-groups']}
+    assignments = {item.get('node_name'): item.get('group') for item in countries}
+    names = [node['name'] for node in new_nodes]
+    country_refs = []
+    for name in names:
+        group = assignments.get(name)
+        if group in groups and group not in GENERAL_GROUPS and group not in country_refs:
+            country_refs.append(group)
+    # Do not rebuild country candidates or touch other selectors. The generic
+    # append contract remains authoritative for unprofiled/Custom callers.
+    groups['🚀 节点选择']['proxies'][:] = list(dict.fromkeys(
+        names + country_refs + ['🚀 手动切换', 'DIRECT']))
+
+
+def transform_yaml_config(data, new_nodes, countries, special_groups=None, policy_config=None, group_transform=None, *, node_update_mode='replace', template_profile='custom'):
     """Shared in-memory update/validation; no files, state or network work."""
     result: Dict[str, Any] = {
         "success": False,
@@ -466,6 +487,7 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
     result["new_node_count"] = len(new_nodes)
 
     try:
+        validate_template_profile(template_profile)
         mode = node_update.normalize(node_update_mode)
         policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
         validate_input_structure(data)
@@ -551,6 +573,8 @@ def transform_yaml_config(data, new_nodes, countries, special_groups=None, polic
         policy_engine.apply(data, new_nodes, countries, special_groups, policy)
         if group_transform is not None:
             group_transform(data)
+        if template_profile == 'default':
+            project_default_primary_selector(data, new_nodes, countries)
         validate_input_structure(data)
         if {node['name'] for node in new_nodes} & {g['name'] for g in data['proxy-groups']}:
             raise ConfigValidationError('新节点名称与策略组冲突。')
@@ -590,7 +614,7 @@ def process_yaml_config(
     special_groups: Optional[List[str]] = None,
     policy_config: Optional[Dict[str, Any]] = None,
     group_transform=None,
-    *, node_update_mode='replace',
+    *, node_update_mode='replace', template_profile='custom',
 ) -> Dict[str, Any]:
     """替换节点及修复组引用，尽可能保留其余 YAML 内容。"""
     result = dict(success=False, output_path="", backup_path="", old_node_count=0,
@@ -601,11 +625,13 @@ def process_yaml_config(
         return result
     result['new_node_count'] = len(new_nodes)
     try:
+        validate_template_profile(template_profile)
         mode = node_update.normalize(node_update_mode)
         policy = policy_engine.normalize(policy_config if policy_config is not None else policy_engine.defaults())
         result['backup_path'] = backup_yaml(input_path, backup_dir)
         transformed = transform_yaml_config(load_yaml(input_path), new_nodes, countries,
-                                            special_groups, policy, group_transform, node_update_mode=mode)
+                                            special_groups, policy, group_transform, node_update_mode=mode,
+                                            template_profile=template_profile)
         data = transformed.pop('data', None)
         transformed.pop('output_path')
         transformed.pop('backup_path')

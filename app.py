@@ -542,7 +542,8 @@ def preview_yaml_diff():
                 source = yaml_diff.read_source(stream)
         else:
             source = yaml_diff.read_source(file.stream)
-        result = yaml_diff.preview(source, parsed, generation_special_groups(), policy, node_update_mode=mode)
+        result = yaml_diff.preview(source, parsed, generation_special_groups(), policy, node_update_mode=mode,
+                                   template_profile='default' if file is None else 'custom')
         response = jsonify(ok=True, **result)
         if len(response.get_data()) > yaml_diff.MAX_RESPONSE_BYTES:
             raise yaml_diff.PreviewLimitError(yaml_diff.TOO_LARGE)
@@ -619,7 +620,8 @@ def process_config():
 
     special_groups = generation_special_groups()
 
-    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups, policy, node_update_mode=mode)
+    yaml_result = generator.generate(upload_path, DIR_OUTPUTS, DIR_BACKUPS, parsed_result, special_groups, policy, node_update_mode=mode,
+                                     template_profile='default' if use_default_yaml else 'custom')
 
     if not yaml_result["success"]:
         context["error_messages"].extend(yaml_result["errors"])

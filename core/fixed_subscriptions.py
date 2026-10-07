@@ -348,7 +348,8 @@ class FixedSubscriptions:
                     os.close(fd)
             out = private_directory(Path(scratch) / 'output')
             backups = private_directory(Path(scratch) / 'backup')
-            result = generator.generate(candidate / 'base.yaml', out, backups, aggregate, source['special_groups'], source['policy_config'], transform if enabled else None)
+            result = generator.generate(candidate / 'base.yaml', out, backups, aggregate, source['special_groups'], source['policy_config'], transform if enabled else None,
+                                        template_profile=source['yaml_source'])
             if not result['success']:
                 raise GenerationError('生成失败，请检查节点、YAML 结构及策略组引用。旧订阅保持不变。')
             content = Path(result['output_path']).read_bytes()
