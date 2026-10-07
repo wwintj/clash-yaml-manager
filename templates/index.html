@@ -77,18 +77,20 @@
 
       {% if error_messages %}
         <div class="terminal-alert error mb-4" role="alert">
-          <div class="panel-subtitle mb-2">ERROR LOG</div>
-          <ul class="mb-0 ps-3">
-            {% for error in error_messages %}
-              <li>{{ error | ui_message }}</li>
-            {% endfor %}
-          </ul>
+          {% if error_messages | length == 1 %}
+            <p class="mb-0">{{ error_messages[0] | ui_message }}</p>
+          {% else %}
+            <ul class="mb-0 ps-3">
+              {% for error in error_messages %}
+                <li>{{ error | ui_message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
         </div>
       {% endif %}
 
       {% if success_message and not result %}
         <div class="terminal-alert success mb-4" role="status">
-          <div class="panel-subtitle mb-1">SUCCESS</div>
           <p class="mb-0">{{ success_message | ui_message }}</p>
         </div>
       {% endif %}
