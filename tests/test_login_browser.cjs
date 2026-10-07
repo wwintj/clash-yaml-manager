@@ -96,8 +96,8 @@ async function changePassword(context, page, current, next) {
       assert(await page.getByRole('status').filter({hasText:'Log in again; any saved draft will be restored after login.'}).isVisible());
       await check(page,'csrf',width,height);
       await password.fill(originalPassword);await navigate(page,()=>password.press('Enter'));
-      for(const text of ['YAML NODE MANAGEMENT','ONLINE','Change Password','Logout','Generate YAML','Fixed Subscriptions','Settings'])
-        assert((await page.locator('body').innerText()).includes(text));
+      for(const text of ['Clash YAML Manager','Change Password','Logout','Generate YAML','Fixed Subscriptions','Settings'])
+        assert((await page.locator('.app-header').innerText()).includes(text));
       assert.equal(await page.locator('.login-panel').count(),0);
       // Exercise the actual success path; only the disposable app's password is changed.
       const temporaryPassword='TEST_ONLY_LOGIN_SUCCESS_PASSWORD';

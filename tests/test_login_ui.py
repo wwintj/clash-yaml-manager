@@ -78,9 +78,9 @@ def test_login_csrf_notice_remains_in_card(client):
 
 def test_authenticated_header_navigation_and_password_dialog_remain(logged_in):
     html = logged_in.get('/').text
-    for text in ('YAML NODE MANAGEMENT', 'ONLINE', 'Change Password', 'Logout',
+    for text in ('Clash YAML Manager', 'Change Password', 'Logout',
                  'Generate YAML', 'Fixed Subscriptions', 'Settings'):
         assert text in html
     assert 'class="login-page"' not in html and 'class="login-heading"' not in html
-    for component in ('app-header', 'panel-title-row', 'brand-meta', 'brand-title', 'changePasswordModal'):
+    for component in ('app-header', 'app-header-main', 'brand-title', 'changePasswordModal'):
         assert component in html
