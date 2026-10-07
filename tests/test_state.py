@@ -71,7 +71,7 @@ def test_authoritative_consumers_reject_unsafe_object_and_leave_it_intact(tmp_pa
     path = tmp_path / filename
     if kind=='fifo':os.mkfifo(path, 0o600)
     else:path.symlink_to(tmp_path/'missing')
-    before = path.lstat()
+    before = unchanged_metadata(path)
     code = f'''
 import sys
 from core.{module} import {owner}
@@ -86,4 +86,4 @@ else:
     result = subprocess.run([sys.executable, '-c', code, str(tmp_path)], cwd=ROOT,
                             capture_output=True, timeout=3)
     assert result.returncode == 0, result.stderr.decode()
-    assert path.lstat() == before
+    assert unchanged_metadata(path) == before
