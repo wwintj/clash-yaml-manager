@@ -59,10 +59,10 @@ def test_header_keeps_account_actions_and_integrated_active_navigation(logged_in
 
 
 @pytest.mark.parametrize('context,label,role', [
-    ({'error_messages': ['Header scope test error.']}, 'ERROR LOG', 'alert'),
-    ({'success_message': 'Header scope test success.'}, 'SUCCESS', 'status'),
+    ({'error_messages': ['Header scope test error.']}, 'Header scope test error.', 'alert'),
+    ({'success_message': 'Header scope test success.'}, 'Header scope test success.', 'status'),
 ])
-def test_authenticated_alert_headings_remain_outside_header(logged_in, context, label, role):
+def test_authenticated_feedback_remains_outside_header(logged_in, context, label, role):
     with logged_in.session_transaction() as session:
         session['page_context'] = context
     html = logged_in.get('/').text
