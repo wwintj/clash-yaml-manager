@@ -11,7 +11,7 @@ from werkzeug.datastructures import MultiDict
 
 from conftest import LINK, ROOT, post
 from core import generator, node_update, policy_engine, yaml_diff, yaml_utils as yaml
-from test_yaml_diff import apply_diff, fields, body, BEFORE_HASHES, SOURCE, ROUTE, snapshot, token
+from test_yaml_diff import apply_diff, fields, body, APPROVED_HASHES, SOURCE, ROUTE, snapshot, token
 
 BASE = (ROOT/'tests/fixtures/merge/base.yaml').read_text()
 
@@ -182,13 +182,13 @@ def test_replace_legacy_rejection_redirect_remains_compatible(logged_in,mode):
 
 @pytest.mark.parametrize('source',['custom','default'])
 @pytest.mark.parametrize('mode',[None,'replace'])
-def test_replace_known_before_output_sha_and_cleanup_unchanged(web,logged_in,source,mode):
+def test_replace_approved_output_sha_and_cleanup_unchanged(web,logged_in,source,mode):
     values=fields(source)
     if mode is not None:values['node_update_mode']=mode
     response=post(logged_in,'/process',body(values));assert response.status_code==302
     with logged_in.session_transaction() as session:context=session['page_context']
     raw=Path(web.DIR_OUTPUTS,context['output_filename']).read_bytes()
-    assert hashlib.sha256(raw).hexdigest()==BEFORE_HASHES[source]
+    assert hashlib.sha256(raw).hexdigest()==APPROVED_HASHES[source]
     data=yaml.load_yaml_text(raw.decode())
     assert [p['name'] for p in data['proxies']]==['🇺🇸 Test']
     assert all('old' not in g['proxies'] for g in data['proxy-groups'])

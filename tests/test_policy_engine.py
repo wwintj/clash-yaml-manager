@@ -1,4 +1,4 @@
-"""Pinned schema and pure transformations; goldens captured from pre-policy HEAD."""
+"""Pinned schema and pure transformations; approved Custom and Default goldens."""
 import hashlib
 from pathlib import Path
 import socket
@@ -46,7 +46,7 @@ def groups(result):
 
 @pytest.mark.parametrize('path', ['custom', 'default'])
 @pytest.mark.parametrize('explicit', [False, True])
-def test_preserve_exact_pre_policy_bytes_and_default_10410_rules(tmp_path, path, explicit):
+def test_preserve_custom_golden_and_current_default_10410_rules(tmp_path, path, explicit):
     original = FIXTURES/'base.yaml' if path == 'custom' else ROOT/'defaults/default.yaml'
     before = original.read_bytes()
     result = generate(tmp_path, policy.defaults() if explicit else None, original)
@@ -57,7 +57,7 @@ def test_preserve_exact_pre_policy_bytes_and_default_10410_rules(tmp_path, path,
     else:
         assert hashlib.sha256(output).hexdigest() == (FIXTURES/'preserve-default.sha256').read_text().strip()
         assert result['rule_count'] == 10410
-        assert hashlib.sha256(before).hexdigest() == 'a30bd14fd5b5873d8eaa6c56e3205ddcf8fc39f4efa30675fdb88c8cec9ecf9b'
+        assert hashlib.sha256(before).hexdigest() == 'bc24dc51c528f7410c7e566f91c82883d2a2574ae3b359847e7ecfd854190576'
     assert original.read_bytes() == before
 
 

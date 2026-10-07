@@ -17,7 +17,9 @@ from conftest import LINK, ROOT, post
 from test_geoip import readers
 
 SOURCE = '# retained header\ndns: {enable: true, nameserver: ["1.1.1.1"]}\nproxies: [{name: old, type: vless, server: old.example, port: 443, uuid: fake}]\nproxy-groups: [{name: custom, type: select, proxies: [old, DIRECT]}]\nrules: [MATCH,DIRECT]\nx-private: "<script>alert(1)</script> & Ω"\n'
-BEFORE_HASHES = {'custom': '77812738ec3a51c8f160cacedc24dc97a9e9d3eeabc7bb0c2db78cc2dd222fda', 'default': '3c491ae173585c7a42ceadd4d8634753f38d932a36d92aac0ef7bb16a7e80a69'}
+# Custom keeps its original golden; Default reflects the approved country cleanup.
+# Default bytes independently reproduced with frozen 8bab3bf runtime and new template.
+APPROVED_HASHES = {'custom': '77812738ec3a51c8f160cacedc24dc97a9e9d3eeabc7bb0c2db78cc2dd222fda', 'default': '7b7ba93e842b9e24c133544248d9cc7c8d5f241ff819875ca62d70db9ea79c64'}
 ROUTE = '/api/preview-yaml-diff'
 
 
@@ -86,11 +88,11 @@ def test_exact_preview_response_matches_subsequent_generate(web,logged_in,reader
 
 
 @pytest.mark.parametrize('source',['custom','default'])
-def test_known_before_refactor_generate_output_identical(web,logged_in,source):
+def test_approved_generate_output_identical(web,logged_in,source):
     response=post(logged_in,'/process',body(fields(source)))
     assert response.status_code==302
     with logged_in.session_transaction() as session:name=session['page_context']['output_filename']
-    assert hashlib.sha256(Path(web.DIR_OUTPUTS,name).read_bytes()).hexdigest()==BEFORE_HASHES[source]
+    assert hashlib.sha256(Path(web.DIR_OUTPUTS,name).read_bytes()).hexdigest()==APPROVED_HASHES[source]
 
 
 @pytest.mark.parametrize('source',[SOURCE.replace('\n','\r\n'),SOURCE.rstrip('\n'),'\ufeff'+SOURCE])
