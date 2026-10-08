@@ -4,6 +4,11 @@ v1.8.0 Phase 2 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
 `scripts/backup_audit.py` 使用 Python 標準函式庫，只讀檢查指定的本機備份。
 它不建立備份、不修改備份格式，也不恢復任何資料。
 
+v1.8.0 Phase 3A 另提供 [Manifest v1 離線 verifier](BACKUP_MANIFEST_V1.md)，
+只驗證有清單的合成離線 fixture，區分 file hashes、manifest digest 與操作者
+提供的外部 trust anchor。未整合至 updater／uninstall，也不替歷史備份補寫
+manifest；本頁的 Phase 2 結構檢查行為保持不變，所有工具仍是 `restore_proven=false`。
+
 ## 既有備份契約
 
 本輪已審閱 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、
@@ -134,7 +139,8 @@ Updater 的分階段複製、uninstall 的資料範圍與 UI 局部覆蓋必須�
 固定密鑰及資料關聯，並測試啟動與業務行為；本 Phase 未做這些操作。
 恢復舊 auth state 可能恢復舊密碼／版本並令舊 session 再次有效；不能盲目覆蓋最新 state。
 
-未來若修改備份 writer，可在 writers 已 quiet 的一致性邊界建立有版本的 manifest，
+Phase 3A 已定義 Manifest v1 schema／canonical bytes 和獨立離線 verifier；
+真正 writer 與一致性收集流程仍未實作。未來若修改備份 writer，可在 writers 已 quiet 的一致性邊界建立有版本的 manifest，
 記錄檔案集合、bytes 雜湊、必要 metadata、應用識別與備份範圍，原子發布完成標記，
 並將簽章／可信 digest 放在受保護的外部 trust anchor。Verifier 必須有界解析、
 拒絕 traversal／重複項目、驗證信任來源，再做獨立的隔離恢復測試。
