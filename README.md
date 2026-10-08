@@ -50,7 +50,9 @@ v1.8.0 開發階段：修正 `POST /process` 直接回傳 HTTP 400 時，Generat
 
 v1.8.0 Phase 2 開發功能新增唯讀 [Backup Audit CLI](docs/BACKUP_READINESS.md)，區分 updater、uninstall data、UI overlay 與未知備份，回報有界結構檢查結果且固定 `restore_proven=false`。它不修改備份、不執行恢復；結構完整不代表真正可恢復。尚未發布，Latest Stable 仍為 v1.7.0。
 
-v1.8.0 Phase 3A 開發功能新增 [Manifest v1 離線 verifier](docs/BACKUP_MANIFEST_V1.md)，檢查確定性清單、完整宣告範圍及檔案 hash，並區分內部一致與操作者獨立提供的 trust anchor。尚未整合至 backup writer，不補寫歷史 manifest、不執行 restore，固定 `restore_proven=false`；Latest Stable 仍為 v1.7.0。
+v1.8.0 Phase 3A 開發功能新增 [Manifest v1 離線 verifier](docs/BACKUP_MANIFEST_V1.md)，檢查確定性清單、完整宣告範圍及檔案 hash，並區分內部一致與操作者獨立提供的 trust anchor。不補寫歷史 manifest、不執行 restore，固定 `restore_proven=false`；Latest Stable 仍為 v1.7.0。
+
+v1.8.0 Phase 3B 開發功能新增 [Offline Verified Snapshot Writer](docs/BACKUP_WRITER.md)，從明確指定的 quiet 離線目錄建立私人 staging，以既有 Manifest v1 verifier 驗證後原子發布全新目的地；明列 exclusions、資源與失敗清理邊界。Manifest digest 必須另行獨立保存才可作 trust anchor，restore 仍未驗證；未接入 updater／production，尚未發布，Latest Stable 仍為 v1.7.0。
 
 ## 一鍵安裝
 

@@ -1,8 +1,9 @@
 # Backup Manifest v1 — Offline Verification Protocol
 
-v1.8.0 Phase 3A 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
-本輪只提供獨立 protocol、[JSON Schema](../schemas/backup-manifest-v1.schema.json)
-及離線 verifier。沒有 production backup writer、restore 或 updater 整合。
+v1.8.0 Phase 3A／3B 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
+Phase 3A 提供獨立 protocol、[JSON Schema](../schemas/backup-manifest-v1.schema.json)
+及離線 verifier；Phase 3B 新增 [Offline Verified Snapshot Writer](BACKUP_WRITER.md)，
+僅在隔離合成 fixtures 驗證。沒有 production backup writer、restore 或 updater 整合。
 所有結果固定 `restore_proven=false`。
 
 ## Schema 與範圍
@@ -85,8 +86,9 @@ JSON code block 的呈現換行不屬於 serialized bytes。
 
 Exclusion 根本身的 type／permissions 仍檢查，但其內部完全不讀取／盤點。
 Exclusions 不能重複、互相包含，也不能與被列入 entries 的後代衝突。
-例如 venv 內可能有指向系統 Python 的合法 symlink，未來 writer 可以明列
-venv exclusion；verifier 不跟隨它，也不把它算作已驗證的環境。
+例如 venv 內可能有指向系統 Python 的合法 symlink，Phase 3B writer 要求操作者明列
+venv exclusion 才能略過其內部，保留空根但不複製 payload；verifier 不跟隨它，
+也不把它算作已驗證的環境。
 
 有 exclusions 時，成功結果必須含 `EXCLUDED_CONTENT_NOT_VERIFIED`，並固定
 `full_file_coverage=false`。`declared_scope_verified=true` 只表示其餘宣告範圍一致。
@@ -167,7 +169,12 @@ size／mtime／ctime；讀取中的增長、替換或檢查後變更均保守失
 filename、manifest／檔案內容、digest、permission 值或原始 exceptions。
 所有 fixtures 都使用 `tmp_path` 合成秘密資料，沒有 SSH 或 production POST。
 
-## Legacy compatibility 與未來 writer
+## Offline writer、legacy compatibility 與 production 邊界
+
+Phase 3B 的獨立 writer 會從 quiet 離線來源建立新樹、記錄實際 stored metadata／bytes，
+用本 protocol 的 canonical bytes 與實際 verifier 驗證後 no-replace 原子發布。
+Digest 只作獨立保存的 handoff，不自動成為 trusted anchor；失敗清理、exclusions
+與資源要求見 [Writer 契約](BACKUP_WRITER.md)。Writer 不改變本頁 verifier 的信任模型。
 
 既有 updater／uninstall／manual snapshots 仍沒有 Manifest v1。
 請用 [Phase 2 結構 audit](BACKUP_READINESS.md)，不能事後補寫 manifest 並宣稱
@@ -184,5 +191,6 @@ Phase 2 的舊分類規則不因此放寬；具有新 manifest 的 fixture 使�
 4. 建立與可修改備份分離的受保護 digest catalog 或簽章／trust anchor，於建立時綁定清單與範圍，另行保護其生命週期。
 5. 與部署格式、原帳戶映射及 legacy 相容性協調，在隔離環境另行授權執行真正的 restore／啟動／業務驗證。
 
-本輪未提供這些 writer／restore 操作，也未聲稱依賴、認證版本、Fixed revision／
+獨立 offline writer 不等於上述 production 一致性收集、trust store 或 restore 整合；
+本輪未聲稱依賴、認證版本、Fixed revision／
 retired token、輸出關聯或應用啟動已被驗證。檔案一致性不代表 state 相容或可恢復。

@@ -9,6 +9,11 @@ v1.8.0 Phase 3A 另提供 [Manifest v1 離線 verifier](BACKUP_MANIFEST_V1.md)�
 提供的外部 trust anchor。未整合至 updater／uninstall，也不替歷史備份補寫
 manifest；本頁的 Phase 2 結構檢查行為保持不變，所有工具仍是 `restore_proven=false`。
 
+Phase 3B 新增 [Offline Verified Snapshot Writer](BACKUP_WRITER.md)，僅從操作者
+指定的 quiet 離線來源建立全新私人 staging，經既有 verifier 驗證後原子發布；
+明列 exclusions、資源、清理與外部 digest handoff。本 Phase 僅執行合成 fixtures，
+未修改既有 updater／uninstall writer、備份格式或歷史備份，也未執行 restore。
+
 ## 既有備份契約
 
 本輪已審閱 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、
@@ -130,9 +135,9 @@ symlink（包含 broken link），並拒絕普通檔案 hardlink，避免讀到�
 writer、bind mount 或 filesystem 故障；請只檢查不再寫入的受保護本機備份。
 觸發變更時回報 `BACKUP_CHANGED`／`UNSAFE`，不自動修復或取得會寫入檔案的 lock。
 
-## 真正恢復驗證及未來 manifest
+## 真正恢復驗證與 production 整合
 
-目前沒有可信的原始清單／雜湊，不能證明任意普通檔案內容與備份建立當時相同，
+既有 legacy snapshots 沒有可信的原始清單／雜湊，不能證明任意普通檔案內容與備份建立當時相同，
 也不能證明所有當時存在的 optional／業務檔案都被收集。
 Updater 的分階段複製、uninstall 的資料範圍與 UI 局部覆蓋必須分別理解。
 真正恢復需另行授權，在隔離環境確認版本與 state 相容、依賴、unit、權限、
@@ -140,9 +145,11 @@ Updater 的分階段複製、uninstall 的資料範圍與 UI 局部覆蓋必須�
 恢復舊 auth state 可能恢復舊密碼／版本並令舊 session 再次有效；不能盲目覆蓋最新 state。
 
 Phase 3A 已定義 Manifest v1 schema／canonical bytes 和獨立離線 verifier；
-真正 writer 與一致性收集流程仍未實作。未來若修改備份 writer，可在 writers 已 quiet 的一致性邊界建立有版本的 manifest，
+Phase 3B 的獨立 offline writer 已支援新 snapshot，但 production 一致性收集流程
+與既有 writer 整合仍未實作。未來若修改 production 備份 writer，可在 writers 已 quiet 的一致性邊界建立有版本的 manifest，
 記錄檔案集合、bytes 雜湊、必要 metadata、應用識別與備份範圍，原子發布完成標記，
 並將簽章／可信 digest 放在受保護的外部 trust anchor。Verifier 必須有界解析、
 拒絕 traversal／重複項目、驗證信任來源，再做獨立的隔離恢復測試。
 不能事後替舊備份產生 manifest，然後把它稱為原始可信校驗資料。
-本 Phase 沒有修改 writer、加入 manifest、實作 restore 或操作 production。
+Phase 2 audit 維持唯讀；Phase 3B 只在全新離線 snapshot 寫入 manifest，
+沒有修改既有部署 writer、補寫歷史清單、實作 restore 或操作 production。
