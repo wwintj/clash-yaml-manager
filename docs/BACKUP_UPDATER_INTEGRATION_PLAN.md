@@ -4,12 +4,16 @@ v1.8.0 Phase 3C 為調查、合成驗證與設計階段，尚未發布；Latest 
 保持 v1.7.0。本輪不修改 updater、uninstall、Writer、Manifest v1 或 verifier，
 不存取 production／歷史真實備份，也不實作 collector、trust store 或 restore。
 
-結論：可進入 **A：明確 opt-in、範圍受限的 verified sidecar** 的實作階段，
-前提是最終 commit 的 Ubuntu RC 通過下列 gate。**B：取代 legacy updater
-backup 不相容**。Sidecar 只驗證宣告範圍的 stored bytes，不能稱整個 updater
-backup 已驗證，更不能稱恢復已證明。所有結果仍為 `restore_proven=false`。
-本頁記錄設計與驗證契約；最終 SHA、Ubuntu run URL、實際 Linux Python 版本
-與結果由本輪外部驗收報告記錄，不預先宣稱尚未執行的 RC 通過。
+目前結論：**READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW**。
+Phase 3C-R1 的 exact-SHA Ubuntu recovery RC 已通過完整驗證與真實 kernel ENOSYS／
+Writer refusal gate；歷史失敗與本輪證據見下節。這僅允許審閱
+**A：明確 opt-in、範圍受限的 verified sidecar**，不是 Phase 3D 已實作，也不是
+production deployment approval。**B：取代 legacy updater backup 不相容**。
+Sidecar 只驗證宣告範圍的 stored bytes，不能稱整個 updater backup 已驗證，
+更不能稱恢復已證明。所有結果仍為 `restore_proven=false`。
+本頁記錄 recovery RC 的已完成結果；文件更新後的 final candidate 仍須另行通過
+exact-SHA Ubuntu RC。最終 SHA 與該 run 的 identity／結果由外部驗收報告記錄，
+不預先宣稱尚未執行的 final candidate RC 通過。
 
 ## 既有契約與實際順序
 
@@ -109,8 +113,11 @@ tests 保持原樣。全部 fixtures 都是 test temporary directory 內的 synt
 - 實際 descriptor-relative `O_NOFOLLOW` open 拒絕 file／directory symlinks，
   安全普通檔案的 fd identity 與 bytes 保持一致。
 - 僅在獨立子行程設定 seccomp filter，讓 kernel 對 renameat2 回傳 ENOSYS。
-  先直接驗證 native syscall 的 errno，再呼叫未改動的 Writer：必須拒絕發布、
-  清理己有 staging，不退回一般 rename。主測試行程／runner policy 不變。
+  在 Writer 呼叫前分別記錄直接 syscall 與 libc wrapper 的 rc／errno；raw syscall
+  必須精確為 ENOSYS，wrapper 也必須拒絕。再呼叫未改動的 Writer，要求拒絕發布、
+  清理己有 staging、來源與既有目的地完整。普通 rename／renameat 設 SIGSYS
+  tripwires，並由 forked grandchildren 實際觸發證明；Writer 必須在同一 filter 下
+  正常回報 refusal。主測試行程／runner policy 不變，未新增 skip／xfail。
 - 四個資源 profile 呼叫真實 copy、stored-byte scan、manifest、fsync、
   pre-/post-publication verifier；timing wrapper 不模擬成功或放寬限制。
 
@@ -129,6 +136,62 @@ API 要求 branch／tag ref，不能直接傳 commit SHA；dispatch 前核對 `m
 checkout。Run metadata SHA、checkout SHA、
 `Validated commit SHA` 必須全部相等；等待 completed/success。若失敗，STOP，
 不得透過擴大修改 Writer／updater 範圍繞過。本頁不會為填入 run URL 再變更已驗證 SHA。
+
+## Phase 3C-R1：ENOSYS gate recovery 證據
+
+| Run | 精確 SHA | 已完成結果 |
+| --- | --- | --- |
+| [37827445213](https://github.com/wwintj/clash-yaml-manager/actions/runs/37827445213)（Phase 3C） | `d35b01678b4f43550cc17c5530082734499907f0` | **FAIL**；3490 passed、1 failed。保留原 run，不改寫歷史。 |
+| [37852424366](https://github.com/wwintj/clash-yaml-manager/actions/runs/37852424366)（Phase 3C-R1 recovery） | `2e87f27bafd996fa4f8368cee95f38afd4316d7c` | **completed/success**；3491 passed、0 failed，936.11 s；`LINUX_NATIVE_UNAVAILABLE: PASS`。 |
+
+Recovery run 的 metadata head SHA、checkout SHA 與 `Validated commit SHA` 都是
+`2e87f27bafd996fa4f8368cee95f38afd4316d7c`。實際環境為 Ubuntu 24.04、
+x86_64、kernel `6.17.0-1022-azure`、Python `3.12.15`、glibc `2.39`。
+macOS 本機完整 pytest 為 3483 passed、8 個 Linux-only skipped；跳過不當成
+Linux 證據。Browser 21/21、static checks、validate-only 與 diff check 均 PASS。
+
+原失敗是測試要求 `libc.renameat2` 的 errno 必須等於 raw kernel ENOSYS。
+舊 log 未記錄實際 rc／errno，且失敗發生在 Writer 呼叫之前，不能把舊 run
+描述成已量到 EINVAL 或已確認 Writer 缺陷。本輪同類 runner 的實測為
+raw syscall `rc=-1 / errno=38 (ENOSYS)`，而實際 libc wrapper
+`rc=-1 / errno=22 (EINVAL)`；兩者都拒絕。
+[glibc 2.39 renameat2 原始碼](https://github.com/bminor/glibc/blob/glibc-2.39/sysdeps/unix/sysv/linux/renameat2.c)
+中的條件分支會在 nonzero flags 的 kernel ENOSYS 後改設 EINVAL。
+因此修正的是 wrapper 與 kernel errno 相同的錯誤假設；保留精確 raw ENOSYS，
+再驗證 Writer 實際使用的 wrapper 與真實 Writer，沒有只測 raw syscall。
+
+獨立檢查與實測證據如下：
+
+- `AUDIT_ARCH=0xc000003e`；`sock_filter` 8 bytes、`sock_fprog` 16 bytes，
+  pointer offset 8、little endian。BPF 先讀 arch，正確架構跳到 syscall load；
+  不符則 KILL_PROCESS。匹配 renameat2 才回 `SECCOMP_RET_ERRNO | 38`，
+  其餘普通 rename tripwires 後才 ALLOW，未發現原架構或 jump offset 錯誤。
+- 實際 syscall numbers：renameat2 `316`、rename `82`、renameat `264`，
+  由 runner 系統 header 解析，與
+  [Linux x86_64 syscall table](https://raw.githubusercontent.com/torvalds/linux/v6.17/arch/x86/entry/syscalls/syscall_64.tbl)
+  一致。aarch64 分支僅做靜態審閱，沒有宣稱 ARM Linux native PASS。
+- `PR_SET_NO_NEW_PRIVS` 與 `PR_SET_SECCOMP` 都是 `rc=0 / errno=0`；
+  getter 確認 NNP state `1`、seccomp mode `2`。直接 syscall 的實測 ENOSYS
+  證明 filter 確實攔截預期 syscall；安裝失敗不忽略。
+- `ctypes.CDLL(..., use_errno=True)`，各 rc／errno probe 前 reset errno，返回後立即
+  `get_errno()`；generic syscall 使用 `c_long` return 與明確 variadic argument
+  types，wrapper 使用其實際 C signature。PRE_WRITER bounded JSON 在任何
+  Writer 呼叫前 flush，只含固定技術欄位，沒有 source payload 或任意路徑。
+- 兩個 forked grandchildren 的實際 rename／renameat syscalls 均被 SIGSYS 終止，
+  證明 no-fallback tripwires 生效；core limit 只在 child 與其 descendants 設定。
+  在同一 filter 下，未改動的 `writer.create(...)` 實際執行並正常回報
+  `FAILED / NOT_PUBLISHED / NO_REPLACE_UNAVAILABLE`，不是 mock。
+- Cleanup `CLEANED`、目的地未產生、無本次 staging；來源 bytes／重要 metadata、
+  既有 empty target 與 unrelated synthetic backup 保持完整。
+  `restore_proven=false`、沒有成功 manifest digest。Writer、verifier、Manifest v1、
+  updater 與 runtime 均未修改，沒有 production 存取／restore／真實備份刪除。
+
+[Kernel seccomp 文件](https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html)、
+[generic syscall 文件](https://man7.org/linux/man-pages/man2/syscall.2.html) 與
+[Python ctypes 文件](https://docs.python.org/3.12/library/ctypes.html)
+分別支持 filter／inheritance、raw syscall 路徑與 errno handling 的檢查。
+本輪沒有發現需要修改 Writer 的缺陷。這個合成 unavailable-syscall gate 不證明
+production filesystem、off-host disaster recovery 或 restore。
 
 ## 資源可行性
 
@@ -279,6 +342,7 @@ Phase 3D 只能在另行授權後實作 A，acceptance 至少包含：
    static／validate-only、exact-SHA Ubuntu RC 通過；沒有 production access／credentials
    洩漏。Production rollout 與 restore acceptance 各需另行授權。
 
-因此，Phase 3C 的「READY FOR INTEGRATION IMPLEMENTATION」僅適用於上述
-受限 A 設計，且以 final Ubuntu PASS 為前提；不是 integration 已存在、production
-部署就緒、complete backup verified 或 restore proven。
+目前的「READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW」僅適用於上述
+受限 A 設計；recovery gate 已取得真實 Linux 證據，文件更新後的 final candidate
+仍需 exact-SHA Ubuntu PASS。Phase 3D 實作另需授權；不是 integration 已存在、
+production 部署就緒、complete backup verified 或 restore proven。
