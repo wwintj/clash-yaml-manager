@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Clash YAML Manager Backup Manifest v1",
+  "description": "離線檔案清單格式；規範化路徑、排序、階層、exclusions 與 canonical bytes 的額外要求見 docs/BACKUP_MANIFEST_V1.md。不是 production backup writer。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "snapshot_type", "snapshot_scope", "root_metadata", "entries", "exclusions"],
+  "properties": {
+    "schema_version": {"const": 1, "type": "integer"},
+    "snapshot_type": {"enum": ["UPDATER_SNAPSHOT", "UNINSTALL_DATA_SNAPSHOT", "UI_OVERLAY_BACKUP"]},
+    "snapshot_scope": {"enum": ["FULL_TREE", "DECLARED_EXCLUSIONS"]},
+    "root_metadata": {"$ref": "#/$defs/permissions"},
+    "entries": {"type": "array", "maxItems": 4094, "items": {"$ref": "#/$defs/entry"}},
+    "exclusions": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "reason"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "reason": {"enum": ["VENV_NOT_VERIFIED", "EPHEMERAL_RUNTIME", "OUT_OF_SCOPE"]}
+        }
+      }
+    }
+  },
+  "allOf": [{
+    "if": {"properties": {"snapshot_scope": {"const": "FULL_TREE"}}},
+    "then": {"properties": {"exclusions": {"maxItems": 0}}},
+    "else": {"properties": {"exclusions": {"minItems": 1}}}
+  }],
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "not": {"const": "BACKUP_MANIFEST.json"},
+      "pattern": "^[^/\\:\u0000-\u001f\u007f-\u009f]+(?:/[^/\\:\u0000-\u001f\u007f-\u009f]+)*$",
+      "description": "NFC、相對 POSIX 路徑，最多 1024 UTF-8 bytes／12 分段。額外規則由離線 verifier 強制執行。"
+    },
+    "mode": {"type": "string", "pattern": "^0[0-7]{3}$"},
+    "owner": {"type": "integer", "minimum": 0, "maximum": 4294967294},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "uid", "gid"],
+      "properties": {
+        "mode": {"$ref": "#/$defs/mode"},
+        "uid": {"$ref": "#/$defs/owner"},
+        "gid": {"$ref": "#/$defs/owner"}
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "type", "size", "sha256", "mode", "uid", "gid"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "type": {"enum": ["file", "directory"]},
+        "size": {"type": ["integer", "null"], "minimum": 0, "maximum": 9223372036854775807},
+        "sha256": {"oneOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]},
+        "mode": {"$ref": "#/$defs/mode"},
+        "uid": {"$ref": "#/$defs/owner"},
+        "gid": {"$ref": "#/$defs/owner"}
+      },
+      "allOf": [{
+        "if": {"properties": {"type": {"const": "file"}}},
+        "then": {"properties": {"size": {"type": "integer"}, "sha256": {"type": "string"}}},
+        "else": {"properties": {"size": {"type": "null"}, "sha256": {"type": "null"}}}
+      }]
+    }
+  }
+}
