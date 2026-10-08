@@ -68,7 +68,7 @@
           </div>
 
           <nav class="ui-nav app-header-nav" aria-label="Main navigation">
-            <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Generate YAML</a>
+            <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint in ('index', 'process_config') %}aria-current="page"{% endif %}>Generate YAML</a>
             <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
             <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
           </nav>
