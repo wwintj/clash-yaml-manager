@@ -123,8 +123,10 @@ tests 保持原樣。全部 fixtures 都是 test temporary directory 內的 synt
 並在 child 設定 no-new-privileges；[kernel seccomp 文件](https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html)
 說明其 errno 與架構條件。這是合成缺失能力測試，不修改主機系統政策。
 
-最終 gate 使用既有 `release-candidate.yml` 的 `workflow_dispatch`：dispatch ref
-與 input `ref` 都是最終 40-character SHA。Run metadata SHA、checkout SHA、
+最終 gate 使用既有 `release-candidate.yml` 的 `workflow_dispatch`。GitHub dispatch
+API 要求 branch／tag ref，不能直接傳 commit SHA；dispatch 前核對 `main` 仍精確
+指向最終 SHA，並將 checkout input `ref` 設為最終 40-character SHA，不用 floating
+checkout。Run metadata SHA、checkout SHA、
 `Validated commit SHA` 必須全部相等；等待 completed/success。若失敗，STOP，
 不得透過擴大修改 Writer／updater 範圍繞過。本頁不會為填入 run URL 再變更已驗證 SHA。
 
