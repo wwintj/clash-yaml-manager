@@ -92,6 +92,24 @@ async function keyboard(page) {
         const after=await active.boundingBox();assert.deepEqual(after,before,'Active style must not change link geometry');
         await active.evaluate(e=>e.setAttribute('aria-current','page'));
       }
+      // Exercise the real direct-400 response in the isolated Flask harness.
+      await page.goto(base+'/');
+      const [invalid]=await Promise.all([page.waitForNavigation(),page.evaluate(()=>{
+        const token=document.querySelector('input[name="csrf_token"]').value;
+        const form=document.createElement('form');form.method='POST';form.action='/process';
+        for(const [name,value] of Object.entries({csrf_token:token,node_update_mode:'invalid'})){
+          const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;
+          form.append(input);
+        }
+        document.body.append(form);form.submit();
+      })]);
+      assert.equal(invalid.status(),400);
+      assert.equal(invalid.headers().location,undefined);
+      await check(page,'generate',width,height);
+      const error=page.locator('.app-shell > .terminal-alert.error');
+      assert.equal(await error.getAttribute('role'),'alert');
+      assert(await error.isVisible());
+      assert((await error.innerText()).includes('Node Update Mode is invalid. Choose Replace or Merge.'));
       const post=page.waitForRequest(r=>new URL(r.url()).pathname==='/logout' && r.method()==='POST');
       await navigate(page,()=>page.getByRole('button',{name:'Logout',exact:true}).click());
       assert(new URLSearchParams((await post).postData()).get('csrf_token'),'Logout carries CSRF');
