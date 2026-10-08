@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- 新增唯讀 Backup Audit CLI，區分 updater、uninstall data、UI overlay 與未知備份，提供有界結構、安全路徑與私密輸出檢查；結果固定 restore_proven=false，不代表真正可恢復，也不修改既有備份流程。
+
 ### Fixed
 
 - Keep Generate YAML navigation marked as the current page when POST /process returns validation errors directly with HTTP 400.

@@ -48,6 +48,8 @@ v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支�
 
 v1.8.0 開發階段：修正 `POST /process` 直接回傳 HTTP 400 時，Generate YAML 主導覽缺少 `aria-current="page"` 的既有問題；僅調整導覽呈現語義，表單驗證、路由、redirect 與錯誤狀態碼不變。此修復尚未發布，Latest Stable 仍為 v1.7.0。
 
+v1.8.0 Phase 2 開發功能新增唯讀 [Backup Audit CLI](docs/BACKUP_READINESS.md)，區分 updater、uninstall data、UI overlay 與未知備份，回報有界結構檢查結果且固定 `restore_proven=false`。它不修改備份、不執行恢復；結構完整不代表真正可恢復。尚未發布，Latest Stable 仍為 v1.7.0。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
