@@ -10,6 +10,8 @@ v1.7.0 Phase 2 僅精修登入後的 chrome：語義化 `header.app-header` 第�
 
 v1.7.0 Phase 3 僅精簡登入後的全域 feedback：沿用 `.terminal-alert` 與原 error／success 顏色，移除 `ERROR LOG`／`SUCCESS` 呈現標題。單條錯誤使用段落，多條使用同一 alert 內的清單；成功訊息直接顯示。保留 `error_messages`／`success_message`、`ui_message`、Jinja autoescape，以及容器的 `role="alert"`／`role="status"`，不逐條新增 role，不新增 icon、toast、animation 或 auto-dismiss。`Generation Complete`、`Temporary Link`、`YAML Changes`、`Generate Result` 等 contextual headings、登入頁、Phase 2 header 與 backend 均不變；正式發布狀態以 README Latest Stable 為準。
 
+v1.8.0 Phase 1（開發階段、尚未發布）：Generate YAML 主導覽的 `aria-current="page"` 適用於 `index` 與 `process_config`，因此正常 `GET /` 及 `POST /process` 直接 render 的 HTTP 400 錯誤頁都保持 Generate active。Fixed／Settings 仍由各自 blueprint 判斷，主導覽只允許一項 active；登入頁不顯示登入後主導覽。僅修正呈現語義，認證、CSRF、session、驗證、redirect 與回應狀態不變。
+
 ## Audit and scope
 
 All routed pages inherit `index.html`. The former inline stylesheet supplied a

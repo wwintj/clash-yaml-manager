@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Keep Generate YAML navigation marked as the current page when POST /process returns validation errors directly with HTTP 400.
+
 ## v1.7.0 - 2026-10-08
 
 ### Changed

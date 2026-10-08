@@ -46,6 +46,8 @@ Web UI 維持英文介面，使用共用字型、控制項與響應式排版，�
 
 v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊；Phase 3 精簡登入後的全域回饋，移除 `ERROR LOG`／`SUCCESS` 呈現標題，單條錯誤直接顯示、多條保留清單，維持訊息語義、escaping 與 accessibility。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；正式可用版本以頁首 Latest Stable 為準。
 
+v1.8.0 開發階段：修正 `POST /process` 直接回傳 HTTP 400 時，Generate YAML 主導覽缺少 `aria-current="page"` 的既有問題；僅調整導覽呈現語義，表單驗證、路由、redirect 與錯誤狀態碼不變。此修復尚未發布，Latest Stable 仍為 v1.7.0。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
