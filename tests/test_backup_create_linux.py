@@ -136,63 +136,176 @@ def test_linux_descriptor_no_follow_is_enforced_by_kernel(native_tree, capsys):
 
 # Runs ONLY in a child. The test process / runner policy is never changed.
 SECCOMP_CHILD = r'''
-import ctypes,errno,json,os,platform,re,sys
+import ctypes,errno,json,os,platform,re,resource,signal,stat,sys
 from pathlib import Path
 from scripts import backup_create as writer
+from scripts import backup_verify as verifier
+def require(condition,code):
+    if not condition:raise AssertionError(code)
+def emit(value):
+    data=json.dumps(value,sort_keys=True)
+    require(len(data)<=4096,'DIAGNOSTIC_SIZE_LIMIT')
+    print(data,flush=True)
+def tree_state(source):
+    # Only our small synthetic fixture; never print names or payload bytes.
+    return {str(p.relative_to(source)):(verifier.fingerprint(p.lstat()),
+            p.read_bytes() if stat.S_ISREG(p.lstat().st_mode) else None)
+            for p in [source,*sorted(source.rglob('*'))]}
 libc=ctypes.CDLL(None,use_errno=True)
 libc.prctl.argtypes=[ctypes.c_int,ctypes.c_ulong,ctypes.c_void_p,ctypes.c_ulong,ctypes.c_ulong]
 libc.prctl.restype=ctypes.c_int
 libc.renameat2.argtypes=[ctypes.c_int,ctypes.c_char_p,ctypes.c_int,ctypes.c_char_p,ctypes.c_uint]
 libc.renameat2.restype=ctypes.c_int
+libc.syscall.argtypes=[ctypes.c_long]  # Variadic arguments below have explicit ABI types.
+libc.syscall.restype=ctypes.c_long
+libc.gnu_get_libc_version.argtypes=[]
+libc.gnu_get_libc_version.restype=ctypes.c_char_p
 arch=platform.machine()
 headers={'x86_64':('/usr/include/x86_64-linux-gnu/asm/unistd_64.h',0xc000003e),
          'aarch64':('/usr/include/asm-generic/unistd.h',0xc00000b7)}
-assert arch in headers and ctypes.sizeof(ctypes.c_void_p)==8
+require(arch in headers and ctypes.sizeof(ctypes.c_void_p)==8,'UNSUPPORTED_TEST_ABI')
 header,audit_arch=headers[arch]
-number=int(re.search(r'^#define\s+__NR_renameat2\s+(\d+)\s*$',Path(header).read_text(),re.M).group(1))
+header_text=Path(header).read_text()
+def syscall_number(name):
+    match=re.search(r'^#define\s+__NR_'+name+r'\s+(\d+)\s*$',header_text,re.M)
+    require(match is not None,'MISSING_SYSCALL_NUMBER')
+    return int(match.group(1))
+number=syscall_number('renameat2')
+ordinary_names=('rename','renameat') if arch=='x86_64' else ('renameat',)
+ordinary_numbers={name:syscall_number(name) for name in ordinary_names}
+diagnostic=dict(phase='PRE_WRITER',python=platform.python_version()[:32],
+    kernel=platform.release()[:128],machine=arch,audit_arch=audit_arch,
+    libc_version=libc.gnu_get_libc_version().decode('ascii')[:32],
+    syscall_number=number,ordinary_syscalls=ordinary_numbers)
 class Filter(ctypes.Structure):
     _fields_=[('code',ctypes.c_ushort),('jt',ctypes.c_ubyte),('jf',ctypes.c_ubyte),('k',ctypes.c_uint)]
 class Program(ctypes.Structure):
     _fields_=[('len',ctypes.c_ushort),('filter',ctypes.POINTER(Filter))]
-# Check ABI, load syscall nr, deny only renameat2 with actual kernel ENOSYS.
+require(ctypes.sizeof(Filter)==8 and ctypes.sizeof(Program)==16
+        and Program.filter.offset==8 and sys.byteorder=='little','INVALID_FILTER_ABI')
+diagnostic['bpf_instruction_bytes']=ctypes.sizeof(Filter)
+diagnostic['filter_program_bytes']=ctypes.sizeof(Program)
+# Check ABI, load syscall nr, deny renameat2 with actual kernel ENOSYS.
 # linux/{filter,seccomp,prctl}.h: LD|W|ABS=0x20, JMP|JEQ|K=0x15, RET|K=0x06.
-filters=(Filter*7)(Filter(0x20,0,0,4),Filter(0x15,1,0,audit_arch),
+instructions=[Filter(0x20,0,0,4),Filter(0x15,1,0,audit_arch),
     Filter(0x06,0,0,0x80000000),Filter(0x20,0,0,0),Filter(0x15,0,1,number),
-    Filter(0x06,0,0,0x00050000|errno.ENOSYS),Filter(0x06,0,0,0x7fff0000))
+    Filter(0x06,0,0,0x00050000|errno.ENOSYS)]
+# A real POSIX fallback would kill this child, rather than look like a refusal.
+for ordinary in ordinary_numbers.values():
+    instructions.extend([Filter(0x15,0,1,ordinary),Filter(0x06,0,0,0x80000000)])
+instructions.append(Filter(0x06,0,0,0x7fff0000))
+filters=(Filter*len(instructions))(*instructions)
 program=Program(len(filters),filters)
-assert libc.prctl(38,1,None,0,0)==0,'no_new_privs failed'
-assert libc.prctl(22,2,ctypes.cast(ctypes.pointer(program),ctypes.c_void_p),0,0)==0,'seccomp filter failed'
+resource.setrlimit(resource.RLIMIT_CORE,(0,0))  # Only this child / its descendants.
+ctypes.set_errno(0)
+diagnostic['no_new_privs_rc']=libc.prctl(38,1,None,0,0)
+diagnostic['no_new_privs_errno']=ctypes.get_errno()
+ctypes.set_errno(0)
+diagnostic['seccomp_install_rc']=libc.prctl(22,2,ctypes.cast(ctypes.pointer(program),ctypes.c_void_p),0,0)
+diagnostic['seccomp_install_errno']=ctypes.get_errno()
+diagnostic['no_new_privs_state']=libc.prctl(39,0,None,0,0)
+diagnostic['seccomp_mode']=libc.prctl(21,0,None,0,0)
+if not (diagnostic['no_new_privs_rc']==diagnostic['seccomp_install_rc']==0
+        and diagnostic['no_new_privs_state']==1 and diagnostic['seccomp_mode']==2):
+    emit(diagnostic)
+    require(False,'SECCOMP_INSTALLATION_FAILED')
 parent=Path(sys.argv[1])
 with writer.root_directory(parent) as (fd,_):
     os.mkdir('raw-source',0o700,dir_fd=fd)
+    os.mkdir('raw-target',0o700,dir_fd=fd)  # Protect an existing empty target too.
     before=writer.identity(os.stat('raw-source',dir_fd=fd,follow_symlinks=False))
-    rc=libc.renameat2(fd,b'raw-source',fd,b'raw-target',1)
-    number_errno=ctypes.get_errno()
-    assert rc==-1 and number_errno==errno.ENOSYS
-    assert writer.identity(os.stat('raw-source',dir_fd=fd,follow_symlinks=False))==before
-    assert not (parent/'raw-target').exists()
+    target_before=verifier.fingerprint(os.stat('raw-target',dir_fd=fd,follow_symlinks=False))
+    ctypes.set_errno(0)
+    diagnostic['raw_rc']=libc.syscall(ctypes.c_long(number),ctypes.c_int(fd),
+        ctypes.c_char_p(b'raw-source'),ctypes.c_int(fd),ctypes.c_char_p(b'raw-target'),ctypes.c_uint(1))
+    diagnostic['raw_errno']=ctypes.get_errno()
+    ctypes.set_errno(0)
+    diagnostic['wrapper_rc']=libc.renameat2(fd,b'raw-source',fd,b'raw-target',1)
+    diagnostic['wrapper_errno']=ctypes.get_errno()
+    diagnostic['filter_intercepted']=(diagnostic['raw_rc']==-1 and diagnostic['raw_errno']==errno.ENOSYS)
+    emit(diagnostic)  # Bounded fixed technical fields BEFORE any Writer call.
+    require(diagnostic['filter_intercepted'],'KERNEL_ENOSYS_NOT_PROVEN')
+    # glibc may translate kernel ENOSYS to EINVAL for nonzero flags. Raw syscall
+    # must still be exactly ENOSYS; the actual Writer wrapper must also refuse.
+    require(diagnostic['wrapper_rc']==-1 and diagnostic['wrapper_errno'] in (errno.ENOSYS,errno.EINVAL),
+            'LIBC_UNAVAILABLE_NOT_PROVEN')
+    require(writer.identity(os.stat('raw-source',dir_fd=fd,follow_symlinks=False))==before,'RAW_SOURCE_CHANGED')
+    require(verifier.fingerprint(os.stat('raw-target',dir_fd=fd,follow_symlinks=False))==target_before,
+            'RAW_DESTINATION_CHANGED')
+    require(list((parent/'raw-target').iterdir())==[],'RAW_DESTINATION_CHANGED')
+    # Positive controls prove BOTH ordinary rename tripwires are active. Only
+    # forked grandchildren deliberately trigger them; no runner policy changes.
+    for name,ordinary in ordinary_numbers.items():
+        pid=os.fork()
+        if pid==0:
+            if name=='rename':
+                libc.syscall(ctypes.c_long(ordinary),ctypes.c_char_p(os.fsencode(parent/'tripwire-missing-source')),
+                             ctypes.c_char_p(os.fsencode(parent/'tripwire-missing-target')))
+            else:
+                libc.syscall(ctypes.c_long(ordinary),ctypes.c_int(fd),ctypes.c_char_p(b'tripwire-missing-source'),
+                             ctypes.c_int(fd),ctypes.c_char_p(b'tripwire-missing-target'))
+            os._exit(99)
+        _,status=os.waitpid(pid,0)
+        require(os.WIFSIGNALED(status) and os.WTERMSIG(status)==signal.SIGSYS,'FALLBACK_TRIPWIRE_NOT_PROVEN')
+source_before=tree_state(parent/'source')
+sentinel=parent/'unrelated-backup'
+sentinel_before=(verifier.fingerprint(sentinel.stat()),sentinel.read_bytes())
 result=writer.create(parent/'source',parent/'snapshot','UPDATER_SNAPSHOT')
-assert result['creation_status']=='FAILED' and result['publication_status']=='NOT_PUBLISHED'
-assert 'NO_REPLACE_UNAVAILABLE' in result['validation_codes']
-assert result['cleanup_status']=='CLEANED'
-assert not (parent/'snapshot').exists() and not list(parent.glob('.backup-create-*'))
-print(json.dumps(dict(result='PASS',kernel_errno='ENOSYS',no_fallback=True,
-    own_staging_cleaned=True,restore_proven=False,syscall_number=number,machine=arch)))
+require(result['creation_status']=='FAILED' and result['publication_status']=='NOT_PUBLISHED','WRITER_PUBLISHED')
+require('NO_REPLACE_UNAVAILABLE' in result['validation_codes'],'WRITER_REFUSAL_NOT_PROVEN')
+require(result['cleanup_status']=='CLEANED','WRITER_CLEANUP_FAILED')
+require(not (parent/'snapshot').exists() and not list(parent.glob('.backup-create-*')),'WRITER_RESIDUE')
+require(tree_state(parent/'source')==source_before,'WRITER_SOURCE_CHANGED')
+require((verifier.fingerprint(sentinel.stat()),sentinel.read_bytes())==sentinel_before,'UNRELATED_BACKUP_CHANGED')
+require(verifier.fingerprint((parent/'raw-target').stat())==target_before,'EXISTING_DESTINATION_CHANGED')
+require(result['restore_proven'] is False and result['MANIFEST_SHA256'] is None,'INVALID_RESTORE_OR_DIGEST')
+emit(dict(result='PASS',kernel_errno='ENOSYS',writer_executed=True,
+    creation_status=result['creation_status'],publication_status=result['publication_status'],
+    refusal_code='NO_REPLACE_UNAVAILABLE',no_fallback=True,tripwires_proven=len(ordinary_numbers),
+    own_staging_cleaned=True,source_unchanged=True,existing_destination_unchanged=True,
+    unrelated_backup_unchanged=True,restore_proven=False,syscall_number=number,machine=arch))
 '''
 
 
 def test_linux_kernel_enosys_refuses_publication_without_fallback(native_tree, capsys):
     source, destination = native_tree
-    before = verifier.fingerprint(source.stat())
+    def tree_state():
+        return {p.relative_to(source):(verifier.fingerprint(p.lstat()),
+                p.read_bytes() if p.is_file() else None) for p in [source, *sorted(source.rglob('*'))]}
+    before = tree_state()
+    sentinel = destination.parent / 'unrelated-backup'
+    sentinel.write_bytes(b'synthetic-only-unrelated-backup')
+    sentinel.chmod(0o600)
+    sentinel_before = (verifier.fingerprint(sentinel.stat()), sentinel.read_bytes())
     result = subprocess.run([sys.executable, '-c', SECCOMP_CHILD, str(destination.parent)],
                             cwd=ROOT, capture_output=True, text=True, timeout=30,
                             env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'))
-    assert result.returncode == 0, result.stderr
-    report = json.loads(result.stdout)
+    assert len(result.stdout) <= 8192, 'DIAGNOSTIC_SIZE_LIMIT'
+    records = [json.loads(line) for line in result.stdout.splitlines()]
+    if records:
+        diagnostic = records[0]
+        evidence(capsys, 'LINUX_ENOSYS_DIAGNOSTIC', diagnostic)
+    return_code = result.returncode
+    assert return_code == 0, 'GATE_NOT_PROVEN'
+    assert len(records) == 2
+    diagnostic, report = records
+    assert diagnostic['raw_rc'] == -1 and diagnostic['raw_errno'] == errno.ENOSYS
+    assert diagnostic['filter_intercepted'] is True
+    assert diagnostic['wrapper_rc'] == -1 and diagnostic['wrapper_errno'] in (errno.ENOSYS, errno.EINVAL)
+    assert diagnostic['no_new_privs_rc'] == diagnostic['seccomp_install_rc'] == 0
+    assert diagnostic['no_new_privs_state'] == 1 and diagnostic['seccomp_mode'] == 2
     assert report['result'] == 'PASS' and report['kernel_errno'] == 'ENOSYS'
-    assert verifier.fingerprint(source.stat()) == before
+    assert report['writer_executed'] is True and report['no_fallback'] is True
+    assert report['tripwires_proven'] == len(diagnostic['ordinary_syscalls'])
+    assert report['creation_status'] == 'FAILED' and report['publication_status'] == 'NOT_PUBLISHED'
+    assert report['refusal_code'] == 'NO_REPLACE_UNAVAILABLE' and report['own_staging_cleaned'] is True
+    assert report['source_unchanged'] is True and report['existing_destination_unchanged'] is True
+    assert report['unrelated_backup_unchanged'] is True and report['restore_proven'] is False
+    assert tree_state() == before
+    assert (verifier.fingerprint(sentinel.stat()), sentinel.read_bytes()) == sentinel_before
     assert not destination.exists()
-    evidence(capsys, 'LINUX_NATIVE_UNAVAILABLE', report)
+    assert not list(destination.parent.glob('.backup-create-*'))
+    evidence(capsys, 'LINUX_NATIVE_UNAVAILABLE: PASS', report)
 
 
 def benchmark_profile(parent, profile, count, size, monkeypatch):
