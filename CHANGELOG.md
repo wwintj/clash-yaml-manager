@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.7.0 - 2026-10-08
+
 ### Changed
 
 - Simplify the login screen into a compact password-only sign-in experience with password-manager support, without changing authentication behavior or the authenticated interface.
