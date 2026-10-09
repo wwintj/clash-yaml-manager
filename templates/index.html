@@ -315,6 +315,9 @@
   <script id="ui-display-phrases" type="application/json">{{ ui_display_phrases | tojson }}</script>
   {% endif %}
   <script src="{{ url_for('static', filename='ui.js') }}"></script>
+  {% if logged_in %}
+  <script src="{{ url_for('static', filename='csrf.js') }}"></script>
+  {% endif %}
   <script src="{{ url_for('static', filename='policy.js') }}"></script>
   {% block generator_scripts %}
   <script src="{{ url_for('static', filename='draft.js') }}"></script>

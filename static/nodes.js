@@ -118,6 +118,7 @@
       root.saveDraft(); serialize();
       const start = revision; parseButton.disabled = true; summary.textContent = 'Parsing…';
       try {
+        await root.CSRF.ensure(form);
         const data = new FormData(form); data.delete('yaml_file');
         data.delete('sources');
         for (const key of [...data.keys()]) if (key.startsWith('source_file_')) data.delete(key);
@@ -145,6 +146,7 @@
       }
       diffButton.disabled = true;
       try {
+        await root.CSRF.ensure(form);
         const response = await fetch('/api/preview-yaml-diff', {method:'POST', body:new FormData(form), credentials:'same-origin', cache:'no-store'});
         if (response.redirected || !response.headers.get('content-type')?.includes('application/json')) {
           throw Error('Session or security token expired; refresh or log in again.');

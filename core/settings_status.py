@@ -37,7 +37,8 @@ def probe_fields(form, prefix='global_'):
 
 
 def runtime(*, port, cookie_secure, trust_proxy, download_base, download_scheme,
-            upload_retention, output_retention, cleanup_interval, backup_retention, bind="0.0.0.0", managed_https=None):
+            upload_retention, output_retention, cleanup_interval, backup_retention, bind="0.0.0.0", managed_https=None,
+            session_lifetime_days=30):
     # Never return arbitrary environment strings, even escaped URLs or origins.
     https = download_scheme == 'https' if not download_base else False
     if download_base:
@@ -55,7 +56,9 @@ def runtime(*, port, cookie_secure, trust_proxy, download_base, download_scheme,
         download_mode='Explicit base URL' if download_base else ('Explicit scheme' if download_scheme else 'Automatic'),
         download_base='Configured' if download_base else 'Not configured',
         download_scheme=download_scheme if download_scheme in ('http', 'https') else 'Automatic',
-        https_download='Configured' if https else 'Not configured', session_lifetime='30 days',
+        https_download='Configured' if https else 'Not configured',
+        session_lifetime=(f'{session_lifetime_days} day' + ('s' if session_lifetime_days != 1 else '')
+                          if type(session_lifetime_days) is int and 1 <= session_lifetime_days <= 3650 else 'Unavailable'),
         bind='Loopback only' if bind == '127.0.0.1' else 'All interfaces',
         managed_https=(managed_https or {'status':'Not configured'}))
     for field, value in dict(upload_retention=upload_retention, output_retention=output_retention,

@@ -10,7 +10,7 @@ from typing import Any, Dict
 from flask import jsonify, Flask, Response, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
-from flask_wtf.csrf import CSRFProtect, CSRFError
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 
 from core import parser, generator
 from core.ui import display_message, BROWSER_DISPLAY_PHRASES
@@ -21,6 +21,7 @@ from core.temporary_links import TemporaryLinks
 from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG as FIXED_SLUG
 from core.fixed_views import blueprint as fixed_blueprint
 from core.retention import seconds_from_env
+from core.session_config import lifetime_days
 from core.rate_limit import LoginLimiter
 from core import policy_engine, geoip, yaml_diff, node_update
 from core.geoip_store import GeoIPStore
@@ -42,6 +43,10 @@ try:
 except ValueError:
     sys.exit("APP_BIND_HOST 必须为 0.0.0.0 或 127.0.0.1。")
 SECRET_KEY = os.environ.get("SECRET_KEY")
+try:
+    SESSION_LIFETIME_DAYS = lifetime_days(os.environ.get('SESSION_LIFETIME_DAYS'))
+except ValueError as error:
+    sys.exit(str(error))
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
 DOWNLOAD_BASE_URL = os.environ.get("DOWNLOAD_BASE_URL", "").rstrip("/")
 DOWNLOAD_URL_SCHEME = os.environ.get("DOWNLOAD_URL_SCHEME", "").lower()
@@ -181,7 +186,7 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = COOKIE_SECURE
 app.config["PREFERRED_URL_SCHEME"] = DOWNLOAD_URL_SCHEME or "http"
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=SESSION_LIFETIME_DAYS)
 app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
 if not SECRET_KEY:
@@ -193,7 +198,7 @@ else:
 def invalidate_old_sessions():
     if request.endpoint == 'healthz':
         return None
-    if request.path != '/api/preview-yaml-diff':
+    if request.path not in ('/api/preview-yaml-diff', '/api/csrf-token'):
         cleanup_old_files()
     if session.get('logged_in'):
         state = auth_store.read()
@@ -474,6 +479,21 @@ def change_password():
     logging.info(f"管理密码已更新 (IP: {request.remote_addr})")
     context["success_message"] = "管理密码已更新，请使用新密码重新登录。"
     return redirect_to_index(context)
+
+
+@app.route('/api/csrf-token', methods=['GET'])
+def fresh_csrf_token():
+    # The preceding auth-version/instance check also applies to this endpoint.
+    # No CORS: the custom header requires a preflight for cross-origin callers.
+    if not session.get('logged_in'):
+        return jsonify(code='session_expired', error='Session expired; sign in again.'), 401
+    origin = request.headers.get('Origin')
+    if (request.method != 'GET' or request.headers.get('X-CSRF-Refresh') != '1'
+            or request.headers.get('Sec-Fetch-Site', 'same-origin') != 'same-origin'
+            or (origin is not None and origin != request.host_url.rstrip('/'))):
+        return jsonify(code='origin_rejected', error='Same-origin token refresh required.'), 403
+    # Re-sign the existing session nonce. Other open forms are not invalidated.
+    return jsonify(csrf_token=generate_csrf())
 
 
 def parse_form_nodes(*, readonly=False):
@@ -773,7 +793,8 @@ def settings_runtime():
         download_scheme=DOWNLOAD_URL_SCHEME, upload_retention=UPLOAD_RETENTION_SECONDS,
         output_retention=OUTPUT_RETENTION_SECONDS, cleanup_interval=CLEANUP_INTERVAL_SECONDS,
         backup_retention=BACKUP_RETENTION_SECONDS, bind=APP_BIND_HOST,
-        managed_https=https_metadata.status(BASE_DIR))
+        managed_https=https_metadata.status(BASE_DIR),
+        session_lifetime_days=int(app.permanent_session_lifetime.total_seconds() // 86400))
 
 
 app.register_blueprint(settings_blueprint(geoip_store, get_base_context, login_required,
@@ -790,9 +811,11 @@ def private_fixed_pages(response):
         # Keep an expired API session from following a GET that runs cleanup.
         response = jsonify(ok=False, code='session_expired', error='Session expired; refresh or log in again.')
         response.status_code = 401
-    if request.blueprint in ('fixed', 'settings') or request.path == '/api/preview-yaml-diff':
+    if request.blueprint in ('fixed', 'settings') or request.path in ('/api/preview-yaml-diff', '/api/csrf-token'):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Referrer-Policy'] = 'no-referrer'
+    if request.path == '/api/csrf-token':
+        response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
 
