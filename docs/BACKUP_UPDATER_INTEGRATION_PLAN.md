@@ -1,5 +1,24 @@
 # Verified Backup：Linux 驗證與 updater 整合評估
 
+## Phase 3D-3R 目前開發範圍
+
+新增獨立 [Updater Sidecar Adapter](BACKUP_UPDATER_SIDECAR.md)，僅在原
+legacy state backup 完成後、auth migration 前，以明確 OFF／OPTIONAL／STRICT
+串接既有離線工具；legacy cp -a／venv／units／state 與原 rollback 材料保留。
+重用 Phase 3D-3G 共同 guard，不改其安全契約。OPTIONAL 不繞過正面 quiet、
+ownership 信任、來源 mutation 或磁碟安全 gates；未知 unit 拒絕，無舊版本缺項猜測。
+Writer digest 使用本次成功返回的 root-process handoff，沒有外部見證宣稱。
+Snapshot／Catalog 不確定發布保留，Adapter 不自動刪 operation／舊備份或 restore。
+
+以下 Phase 3C／3C-R1／3D-1／3D-2 的「未整合」文字描述各階段當時範圍；
+目前新 hook 的 supported lifecycle、metadata 三種來源、資源與 failure matrix
+以新文件為準。完整 legacy replacement、production、業務 closure／off-host DR／
+restore 仍未驗證。Session／Retention 原有安全限制未改，Latest Stable 保持 v1.7.0。
+Phase 3T-2 首次 macOS Verifier refusal-code 差異保持開放觀察，根因未知；
+後續重跑通過不能宣稱已修復。本輪若任何 gate 失敗即 STOP，不擴大原工具契約。
+
+## 歷史評估與證據
+
 v1.8.0 Phase 3C 的歷史範圍為調查、合成驗證與設計；後續 Phase 3D-1 新增
 獨立 [Offline Sidecar Collector](BACKUP_COLLECTOR.md)，僅處理明確的 quiet offline
 fixtures。尚未發布，Latest Stable 保持 v1.7.0。Updater、uninstall、Writer、
