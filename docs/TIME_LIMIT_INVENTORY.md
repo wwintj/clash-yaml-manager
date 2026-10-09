@@ -1,6 +1,7 @@
-# Time Limit Inventory（v1.8.0 Phase 3D-3G，只讀盤點）
+# Time Limit Inventory（v1.8.0 開發）
 
-本輪不修改 app、Session、認證、CSRF、retention、scheduler 或任何時間數值。
+原 Phase 3D-3G 為只讀盤點。Phase 3T-1 現在新增有限 Session 設定與提交前 CSRF 更新，
+詳見 [Session Lifetime](SESSION_LIFETIME.md)；retention、scheduler、network timeout 與其他安全 budget 不變。
 Stable 仍為 v1.7.0。以下根據 app.py、core/、scripts/、shell entrypoints、static/、
 templates/ 與依賴設定盤點；生成 bootstrap 與原 source 的重複項合併。
 歷史報告時間／測試等待／CI 執行時間不屬於產品使用期限，另外說明於文末。
@@ -13,7 +14,7 @@ templates/ 與依賴設定盤點；生成 bootstrap 與原 source 的重複項�
 
 | 項目／設定位置 | 目前預設與用途 | 使用者影響 | 可自訂／永不過期評估 |
 | --- | --- | --- | --- |
-| Session／Cookie：app.py `PERMANENT_SESSION_LIFETIME`、login、`SESSION_REFRESH_EACH_REQUEST` | 30 天；登入使用 permanent session，每次請求續期。簽章驗證 max age 與 Cookie expiry 由同一 lifetime 控制；没有另外設定的 idle timer。 | 有活動可滑動續期，長期閒置或瀏覽器清 Cookie 需重新登入。auth_version／instance_id 改變、logout、SECRET_KEY 改變仍失效。 | 目前 hardcoded、非 Runtime 可編輯設定。下一階段可增加明確有限長期 lifetime；無限 Session 需另審 token 失竊、撤銷與 cookie/signature 的一致語義，不能只刪 Cookie expiry。 |
+| Session／Cookie：app.py `PERMANENT_SESSION_LIFETIME`、login、`SESSION_REFRESH_EACH_REQUEST` | 30 天；登入使用 permanent session，每次請求續期。簽章驗證 max age 與 Cookie expiry 由同一 lifetime 控制；没有另外設定的 idle timer。 | 有活動可滑動續期，長期閒置或瀏覽器清 Cookie 需重新登入。auth_version／instance_id 改變、logout、SECRET_KEY 改變仍失效。 | Phase 3T-1：私人 `.env` 可設 SESSION_LIFETIME_DAYS=1–3650，預設30；不合法會停止啟動，Runtime 唯讀顯示生效值。保持有限簽章與撤銷；瀏覽器可能 cap Cookie，不能保證3650天閒置登入。 |
 | 本機 Generate 草稿：static/draft.js `TTL`／localStorage | 30 天，自最後 saved_at 計；超時、未來時間、schema 錯誤會移除。沒有 server draft TTL。 | 長久未編輯可能失去未提交資料；草稿含節點 link，不含密碼／CSRF／Cookie，但仍可能敏感。 | 目前 hardcoded。可提議可選較長期限、停用儲存、明確清除；永存須使用者 opt-in 並提示共享瀏覽器風險。 |
 | Upload：app.py、core/retention.py `UPLOAD_RETENTION_HOURS` | 1 小時，未設定 hour 時相容 `FILE_RETENTION_DAYS`。按 file mtime 清理。 | 過期暫存上傳會刪除。 | 可設正且有限的小時值；0／負值／invalid 現在 fallback，**不表示永不過期**。未來另設 explicit keep policy 加磁碟管理，不能偷偷重新解釋 0。 |
 | Output：`OUTPUT_RETENTION_HOURS`，同上 | 24 小時，legacy `FILE_RETENTION_DAYS`；普通 output mtime 清理。 | 過期生成檔不可再下載；不是 Fixed revision retention。 | 同上；可增加可選持久輸出模式，但須磁碟／secret URL 管理。 |
@@ -26,7 +27,7 @@ templates/ 與依賴設定盤點；生成 bootstrap 與原 source 的重複項�
 
 | 項目／位置 | 預設／用途與使用者影響 | 可自訂／永不過期評估 |
 | --- | --- | --- |
-| CSRF：app.py `CSRFProtect`、Flask-WTF | app 未覆寫 WTF_CSRF_TIME_LIMIT，依賴預設 3600 秒；舊頁表單／JSON POST 超時回 400，需 refresh。不是登入 Cookie 失效；草稿復原仍可用。[Flask-WTF 官方設定](https://flask-wtf.readthedocs.io/en/1.2.x/config/) | 沒有 app env 控制。依賴可用 None 使 token 隨 Session 存活，但本輪不改；下一階段優先 fresh-token refresh／清楚回饋並保留有限安全期限。 |
+| CSRF：app.py `CSRFProtect`、Flask-WTF | app 未覆寫 WTF_CSRF_TIME_LIMIT，依賴預設 3600 秒；過期 POST 仍拒絕（Parse／Diff JSON 400、一般表單303 recovery）。Phase 3T-1 在明確操作前透過認證／same-origin GET 取得 fresh token；不是登入 Cookie 失效，Generate 草稿仍可恢復。[Flask-WTF 官方設定](https://flask-wtf.readthedocs.io/en/1.2.x/config/) | 沒有 app env 控制。不使用 None、不 exempt；只有有效 Session 可刷新，無 polling、不 replay 拒絕的 POST。Fixed／Settings 不新增持久瀏覽器草稿，刷新失敗保留目前輸入。 |
 | Login limiter：app.py／core/rate_limit.py | LOGIN_MAX_FAILURES=5，LOGIN_WINDOW_SECONDS=600，LOGIN_LOCKOUT_SECONDS=900；固定 lockout，被阻擋請求不延長。返回 429／Retry-After；狀態含有限容量避免繞過。 | 三者可設正整數；不得直接設 0 停用。window／lockout 應保持有限，不屬使用期限。 |
 | auth／token 撤銷：core/security.py、Fixed、temporary_links | 密碼只有 non-empty 要求，不設到期或複雜度；周圍空格與 Unicode 保留。auth_version／instance_id、Fixed retired_tokens、temporary tombstone 無時間 GC。 | 已無 password expiry；不能取消 logout／rotation／撤銷。若長期 Session 功能需證明密碼變更仍撤銷舊 Session，退休 bearer 不復活。 |
 | State／HTTPS／backup/catalog locks、deployment guard | flock 依 FD 存活，沒有 PID/age expiry；部分 state lock 可 blocking，某些 job admission nonblocking。 | 保持排他性；不可加「超時刪檔」繞過 holder。卡住需有界作業與人工診斷，不是刪 lock。 |
@@ -76,7 +77,7 @@ Release CLI 的 git／gh 子程序未另设 Python timeout；CI／browser suite 
 180秒、測試 doubles 的 timeout、fixture barrier、Playwright wait、GitHub-hosted runner
 預設 job 上限等是開發驗證界限，不是部署產品的登入或分享期限。本輪維持全數。
 
-下一階段可獨立提出「長期登入與儲存 policy」：
+Phase 3T-1 已實作下列第1、2項的有限方案，尚未發布／部署；第3、4項保持提案／既有行為：
 
 1. 新增明確可配置的有限 Session lifetime，先保留預設30天與每請求續期；測試 Cookie
    expiry／server signature max age 同步、restart 保持登入、logout／密碼變更即撤銷。
@@ -87,4 +88,4 @@ Release CLI 的 git／gh 子程序未另设 Python timeout；CI／browser suite 
 4. 長期 subscription 優先使用已無 TTL 的 Fixed；不要復活 retired bearer、重用 /t/ ID
    或把 scheduler/backoff、Health freshness、network／worker timeout 刪除。
 
-以上僅方案，尚未實作、未部署，也沒有縮放或放寬任何 Backup 工具的 security budget。
+Session／CSRF 開發變更見專用文件；其餘提案尚未實作。沒有部署 production，也沒有縮放或放寬任何 Backup 工具的 security budget。

@@ -4,14 +4,19 @@
 
 ### Added
 
+- 新增有限 `SESSION_LIFETIME_DAYS` 啟動設定（預設 30、合法 1–3650 天），Cookie expiry／簽章 max age 共用生效值，Runtime 顯示實際期限；保留滑動續期與原 Logout／密碼／Secret Key 撤銷，不新增認證 state 或永不過期憑證，明列瀏覽器保存限制。
 - 新增新版 updater 的共同 Deployment Guard：固定 root 私人持久目錄／空 lock、descriptor-relative no-follow／inode／ownership 檢查與 nonblocking flock；direct／remote 共用已驗證 FD，涵蓋 remote post-update metadata，衝突固定返回 75 且在部署副作用前拒絕。預設 OFF 僅增加此授權入場例外，保留 legacy backup／venv／auth／service/timer 順序；未接入 Sidecar，歷史 updater 與其他 writer 不自動受保護，production／restore 未驗證。
-- 新增只讀 Time Limit Inventory，分開列出 Session／Cookie／草稿／臨時下載／retention、安全控制、作業 timeout、scheduler／backoff／freshness 與後續可配置方案；本輪不改時間語義。
+- 新增只讀 Time Limit Inventory，分開列出 Session／Cookie／草稿／臨時下載／retention、安全控制、作業 timeout、scheduler／backoff／freshness 與後續可配置方案；原 Phase 3D-3G 不改時間語義，Phase 3T-1 實作有限 Session 設定與 CSRF UX。
 - 新增獨立 Trust Anchor Catalog，要求操作者提供獨立核對的 digest，完整驗證已完成的離線 Snapshot，再於分離私人 Catalog 以嚴格 schema 綁定身份／scope／digest；支援 register／verify／inspect、有界容量、排他鎖、fsync／no-replace 與 crash／orphan 診斷，不自動刪除資料，未整合 updater／production，未驗證 restore 或 off-host DR。
 - 新增獨立 Offline Sidecar Collector，僅從明確指定且已確認 quiet 的離線 fixture，依固定 updater-sidecar-v1 allowlist 與受保護 ownership 聲明收集配置／持久 state；以 0700／0600 新表示及原始 source role ledger 供既有 Writer／Manifest v1／Verifier 使用，明列省略、預算、no-replace 發布與身份清理限制，未接入 updater／production、trust catalog 或 restore。
 - 新增 Linux native snapshot publication 的合成測試與 updater 整合評估，涵蓋真實 no-replace、descriptor no-follow、fsync、衝突清理與 kernel ENOSYS refusal；評估受限 opt-in verified sidecar，保留 legacy backup，尚未實作 production 整合或 restore；後續獨立 Collector／Catalog 見其他 Added 項目。
 - 新增獨立 Offline Verified Snapshot Writer，僅從明確指定的 quiet 離線目錄建立全新私人備份，重新檢查來源與 stored bytes，以 Manifest v1 verifier 驗證後 no-replace 原子發布；明列 payload 省略的 exclusions、資源預算、失敗清理與獨立 digest handoff，固定 restore_proven=false，未接入 production updater。
 - 新增 Manifest v1 protocol、JSON Schema 與離線 verifier，檢查規範化清單、完整宣告範圍、檔案 SHA-256 與 permission metadata，明確區分內部一致、外部 trust anchor 和 exclusions；固定 restore_proven=false，不補寫歷史備份，未整合既有部署備份流程。
 - 新增唯讀 Backup Audit CLI，區分 updater、uninstall data、UI overlay 與未知備份，提供有界結構、安全路徑與私密輸出檢查；結果固定 restore_proven=false，不代表真正可恢復，也不修改既有備份流程。
+
+### Changed
+
+- 已認證表單與 Parse／Diff AJAX 在明確操作時取得 same-origin、no-store fresh CSRF token，保留有限驗證；多表單共用 nonce，失敗保留當前輸入／Generate 草稿，不背景 polling、重新認證或重送拒絕的 POST。
 
 ### Fixed
 

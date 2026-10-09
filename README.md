@@ -60,7 +60,9 @@ v1.8.0 Phase 3D-1 開發功能新增獨立 [Offline Sidecar Collector](docs/BACK
 
 v1.8.0 Phase 3D-2 開發功能新增獨立 [Trust Anchor Catalog](docs/BACKUP_CATALOG.md)：操作者提供獨立核對的 digest，工具完整驗證已完成的離線 Snapshot，再將身份／digest 關聯以私人 record 登記於分離 Catalog；後續以受保護 record 的 expected digest 呼叫既有 Verifier。容量有界、no-replace／fsync 發布，明列 crash／孤兒與同主機 root 保護限制；不自動刪除資料，未整合 updater、未驗證 restore 或 off-host DR。尚未發布，Latest Stable 仍為 v1.7.0。
 
-v1.8.0 Phase 3D-3G 開發功能新增 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md)：新版 direct／remote updater 在 legacy backup 前共同取得 root 私人 nonblocking flock，涵蓋 remote 最終 metadata 寫入；衝突返回 75 且不執行部署副作用。這是預設 OFF 的唯一入場例外，原備份、venv、auth 與 service/timer 順序保持不變；歷史 updater、install/uninstall 與外部 root writer 未自動受保護。尚未接入 Sidecar、部署 production 或驗證 restore，Latest Stable 仍為 v1.7.0。[Time Limit Inventory](docs/TIME_LIMIT_INVENTORY.md) 僅盤點登入／檔案有效期、安全控制、作業 timeout 與排程，不改時間行為。
+v1.8.0 Phase 3D-3G 開發功能新增 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md)：新版 direct／remote updater 在 legacy backup 前共同取得 root 私人 nonblocking flock，涵蓋 remote 最終 metadata 寫入；衝突返回 75 且不執行部署副作用。這是預設 OFF 的唯一入場例外，原備份、venv、auth 與 service/timer 順序保持不變；歷史 updater、install/uninstall 與外部 root writer 未自動受保護。尚未接入 Sidecar、部署 production 或驗證 restore，Latest Stable 仍為 v1.7.0。[Time Limit Inventory](docs/TIME_LIMIT_INVENTORY.md) 起初僅盤點時間限制；Phase 3T-1 的 Session／CSRF 變更已另行標明，其他時間語義不變。
+
+v1.8.0 Phase 3T-1 開發功能提供[可配置的有限長期登入](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章有效期一致，Runtime 顯示生效值；登出、密碼與 Secret Key 撤銷語義保留。已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，保留一小時令牌期限及草稿，不背景續命、不重送已拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。尚未發布或部署，Latest Stable 仍為 v1.7.0。
 
 ## 一鍵安裝
 
@@ -325,7 +327,7 @@ BACKUP_RETENTION_DAYS=7
 
 升級保留原 `.env`：如果舊安裝是直接 HTTP，卻已有 `DOWNLOAD_URL_SCHEME=https`，請手動改為空值或 `http` 並重啟服務。固定 `SECRET_KEY` 必須在所有 worker 間一致，且不能隨意更換，否則既有簽名訂閱和 session 會失效。
 
-POST 表單與解析 API 使用 Flask-WTF CSRF 保護；表單過期請重新整理以恢復草稿。登出只接受 POST。session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；登入 session 為 30 天滑動有效，每次活動延長有效期。HTTPS 部署需設定 `COOKIE_SECURE=true`。
+POST 表單與解析 API 使用 Flask-WTF CSRF 保護；Stable v1.7.0 表單過期可重新整理恢復草稿。登出只接受 POST。Session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；預設為 30 天滑動有效，每次活動延長有效期。HTTPS 部署需設定 `COOKIE_SECURE=true`。
 
 新安裝只將 Werkzeug PBKDF2-SHA256（1,000,000 次）密碼雜湊存入 `state/auth.json`，不將明文或 Base64 密碼寫入 `.env`。所有 worker 每次認證都讀取共享檔案，修改密碼後立即生效，無需重啟；其他瀏覽器的舊 session 在下一次請求時失效。runtime 不修改 `.env`。只更新程式而略過升級腳本時，可以從舊環境憑據初始化 state，但仍需管理員完成 `.env` 清理。
 
