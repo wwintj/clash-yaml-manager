@@ -92,6 +92,24 @@ TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"
 BACKUP_DIR="$(mktemp -d "/root/${SERVICE_NAME}-update-backup-${TIMESTAMP}.XXXXXX")"
 
 upgrade_failed() {
+  # BEGIN VERIFIED SIDECAR FAILURE REPORT
+  if [[ "${CLASH_BACKUP_SIDECAR_MODE:-OFF}" != OFF ]]; then
+    if [[ "${SIDECAR_INVOKED:-false}" != true ]]; then
+      echo "LEGACY_BACKUP_STATUS=NOT_CONFIRMED SIDECAR_STATUS=NOT_RUN CATALOG_STATUS=NOT_RUN PUBLICATION_STATUS=NOT_RUN CLEANUP_STATUS=NOT_RUN" >&2
+    elif [[ -n "${SIDECAR_REPORT:-}" ]]; then
+      echo "${SIDECAR_REPORT}" >&2
+    else
+      echo "LEGACY_BACKUP_STATUS=COMPLETE_BY_UPDATER_HANDOFF SIDECAR_STATUS=UNCONFIRMED CATALOG_STATUS=UNCONFIRMED PUBLICATION_STATUS=UNCERTAIN CLEANUP_STATUS=UNCONFIRMED; preserve this operation for manual review." >&2
+    fi
+    local sidecar_service_state
+    sidecar_service_state="$(systemctl is-active "${SERVICE_NAME}" 2>/dev/null || true)"
+    case "${sidecar_service_state}" in
+      active|inactive|failed|activating|deactivating) ;;
+      *) sidecar_service_state=CHECK_ERROR ;;
+    esac
+    echo "UPGRADE_STATUS=FAILED SERVICE_STATE=${sidecar_service_state}; no automatic restore; inspect retained legacy backup and sidecar evidence." >&2
+  fi
+  # END VERIFIED SIDECAR FAILURE REPORT
   echo "升级失败。备份保留于 ${BACKUP_DIR}，请勿再次运行 install.sh。" >&2
   echo "回滚：先停止 refresh 和 health timer/oneshot 和 ${SERVICE_NAME}；恢复备份代码、venv、.env、defaults 和五个原 unit（旧版本没有 refresh/health unit 时移除新增 unit）；若回到旧 root 版本，恢复备份 .env 中的旧凭据。保留运行数据；state 回滚须核对密码和订阅版本，详见 docs/PHASE2.md、docs/AUTO_REFRESH.md、docs/AUTOMATIC_HEALTH.md。daemon-reload 后重启。" >&2
 }
@@ -152,6 +170,16 @@ fi
 if [[ -d "${INSTALL_DIR}/state" ]]; then
   backup_private_state "${INSTALL_DIR}/state" "${BACKUP_DIR}/state"
 fi
+# BEGIN VERIFIED SIDECAR HOOK
+# OFF does not invoke any sidecar tool or create sidecar objects. The opt-in
+# adapter receives the completed legacy backup, never the live payload tree.
+if [[ "${CLASH_BACKUP_SIDECAR_MODE:-OFF}" != OFF ]]; then
+  SIDECAR_INVOKED=true
+  SIDECAR_REPORT="$(python3 -B "${CURRENT_DIR}/scripts/backup_sidecar_update.py" \
+    --legacy-backup "${BACKUP_DIR}" --installed "${INSTALL_DIR}" --target-source "${CURRENT_DIR}")"
+  echo "${SIDECAR_REPORT}"
+fi
+# END VERIFIED SIDECAR HOOK
 "${INSTALL_DIR}/venv/bin/python" -m core.migrate --env-file "${INSTALL_DIR}/.env" --state-dir "${INSTALL_DIR}/state"
 
 echo "正在复制新版应用代码..."
@@ -214,6 +242,11 @@ fi
 
 echo "=========================================================="
 echo "升级完成。"
+# BEGIN VERIFIED SIDECAR COMPLETION REPORT
+if [[ "${CLASH_BACKUP_SIDECAR_MODE:-OFF}" != OFF ]]; then
+  echo "UPGRADE_STATUS=APP_STEP_COMPLETED; remote metadata finalization (if applicable) remains protected by the parent guard."
+fi
+# END VERIFIED SIDECAR COMPLETION REPORT
 echo "已保留: 非认证 .env 配置、defaults/default.yaml、uploads、outputs、backups、logs、state"
 echo "旧凭据已迁入 state/auth.json；服务用户为 clashyaml。"
 echo "备份目录: ${BACKUP_DIR}"
