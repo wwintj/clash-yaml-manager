@@ -3,20 +3,24 @@
 v1.8.0 Phase 3C 的歷史範圍為調查、合成驗證與設計；後續 Phase 3D-1 新增
 獨立 [Offline Sidecar Collector](BACKUP_COLLECTOR.md)，僅處理明確的 quiet offline
 fixtures。尚未發布，Latest Stable 保持 v1.7.0。Updater、uninstall、Writer、
-Manifest v1 與 verifier 不變；沒有 production／歷史真實備份存取、trust store 或 restore。
+Manifest v1 與 verifier 不變。Phase 3D-2 新增獨立離線
+[Trust Anchor Catalog](BACKUP_CATALOG.md)；沒有 production／歷史真實備份存取或 restore。
 
 Phase 3C-R1 已完成結論：**READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW**。
 Phase 3C-R1 的 exact-SHA Ubuntu recovery RC 已通過完整驗證與真實 kernel ENOSYS／
 Writer refusal gate；歷史失敗與本輪證據見下節。這僅允許審閱
 **A：明確 opt-in、範圍受限的 verified sidecar**；當時尚未實作 Phase 3D。Phase 3D-1
-現在僅實作離線 Collector 基礎，不是 production deployment approval。
+完成離線 Collector 基礎；Phase 3D-2 僅另加獨立 Catalog，不是 production deployment approval。
 **B：取代 legacy updater backup 不相容**。
 Sidecar 只驗證宣告範圍的 stored bytes，不能稱整個 updater backup 已驗證，
 更不能稱恢復已證明。所有結果仍為 `restore_proven=false`。
 Phase 3C-R1 的文件 final candidate 已由 run
 [37854413690](https://github.com/wwintj/clash-yaml-manager/actions/runs/37854413690)
 在 `dc9b12c5f75ac212be241b7dd3c2153263919bc5` 完整驗證成功（3491 passed）。
-Phase 3D-1 最終 exact-SHA RC 與身份／結果另存當輪驗收報告，本頁不預先宣稱通過。
+Phase 3D-1 最終 RC
+[37919238077](https://github.com/wwintj/clash-yaml-manager/actions/runs/37919238077)
+在 `1caf6026f9da3610664348c604aaf47893a2d497` completed/success（3579 passed）。
+Phase 3D-2 需自己的 final exact-SHA RC，結果另存當輪驗收報告。
 
 ## 既有契約與實際順序
 
@@ -106,7 +110,8 @@ cleanup 不放寬原 Writer gates；發布後未確認結果保留，不自動�
 完整 input／失敗／所有權／測試契約見 [Collector 文件](BACKUP_COLLECTOR.md)。
 
 這是離線基礎工具與 synthetic acceptance；updater hook、全域 quiet/exclusivity、
-獨立 catalog／anchor、retention、production rollout 及 restore 仍是後續工作。
+Catalog 的獨立離線 register／verify 見下節；production 雙重發布整合、retention、
+production rollout 及 restore 仍是後續工作。
 原 legacy backup／venv／rollback 材料保留不變。
 
 ## Ownership 與 offline collector 設計
@@ -300,13 +305,39 @@ fingerprint 重查不能保證任意管理員不再寫入。
 policy；相容既有 upgrade 行為另以 command-double tests 確認。本 Phase 不停止
 任何服務，也不修改現有 timer policy。
 
-## 獨立 trust anchor 生命周期（設計，未實作）
+## Phase 3D-2：獨立 trust anchor Catalog（離線工具）
+
+新增 `backup_catalog.py`，register／verify／inspect 使用明確指定的離線 Catalog 與
+Snapshot，沒有 updater hook、retention、restore 或 network。操作契約與 schema 見
+[Catalog 文件](BACKUP_CATALOG.md)。原 Writer、Collector、Verifier／Manifest gates 不變。
+
+Register 要求操作者提供獨立核對的 expected digest、operation ID、scope profile、
+已完成 quiet offline attestation 與明確 representation/source 根。Catalog 必須與這兩個
+資料根分離；path hash／dev/inode／UID/GID/mode 綁定本機身份，不保存任意完整路徑。
+Snapshot 聲明、operator original/target identity 與工具驗證事實分開；沒有根據名稱
+猜測 installed identity，也不保存 state／password／bearer URL。
+
+Root 0700／records 0600、固定 128 records／16 KiB、flat inventory／read/time bounds、
+nonblocking directory flock、exclusive staging／file fsync／native no-replace／directory
+fsync 與最終身份／完整 Verifier checks，全部由獨立工具執行。非 root fixtures 不冒充
+production root protection。滿額／重複 operation ID／staging residue 拒絕，不 prune。
+
+登記後 verify 以受保護 record 作 expected digest 來源，再呼叫未改動 Verifier；
+record missing 為 UNANCHORED，Snapshot missing 為 MISSING_SNAPSHOT，保留物件。
+不從可修改 Snapshot 自行生成可信 anchor。Same-host root compromise、Snapshot
+與 Catalog 非原子雙重發布、主機遺失／off-host DR 和 restore 未驗證仍是明確限制。
+
+Phase 3D-2 final candidate 先送至新臨時 RC branch，以同一完整 SHA 作 workflow input，
+核對 metadata／checkout／validated SHA 且 completed/success 後才 push main；
+這不改 workflow 或以 moving branch 代替精確 checkout。
+
+### 未來 production 整合生命周期
 
 在 snapshot／collector tree 外設 root-owned 0700 catalog，records 0600。
 Record 包含有版本的 schema、隨機 snapshot ID、canonical manifest SHA-256、
 scope profile/version、固定 type、capture/update operation ID、capture time、
 舊 installed identity 與另列的新 target identity。Snapshot-to-digest association
-以受保護 catalog 的 ID、限定 private root 下的生成名稱及 digest 明確绑定；
+以受保護 catalog 的 ID、本機 location hash／inode 及 digest 明確綁定；
 inode 可作本機 audit 證據，不是跨主機 portable identity。
 
 只在 Writer CREATED、post-verifier 通過後接受 digest handoff。Record 用 exclusive
@@ -315,8 +346,8 @@ temporary file 寫入、flush／file fsync，以 no-replace atomic publication �
 跨目錄原子交易：snapshot 成功而 anchor 失敗必須標為 retained/unanchored，
 不得將 snapshot 內的 digest 再讀出當作獨立 trusted anchor。
 
-建議設計上界是每 record 16 KiB、最多 128 records，具體 schema／bounds 在
-Phase 3D review 後才實作。達上限不自動刪除備份或 anchor；需要操作員另行
+Phase 3D-2 已實作每 record 16 KiB、最多 128 records 及嚴格 schema／bounds。
+達上限不自動刪除備份或 anchor；需要操作員另行
 授權 archive／retention 行為，snapshot 留存期間保留對應 anchor。Crash／孤兒
 records 以明確 operation ID 對照，不靠 glob 猜測並刪除舊備份。
 
@@ -358,7 +389,7 @@ Rollback 沿用原人工邊界：先停止所有 writers，核對版本、恢復
 | 等級 | 判定與下一步 |
 | --- | --- |
 | HIGH | B／完整 legacy replacement 不相容，拒絕該方向。全量業務 closure 與完整 restore 未驗證，禁止相應宣稱。A 的實作必須先通過 final exact-SHA Ubuntu gate；若 native syscall／Writer 缺陷浮現，本 Phase STOP。 |
-| MEDIUM | Phase 3D-1 僅完成 standalone offline Collector、固定 allowlist 與私人 source role ledger；production quiet/exclusivity、updater hook、獨立 catalog 交易／crash／retention 尚未實作，不能省略。資源 refusal 與不同 filesystem 支援需保留，warm-cache 不提供 production SLA。 |
+| MEDIUM | Phase 3D-1 完成 standalone offline Collector、固定 allowlist 與私人 source role ledger；Phase 3D-2 完成獨立 Catalog register／verify 的有界私人發布、crash／orphan 診斷。Production quiet/exclusivity、updater hook、Snapshot/Catalog 雙重發布整合及 retention 尚未實作，不能省略。資源 refusal 與不同 filesystem 支援需保留，warm-cache 不提供 production SLA。 |
 | LOW | 真實 VPS performance、off-host DR、實際 restore／電力故障均 NOT TESTED；不在此次合成完整性／設計 gate 的宣稱中。 |
 
 Phase 3D 只能在另行授權後實作 A，acceptance 至少包含：
@@ -380,6 +411,7 @@ Phase 3D 只能在另行授權後實作 A，acceptance 至少包含：
 
 Phase 3C-R1 的「READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW」僅適用於
 上述受限 A 設計，recovery／final RC 已取得真實 Linux 證據。Phase 3D-1 的 offline
-Collector 需通過自身 final exact-SHA Ubuntu gate；後續 production 整合另需授權。
+Collector 已通過自身 final exact-SHA Ubuntu gate；Phase 3D-2 Catalog 另需自身 gate，
+後續 production 整合另需授權。
 不是 updater integration 已存在、production 部署就緒、complete backup verified
 或 restore proven。

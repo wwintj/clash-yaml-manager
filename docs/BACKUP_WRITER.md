@@ -135,6 +135,14 @@ Writer 不建立 trust store，不在同 snapshot 內寫 checksum 當作 anchor�
 測試中的獨立 digest 檔案僅模擬 handoff，沒有建立 production trust anchor。
 真正 restore／啟動／依賴／認證與 Fixed／Health 業務驗收都要另行授權。
 
+Phase 3D-2 新增獨立 [Trust Anchor Catalog](BACKUP_CATALOG.md)，可接收操作者獨立
+核對的 Writer digest handoff，完整查驗已完成且 quiet 的 Snapshot，再以分離的私人
+record 綁定 digest／本機身份。後續依 record 呼叫同一個既有 Verifier；Writer 本身仍
+不建立 anchor，不改其 `trust_anchor_verified=false` 契約。Snapshot 與 Catalog 的
+兩次發布不是原子交易；Catalog failure 保留 unanchored／未確認物件，不自動刪除。
+這只提供登記後比對基準，不證明登記前 provenance、root compromise 抵抗、off-host
+DR 或 restore。FULL_TREE 仍只代表實際輸入／collected representation 的宣告範圍。
+
 ## Legacy 相容性
 
 既有 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、備份格式及歷史備份
@@ -153,5 +161,6 @@ Writer 使用 `FULL_TREE` 時只涵蓋這份 collected representation，包括�
 metadata 檔案；不表示原始 installation／VPS 全量保存。Ledger 的 original UID/GID/mode
 與 Manifest 的實際 stored metadata 是不同資料，沒有自動 restore mapping。
 Collector capacity budgets 為 Writer／Manifest 預留空間，但後續 Writer timing、
-完整業務 closure、external provenance、independent anchor 與 restore 仍須另行確認。
+完整業務 closure、external provenance 與 restore 仍須另行確認；independent anchor
+登記可使用後續 Catalog，但操作者的獨立 handoff／來源核對不可省略。
 這不是 updater 整合、production backup approval 或 legacy replacement。
