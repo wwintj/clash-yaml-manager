@@ -203,8 +203,9 @@ async function check(page,name,width,shotSelector) {
       const editButton=page.getByRole('link',{name:'Edit',exact:true}).last();
       assert(Math.abs((await deletion.boundingBox()).height-(width<=575?40:32))<=1,'Delete keeps utility geometry');
       assert(Math.abs((await editButton.boundingBox()).height-(width<=575?44:40))<=1,'Edit keeps standard action geometry');
-      let confirmation;page.once('dialog',async d=>{confirmation=d.message();await d.dismiss();});
-      await deletion.click();assert(confirmation?.includes('Delete this fixed subscription?'));
+      let confirmation;
+      const cancelled=new Promise(resolve=>page.once('dialog',async d=>{confirmation=d.message();await d.dismiss();resolve();}));
+      await deletion.click();await cancelled;assert(confirmation?.includes('Delete this fixed subscription?'));
       await page.goto(base+'/settings');
       if([1440,390].includes(width)) await page.screenshot({path:path.join(artifacts,`settings-navigation-${width}.png`)});
       for(const section of ['overview','geoip','health','runtime','notifications']) {

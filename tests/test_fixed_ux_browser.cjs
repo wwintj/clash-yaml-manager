@@ -280,8 +280,9 @@ async function layout(page,width) {
     for(const [button,message] of [['Regenerate Link','This will invalidate the old subscription URL.'],
       ['Delete','Delete this fixed subscription? Its URL will stop working permanently.']]) {
       let observed;
-      page.once('dialog',async dialog=>{observed=dialog.message();await dialog.dismiss();});
+      const cancelled=new Promise(resolve=>page.once('dialog',async dialog=>{observed=dialog.message();await dialog.dismiss();resolve();}));
       await cancelRow.getByRole('button',{name:button,exact:true}).click();
+      await cancelled;
       assert.equal(observed,message);await publicRead(oldGamma,200);
     }
     const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:900}});

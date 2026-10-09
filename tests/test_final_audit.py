@@ -243,7 +243,7 @@ def test_unsafe_object_snapshot_ignores_only_symlink_access_time(tmp_path, monke
 def test_complete_route_inventory_auth_and_csrf_boundaries(web, logged_in):
     from conftest import post
     expected = {
-        'static', 'index', 'healthz', 'login', 'logout', 'change_password', 'parse_nodes', 'preview_yaml_diff',
+        'static', 'index', 'healthz', 'login', 'logout', 'change_password', 'parse_nodes', 'preview_yaml_diff', 'fresh_csrf_token',
         'process_config', 'temporary_subscribe', 'download_file', 'subscribe_file',
         'short_subscribe_file', 'delete_temp', 'fixed.index', 'fixed.create', 'fixed.edit',
         'fixed.health_action', 'fixed.proxy_defaults', 'fixed.proxy_action',
@@ -253,6 +253,7 @@ def test_complete_route_inventory_auth_and_csrf_boundaries(web, logged_in):
     }
     rules = list(web.app.url_map.iter_rules())
     assert {rule.endpoint for rule in rules} == expected
+    assert web.app.test_client().get('/api/csrf-token', headers={'X-CSRF-Refresh':'1'}).status_code == 401
     anonymous = web.app.test_client()
     protected = {'change_password','parse_nodes','process_config','delete_temp','preview_yaml_diff'}
     for rule in rules:

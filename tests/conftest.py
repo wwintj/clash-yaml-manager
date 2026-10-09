@@ -37,7 +37,7 @@ def node():
 
 
 @pytest.fixture
-def web(tmp_path, monkeypatch):
+def web(tmp_path, monkeypatch, request):
     # Import-time logging/cleanup must never touch the checkout's runtime data.
     for name in ('app.py', 'VERSION', 'mihomo-manifest.json'):
         shutil.copy2(ROOT / name, tmp_path / name)
@@ -46,8 +46,10 @@ def web(tmp_path, monkeypatch):
     monkeypatch.setenv('APP_PASSWORD', 'test 密码')
     monkeypatch.setenv('SECRET_KEY', 'test-only-fixed-secret')
     for name in ('APP_PASSWORD_B64', 'APP_PASSWORD_HASH', 'DOWNLOAD_BASE_URL',
-                 'DOWNLOAD_URL_SCHEME', 'TRUST_PROXY_HEADERS', 'COOKIE_SECURE'):
+                 'DOWNLOAD_URL_SCHEME', 'TRUST_PROXY_HEADERS', 'COOKIE_SECURE', 'SESSION_LIFETIME_DAYS'):
         monkeypatch.delenv(name, raising=False)
+    for name, value in getattr(request, 'param', {}).items():
+        monkeypatch.setenv(name, value)
     root_logger = logging.getLogger()
     handlers, level = root_logger.handlers[:], root_logger.level
     spec = importlib.util.spec_from_file_location('isolated_app', tmp_path / 'app.py')

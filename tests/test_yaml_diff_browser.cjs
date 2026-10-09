@@ -88,7 +88,13 @@ async function setup(browser,width) {
    assert((await status.textContent()).includes('Preview unavailable'));
    await page.locator('#batch_nodes').fill(latest);
    await page.locator('#process-form [name=csrf_token]').evaluate(input=>{input.value='invalid';});
+   // Reject a real POST after successful preflight refresh; no automatic replay.
+   await page.route('**/api/preview-yaml-diff',route=>{
+    const data=new URLSearchParams(route.request().postData());data.set('csrf_token','invalid');
+    return route.continue({postData:data.toString(),headers:{...route.request().headers(),'content-type':'application/x-www-form-urlencoded'}});
+   });
    await preview(400);assert((await status.textContent()).includes('refresh or log in again'));
+   await page.unroute('**/api/preview-yaml-diff');
    await page.reload();await button.click();assert((await status.textContent()).includes('Custom YAML needs to be selected again.'));
    await upload(generated);
    const csrf=await page.locator('#process-form [name=csrf_token]').inputValue();
@@ -96,7 +102,10 @@ async function setup(browser,width) {
    const anonymousHtml=await (await context.request.get(base)).text();
    const fresh=anonymousHtml.match(/name="csrf_token" value="([^"]+)"/)[1];
    await page.locator('#process-form [name=csrf_token]').evaluate((input,value)=>{input.value=value;},fresh);
-   await preview(401);assert((await status.textContent()).includes('Session expired'));
+   const prior=count(routePath),expired=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/csrf-token');
+   await button.click();assert.equal((await expired).status(),401);
+   await page.waitForFunction(()=>!document.getElementById('preview-yaml-diff').disabled);
+   assert((await status.textContent()).includes('Session expired'));assert.equal(count(routePath),prior);
    await context.close();
    // Independent normal generation never requires Diff Preview.
    const direct=await setup(browser,width);

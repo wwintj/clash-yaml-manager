@@ -80,8 +80,8 @@ const link = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?type=
     }
     await clickNavigate(page.getByRole('button',{name:'Disable',exact:true})); await publicRead(url,404);
     await clickNavigate(page.getByRole('button',{name:'Enable',exact:true})); await publicRead(url,200);
-    page.once('dialog', dialog => dialog.dismiss());
-    await page.getByRole('button',{name:'Regenerate Link',exact:true}).click(); await publicRead(url,200);
+    const cancelled = new Promise(resolve => page.once('dialog', async dialog => {await dialog.dismiss();resolve();}));
+    await page.getByRole('button',{name:'Regenerate Link',exact:true}).click(); await cancelled; await publicRead(url,200);
     page.once('dialog', dialog => dialog.accept());
     await clickNavigate(page.getByRole('button',{name:'Regenerate Link',exact:true}));
     const replacement = await page.locator('.fixed-url').inputValue(); assert(replacement !== url);
