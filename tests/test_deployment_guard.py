@@ -110,7 +110,9 @@ def test_replaced_inode_detected_and_second_updater_still_excluded(isolated_guar
     finally: held.close()
 
 
-@pytest.mark.parametrize('value', ['', '1:2', '3:3', '-1:4', '3', '9:99999999999', '٣:٤', '99998:99999', 'true'])
+@pytest.mark.parametrize('value', ['', '1:2', '3:3', '-1:4', '3', '9:99999999999',
+                                   '9999999999:9999999998', '3:2147483648', '2147483648:3',
+                                   '٣:٤', '99998:99999', 'true'])
 def test_environment_is_not_admission(isolated_guard, value):
     with pytest.raises(guard.DeploymentGuardError): isolated_guard.guard_inherited({guard.GUARD_ENV: value})
 

@@ -360,7 +360,8 @@ def guard_inherited(environ):
     guard_require(len(fields) == 2 and all(p.isascii() and p.isdigit() and len(p) <= 10 for p in fields),
                   'DEPLOYMENT_GUARD_BAD_HANDOFF')
     directory, lock = map(int, fields)
-    guard_require(directory >= 3 and lock >= 3 and directory != lock, 'DEPLOYMENT_GUARD_BAD_HANDOFF')
+    guard_require(3 <= directory <= 2**31 - 1 and 3 <= lock <= 2**31 - 1
+                  and directory != lock, 'DEPLOYMENT_GUARD_BAD_HANDOFF')
     duplicate_directory = os.dup(directory)
     try:
         duplicate_lock = os.dup(lock)
