@@ -14,6 +14,7 @@ if __name__ == '__main__' and __file__ != '<stdin>':
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from core.install_info import read_install_info, write_install_info, make_install_info, display_build
+from scripts.deployment_guard import held_deployment_guard, current_deployment_guard, DeploymentGuardError
 
 REPOSITORY = 'wwintj/clash-yaml-manager'
 INSTALL_DIR = Path('/opt/clash-yaml-manager')
@@ -120,7 +121,9 @@ def execute_script(root, mode, metadata):
         with terminal:
             subprocess.run(['bash', 'install.sh'], cwd=root, stdin=terminal, check=True, env=env)
     else:
-        subprocess.run(['bash', 'update.sh'], cwd=root, check=True, env=env)
+        guard = current_deployment_guard()
+        subprocess.run(['bash', 'update.sh'], cwd=root, check=True, env=guard.environment(env),
+                       pass_fds=(guard.directory, guard.lock))
 
 
 def resolve_commit(directory, channel, tag=None, fetch=download):
@@ -152,6 +155,14 @@ def run_lifecycle(mode, args, install_dir=INSTALL_DIR, fetch=download, execute=e
         raise LifecycleError('Please run with sudo/root.')
     if mode == 'update' and not args.resolve_only and not (install_dir / 'app.py').is_file():
         raise LifecycleError('Existing installation not found; use remote-install.sh.')
+    if mode == 'update' and not args.resolve_only:
+        with held_deployment_guard():
+            return _run_lifecycle(mode, args, install_dir, fetch, execute)
+    return _run_lifecycle(mode, args, install_dir, fetch, execute)
+
+
+def _run_lifecycle(mode, args, install_dir, fetch, execute):
+    channel = getattr(args, 'channel', 'stable')
     print(f'Channel: {channel}', flush=True)
     if channel == 'main':
         print('Development channel selected. This build is not a Stable Release.', flush=True)
@@ -215,6 +226,8 @@ def run_lifecycle(mode, args, install_dir=INSTALL_DIR, fetch=download, execute=e
         if (install_dir / 'VERSION').read_text().rstrip('\n') != base_version:
             raise LifecycleError('Installed VERSION verification failed; inspect deployment backup.')
         # Old stable lifecycle scripts predate metadata hooks. Finalize those too.
+        if mode == 'update':
+            current_deployment_guard().validate()
         write_install_info(install_dir, info)
         if read_install_info(install_dir, base_version) != info:
             raise LifecycleError('Installed build metadata verification failed.')
@@ -237,6 +250,8 @@ def main(argv=None):
         parser.error('--allow-downgrade applies only to update')
     try:
         run_lifecycle(args.mode, args)
+    except DeploymentGuardError as error:
+        parser.exit(error.exit_code, 'Deployment guard refused: ' + error.code + '\n')
     except (LifecycleError, ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'{error}\n')
 

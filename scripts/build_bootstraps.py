@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def render(mode):
     source = (ROOT / 'scripts/remote_lifecycle.py').read_text()
+    guard = (ROOT / 'scripts/deployment_guard.py').read_text().split("\nif __name__ == '__main__':")[0]
+    source = source.replace('from scripts.deployment_guard import held_deployment_guard, current_deployment_guard, DeploymentGuardError', guard)
     source = source.replace('from core.install_info import read_install_info, write_install_info, make_install_info, display_build',
                             (ROOT / 'core/install_info.py').read_text())
     return ('#!/usr/bin/env bash\nset -euo pipefail\n'

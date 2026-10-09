@@ -32,6 +32,15 @@ if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
   exit 1
 fi
 
+# Admission precedes the legacy backup, dependency changes and service stops.
+# Inherited descriptors are verified against the fixed private lock objects;
+# the environment value alone never grants admission.
+command -v python3 >/dev/null || { echo "缺少必要命令：python3"; exit 1; }
+if [[ -z "${CLASH_DEPLOYMENT_GUARD_FDS:-}" ]]; then
+  exec python3 "${CURRENT_DIR}/scripts/deployment_guard.py" --run-update "${BASH_SOURCE[0]}" "$@"
+fi
+python3 "${CURRENT_DIR}/scripts/deployment_guard.py" --check-inherited
+
 source "${CURRENT_DIR}/scripts/deploy-common.sh"
 
 for command in python3 systemctl curl getent useradd chown; do
