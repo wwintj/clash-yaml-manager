@@ -276,6 +276,14 @@ life.run_lifecycle('update',args,installed,fetch)
         else:
             result=execute_native(data)
         evidence=reports(result)
+        if case=='manual-conflict':
+            assert result.returncode==1
+            assert 'EXTERNAL_WRITERS_QUIET_REQUIRED' in result.stderr
+            assert not list(parent.glob('upgrade-backup-*'))
+            assert not (parent/'sidecars').exists() and not events.exists()
+            assert (installed/'app.py').read_bytes()==old_app and (installed/'.env').read_bytes()==old_env
+            print(json.dumps(dict(case=case,root=True,early_admission=True,production=False)))
+            return
         successful=case in ('off','optional-success','strict-success','optional-ordinary-failure','remote-success')
         assert (result.returncode==0)==successful,(case,result.returncode,result.stdout,result.stderr)
         legacy=list(parent.glob('upgrade-backup-*'));assert len(legacy)==1

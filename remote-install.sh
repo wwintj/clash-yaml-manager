@@ -549,6 +549,15 @@ def resolve_commit(directory, channel, tag=None, fetch=download):
     return commit
 
 
+def sidecar_admission():
+    """Pure operator-setting check; guard and actual quiet evidence remain required."""
+    mode = os.environ.get('CLASH_BACKUP_SIDECAR_MODE', 'OFF')
+    if mode not in ('OFF', 'OPTIONAL', 'STRICT'):
+        raise LifecycleError('Sidecar preflight refused: INVALID_MODE; nothing updated.')
+    if mode != 'OFF' and os.environ.get('CLASH_BACKUP_EXTERNAL_WRITERS_QUIET') != 'YES':
+        raise LifecycleError('Sidecar preflight refused: EXTERNAL_WRITERS_QUIET_REQUIRED; nothing updated.')
+
+
 def run_lifecycle(mode, args, install_dir=INSTALL_DIR, fetch=download, execute=execute_script):
     channel = getattr(args, 'channel', 'stable')
     if channel not in ('stable', 'main'):
@@ -561,6 +570,7 @@ def run_lifecycle(mode, args, install_dir=INSTALL_DIR, fetch=download, execute=e
         raise LifecycleError('Existing installation not found; use remote-install.sh.')
     if mode == 'update' and not args.resolve_only:
         with held_deployment_guard():
+            sidecar_admission()
             return _run_lifecycle(mode, args, install_dir, fetch, execute)
     return _run_lifecycle(mode, args, install_dir, fetch, execute)
 

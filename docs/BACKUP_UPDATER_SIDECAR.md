@@ -8,7 +8,8 @@ Manifest v1 Verifier 與 Protected Catalog。只驗證離線 subset 的完整性
 ## 明確 opt-in 與生命週期
 
 Root 操作者透過程序環境選擇 `CLASH_BACKUP_SIDECAR_MODE`，不讀取 app `.env`
-來決定模式。未設定為 `OFF`，值只接受精確 `OFF`／`OPTIONAL`／`STRICT`。
+來決定模式。未設定時預設 `OFF`，值只接受精確 `OFF`／`OPTIONAL`／`STRICT`；
+明確空字串、未知值、小寫或含空白一律拒絕，不會視為 OFF。
 非 OFF 另需 `CLASH_BACKUP_EXTERNAL_WRITERS_QUIET=YES`：操作者已確認沒有
 歷史 updater、installer、uninstaller、管理工具或手動 root writer 並行。
 這是信任前提，不代表工具能偵測任意外部程式。操作示例僅用於已審閱的隔離來源：
@@ -22,6 +23,21 @@ Remote wrapper 原有環境交接亦保留這兩個 opt-in 值；它沒有新增
 CLI 選項。只有包含新 hook 的目標 updater 能使用本功能，歷史 Stable child
 不因此取得 Sidecar 能力。本文件不是 production deployment 授權。
 
+Phase 3D-3R2 在真正的共同 guard 入場後增加純設定 preflight。Direct updater
+在 source common／Legacy Backup／pip／venv／service stops／auth／code copy 前
+拒絕無效設定；remote parent 更在 resolution／archive／暫存 metadata 前檢查，
+涵蓋「已是最新版」不執行 child 與歷史 child 未含新檢查的路徑。只靠 child
+update.sh 無法涵蓋這兩種情況，因此 remote lifecycle 僅新增相同環境設定檢查，
+並依既有規則再生兩個 standalone entrypoints；install 與 resolve-only 路徑不套用。
+
+OPTIONAL／STRICT 必須精確 `CLASH_BACKUP_EXTERNAL_WRITERS_QUIET=YES`，
+缺失、空值、大小寫或空白變體提前拒絕。OFF 不要求此聲明，也不呼叫 Sidecar
+工具。拒絕碼為 INVALID_MODE／EXTERNAL_WRITERS_QUIET_REQUIRED（exit 1），
+不輸出任意環境值。Guard 優先，所以衝突仍 exit 75、無效 FD 仍 exit 78；
+普通環境字串不授權跳過 guard。既有 guard 私人物件仍是已授權入場例外。
+這只檢查操作者聲明；後段 systemd/cgroup、來源與磁碟 quiet gates 完全保留，
+不能因 preflight 接受就宣稱 writers 已 quiet、Sidecar 已 VERIFIED 或 upgrade 已完成。
+
 | 模式 | 行為 |
 | --- | --- |
 | OFF | 不呼叫 Adapter／Collector／Writer／Verifier／Catalog，不建立 Sidecar 物件；原 cp -a、依賴、state、auth、service/timer 與 remote finalization 行為保留。 |
@@ -34,11 +50,12 @@ CLI 選項。只有包含新 hook 的目標 updater 能使用本功能，歷史 
 歷史 updater、install/uninstall 與不遵守協定的 root writer 仍在保護範圍外。
 
 Hook 僅位於 `backup_private_state` **返回成功後、`core.migrate` 前**：
-guard → 原 legacy code/venv/config/units backup → pip → 原 service/timer stops →
+guard → 純 opt-in 設定 preflight → 原 legacy code/venv/config/units backup → pip → 原 service/timer stops →
 legacy state backup → opt-in Sidecar → auth migration → code copy／service recovery →
 remote metadata finalization → guard release。没有提前或推遲 legacy backup。
 
-Strict 拒絕時，依賴可能已更新、服務／timers 可能已停止；沒有自動重新啟動、
+設定 preflight 拒絕時沒有部署副作用；後段 Strict Sidecar capture 拒絕時，
+依賴可能已更新、服務／timers 可能已停止；沒有自動重新啟動、
 downgrade 或 restore。錯誤路徑查詢並回報 app 的當前 `SERVICE_STATE`，無法查詢
 時明列 CHECK_ERROR。依原 rollback 文件人工核對 legacy venv、auth 與 units，
 不得把 Snapshot 當可直接覆蓋的恢復格式。

@@ -41,6 +41,24 @@ if [[ -z "${CLASH_DEPLOYMENT_GUARD_FDS:-}" ]]; then
 fi
 python3 "${CURRENT_DIR}/scripts/deployment_guard.py" --check-inherited
 
+# BEGIN VERIFIED SIDECAR PREFLIGHT
+# Check only explicit operator settings, before backup/pip/writer stops. This
+# never substitutes for the adapter's later systemd/cgroup quiet checks.
+case "${CLASH_BACKUP_SIDECAR_MODE-OFF}" in
+  OFF) ;;
+  OPTIONAL|STRICT)
+    if [[ "${CLASH_BACKUP_EXTERNAL_WRITERS_QUIET-}" != YES ]]; then
+      echo "Sidecar preflight refused: EXTERNAL_WRITERS_QUIET_REQUIRED; nothing updated." >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Sidecar preflight refused: INVALID_MODE; nothing updated." >&2
+    exit 1
+    ;;
+esac
+# END VERIFIED SIDECAR PREFLIGHT
+
 source "${CURRENT_DIR}/scripts/deploy-common.sh"
 
 for command in python3 systemctl curl getent useradd chown; do

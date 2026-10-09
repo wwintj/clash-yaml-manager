@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- Sidecar opt-in 設定改在共同 guard 入場後、任何部署副作用前驗證；未設定仍 OFF，明確空值／未知／大小寫或空白變體拒絕，OPTIONAL／STRICT 必須精確 YES。Direct 與 remote parent 同步檢查，包含 remote no-op／歷史 child 路徑；保留 75／78、channel／SHA／FD／metadata finalization 與後段真正 quiet gate，不改安全工具或 Restore 契約。
 - Keep Generate YAML navigation marked as the current page when POST /process returns validation errors directly with HTTP 400.
 
 ## v1.7.0 - 2026-10-08
