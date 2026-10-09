@@ -46,7 +46,11 @@ def web(tmp_path, monkeypatch, request):
     monkeypatch.setenv('APP_PASSWORD', 'test 密码')
     monkeypatch.setenv('SECRET_KEY', 'test-only-fixed-secret')
     for name in ('APP_PASSWORD_B64', 'APP_PASSWORD_HASH', 'DOWNLOAD_BASE_URL',
-                 'DOWNLOAD_URL_SCHEME', 'TRUST_PROXY_HEADERS', 'COOKIE_SECURE', 'SESSION_LIFETIME_DAYS'):
+                 'DOWNLOAD_URL_SCHEME', 'TRUST_PROXY_HEADERS', 'COOKIE_SECURE', 'SESSION_LIFETIME_DAYS',
+                 'UPLOAD_RETENTION_POLICY', 'OUTPUT_RETENTION_POLICY', 'BACKUP_RETENTION_POLICY',
+                 'TEMP_LINK_LIFETIME_HOURS', 'UPLOAD_RETENTION_HOURS', 'OUTPUT_RETENTION_HOURS',
+                 'BACKUP_RETENTION_HOURS', 'FILE_RETENTION_DAYS', 'BACKUP_RETENTION_DAYS',
+                 'CLEANUP_INTERVAL_HOURS', 'CLEANUP_INTERVAL_DAYS'):
         monkeypatch.delenv(name, raising=False)
     for name, value in getattr(request, 'param', {}).items():
         monkeypatch.setenv(name, value)
