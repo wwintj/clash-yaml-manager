@@ -60,6 +60,8 @@ v1.8.0 Phase 3D-1 開發功能新增獨立 [Offline Sidecar Collector](docs/BACK
 
 v1.8.0 Phase 3D-2 開發功能新增獨立 [Trust Anchor Catalog](docs/BACKUP_CATALOG.md)：操作者提供獨立核對的 digest，工具完整驗證已完成的離線 Snapshot，再將身份／digest 關聯以私人 record 登記於分離 Catalog；後續以受保護 record 的 expected digest 呼叫既有 Verifier。容量有界、no-replace／fsync 發布，明列 crash／孤兒與同主機 root 保護限制；不自動刪除資料，未整合 updater、未驗證 restore 或 off-host DR。尚未發布，Latest Stable 仍為 v1.7.0。
 
+v1.8.0 Phase 3D-3G 開發功能新增 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md)：新版 direct／remote updater 在 legacy backup 前共同取得 root 私人 nonblocking flock，涵蓋 remote 最終 metadata 寫入；衝突返回 75 且不執行部署副作用。這是預設 OFF 的唯一入場例外，原備份、venv、auth 與 service/timer 順序保持不變；歷史 updater、install/uninstall 與外部 root writer 未自動受保護。尚未接入 Sidecar、部署 production 或驗證 restore，Latest Stable 仍為 v1.7.0。[Time Limit Inventory](docs/TIME_LIMIT_INVENTORY.md) 僅盤點登入／檔案有效期、安全控制、作業 timeout 與排程，不改時間行為。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
