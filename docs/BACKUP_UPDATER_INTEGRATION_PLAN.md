@@ -1,19 +1,22 @@
 # Verified Backup：Linux 驗證與 updater 整合評估
 
-v1.8.0 Phase 3C 為調查、合成驗證與設計階段，尚未發布；Latest Stable
-保持 v1.7.0。本輪不修改 updater、uninstall、Writer、Manifest v1 或 verifier，
-不存取 production／歷史真實備份，也不實作 collector、trust store 或 restore。
+v1.8.0 Phase 3C 的歷史範圍為調查、合成驗證與設計；後續 Phase 3D-1 新增
+獨立 [Offline Sidecar Collector](BACKUP_COLLECTOR.md)，僅處理明確的 quiet offline
+fixtures。尚未發布，Latest Stable 保持 v1.7.0。Updater、uninstall、Writer、
+Manifest v1 與 verifier 不變；沒有 production／歷史真實備份存取、trust store 或 restore。
 
-目前結論：**READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW**。
+Phase 3C-R1 已完成結論：**READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW**。
 Phase 3C-R1 的 exact-SHA Ubuntu recovery RC 已通過完整驗證與真實 kernel ENOSYS／
 Writer refusal gate；歷史失敗與本輪證據見下節。這僅允許審閱
-**A：明確 opt-in、範圍受限的 verified sidecar**，不是 Phase 3D 已實作，也不是
-production deployment approval。**B：取代 legacy updater backup 不相容**。
+**A：明確 opt-in、範圍受限的 verified sidecar**；當時尚未實作 Phase 3D。Phase 3D-1
+現在僅實作離線 Collector 基礎，不是 production deployment approval。
+**B：取代 legacy updater backup 不相容**。
 Sidecar 只驗證宣告範圍的 stored bytes，不能稱整個 updater backup 已驗證，
 更不能稱恢復已證明。所有結果仍為 `restore_proven=false`。
-本頁記錄 recovery RC 的已完成結果；文件更新後的 final candidate 仍須另行通過
-exact-SHA Ubuntu RC。最終 SHA 與該 run 的 identity／結果由外部驗收報告記錄，
-不預先宣稱尚未執行的 final candidate RC 通過。
+Phase 3C-R1 的文件 final candidate 已由 run
+[37854413690](https://github.com/wwintj/clash-yaml-manager/actions/runs/37854413690)
+在 `dc9b12c5f75ac212be241b7dd3c2153263919bc5` 完整驗證成功（3491 passed）。
+Phase 3D-1 最終 exact-SHA RC 與身份／結果另存當輪驗收報告，本頁不預先宣稱通過。
 
 ## 既有契約與實際順序
 
@@ -64,7 +67,7 @@ Phase 3A 的內部一致、獨立 anchor 比對與真實恢復分屬不同證據
 | root 私有 legacy backup 外層 | COMPATIBLE | 典型 root 0700 外層符合來源要求；不因此推定所有後代符合。 |
 | `clashyaml`-owned state 子目錄（若存在） | INCOMPATIBLE（直接輸入 root Writer） | `cp -a` 保留服務 UID 的子目錄；Writer 要求每個來源目錄屬執行 UID。單有服務 UID 的普通檔案不是這項 directory gate 的拒絕理由；不能從 root 外層推定所有後代安全。Root 執行不繞過此規則，不修改 live／legacy ownership 迎合工具。 |
 | `cp -a` 的 ownership／mode／其他 metadata | INCOMPATIBLE（替代恢復格式） | Writer 新建目錄 0700、檔案 0600，記錄的是 stored metadata；不保存原 UID/GID、mode、ACL、xattrs、timestamps。Bytes 相同不代表 `cp -a` 等價。 |
-| 新收集的 root-owned offline representation | CONDITIONAL | 需要獨立、安全、有界 collector 與 writer quiet 證據；詳細設計見下節。本輪未實作。 |
+| 新收集的 root-owned offline representation | CONDITIONAL | Phase 3D-1 提供獨立有界 offline Collector；受保護 operator quiet／ownership 聲明、固定 scope 與資源條件仍必須成立。未整合 production writers quiet 或 updater。 |
 | 一般 Python venv | INCOMPATIBLE | `bin/python*` 常為 symlink；可能有 hardlinks／過多物件／深度／容量。Writer 不跟隨 symlink。排除 venv 會省略 payload，不是保存 recovery material。 |
 | app／refresh／health 五個 unit 的 bytes | CONDITIONAL | 可放進 root offline representation；需記錄缺少的舊 unit。Manifest 不驗證 systemd 語義、帳戶、安裝路徑、enablement 或啟動結果。 |
 | `.env` 與 auth migration 前 state | CONDITIONAL | 必須同一明確捕捉邊界、私有保存，不輸出內容；回滾須核對密鑰、認證版本與 session 影響。 |
@@ -73,6 +76,38 @@ Phase 3A 的內部一致、獨立 anchor 比對與真實恢復分屬不同證據
 | 原始 systemd、Nginx、依賴與完整還原 | NOT TESTED | 本輪不啟動／恢復 production，不宣稱整機重建、帳戶還原或實際 routing 已驗證。 |
 | 整份 legacy updater backup 作 Writer 直接輸入 | INCOMPATIBLE（一般情況） | 混合 ownership、venv links、資源及 metadata 復原問題；逐步收集時序也不是單一時間點。 |
 | 既有手動 rollback | CONDITIONAL | 繼續使用原 legacy code、venv、設定與 units；保留最新 runtime data，state rollback 需人工核對版本與密碼，不以 sidecar 自動取代。 |
+
+## Phase 3D-1：已實作的 offline subset 基礎
+
+`backup_collect.py` 只接受明確 source／destination／`updater-sidecar-v1` profile。
+操作者事先在私人離線根提供 executor-owned 0600 `COLLECTOR_SOURCE.json`，明確
+attest offline／quiet；工具不建立來源聲明、不停止服務、不找 live installation。
+Root 讀取 captured clashyaml-owned state 時，須核對 root-controlled 聲明及私人
+`.service-account` 的 numeric UID/GID，再逐項檢查 owner pair／mode。不能因 root
+可讀就接納其他 UID；來源與 legacy tree 不 chown／chmod。
+
+固定 allowlist 包含必要 .env、VERSION、Default、state/auth，條件 INSTALLATION
+metadata，以及明列的 persistent JSON、Fixed UUID revision／source payload 文法、
+GeoIP active bytes；未知 state／unsupported envelope 拒絕。這不是任意 state tree copy。
+Known locks／scratch 與 app／venv／outputs／uploads／backups／logs／Nginx／外部
+憑證／系統依賴省略，scope metadata 明列未讀範圍與缺少 optional。
+Fixed orphan revisions 可保存，但不做 GC 或業務 closure／restore 認證。
+
+Output 新建為 executor-owned 0700／0600；COLLECTION_SCOPE.json 與
+SOURCE_OWNERSHIP.json 是私人普通資料檔，分開說明 allowlist subset、原始
+UID/GID/mode／role 與 collected metadata。既有 Writer 的 FULL_TREE 只覆蓋
+representation，包括這兩個檔案；Manifest v1 契約不變，不表示全 VPS。
+
+Collector 上限為 512 objects（含 generated controls 與 future Manifest reserve）、
+8 depth、16 MiB/file、64 MiB stored（其中預留 2 MiB Manifest）、256 MiB aggregate
+reads、10 秒合作式 budget；JSON 與 generated metadata 另有較小上限。
+來源前後重盤點、output hash、private staging／fsync／native no-replace 及 inode-ledger
+cleanup 不放寬原 Writer gates；發布後未確認結果保留，不自動刪除任何舊備份。
+完整 input／失敗／所有權／測試契約見 [Collector 文件](BACKUP_COLLECTOR.md)。
+
+這是離線基礎工具與 synthetic acceptance；updater hook、全域 quiet/exclusivity、
+獨立 catalog／anchor、retention、production rollout 及 restore 仍是後續工作。
+原 legacy backup／venv／rollback 材料保留不變。
 
 ## Ownership 與 offline collector 設計
 
@@ -97,8 +132,9 @@ Numeric UID 不能直接套到另一主機，需核對服務帳戶與安裝標�
 
 Writer 只接收已收集完成的 quiet offline tree，不直接指向 live 安裝。
 其來源／stored bytes 重查是變更偵測，無法替代 filesystem snapshot 或對抗
-惡意 root concurrent writer。Collector 未實作，因此本輪沒有新的 production
-收集路徑，也沒有聲稱 ownership 或恢復映射已被驗收。
+惡意 root concurrent writer。Phase 3D-1 的 offline Collector 建立私人 source role／
+original ownership ledger，並測試合成混合所有權；沒有 production 收集路徑，也沒有
+自動恢復映射、帳戶重建或 restore 驗收。
 
 ## Linux native gate
 
@@ -322,7 +358,7 @@ Rollback 沿用原人工邊界：先停止所有 writers，核對版本、恢復
 | 等級 | 判定與下一步 |
 | --- | --- |
 | HIGH | B／完整 legacy replacement 不相容，拒絕該方向。全量業務 closure 與完整 restore 未驗證，禁止相應宣稱。A 的實作必須先通過 final exact-SHA Ubuntu gate；若 native syscall／Writer 缺陷浮現，本 Phase STOP。 |
-| MEDIUM | A 的 collector、quiet/exclusivity gate、scope allowlist、ownership ledger、獨立 catalog 交易／crash／retention 尚未實作；這些是 Phase 3D 必須完成的工作，不能省略。資源 refusal 與不同 filesystem 支援需保留，warm-cache 不提供 production SLA。 |
+| MEDIUM | Phase 3D-1 僅完成 standalone offline Collector、固定 allowlist 與私人 source role ledger；production quiet/exclusivity、updater hook、獨立 catalog 交易／crash／retention 尚未實作，不能省略。資源 refusal 與不同 filesystem 支援需保留，warm-cache 不提供 production SLA。 |
 | LOW | 真實 VPS performance、off-host DR、實際 restore／電力故障均 NOT TESTED；不在此次合成完整性／設計 gate 的宣稱中。 |
 
 Phase 3D 只能在另行授權後實作 A，acceptance 至少包含：
@@ -342,7 +378,8 @@ Phase 3D 只能在另行授權後實作 A，acceptance 至少包含：
    static／validate-only、exact-SHA Ubuntu RC 通過；沒有 production access／credentials
    洩漏。Production rollout 與 restore acceptance 各需另行授權。
 
-目前的「READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW」僅適用於上述
-受限 A 設計；recovery gate 已取得真實 Linux 證據，文件更新後的 final candidate
-仍需 exact-SHA Ubuntu PASS。Phase 3D 實作另需授權；不是 integration 已存在、
-production 部署就緒、complete backup verified 或 restore proven。
+Phase 3C-R1 的「READY FOR PHASE 3D DESIGN/IMPLEMENTATION REVIEW」僅適用於
+上述受限 A 設計，recovery／final RC 已取得真實 Linux 證據。Phase 3D-1 的 offline
+Collector 需通過自身 final exact-SHA Ubuntu gate；後續 production 整合另需授權。
+不是 updater integration 已存在、production 部署就緒、complete backup verified
+或 restore proven。

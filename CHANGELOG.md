@@ -4,6 +4,7 @@
 
 ### Added
 
+- 新增獨立 Offline Sidecar Collector，僅從明確指定且已確認 quiet 的離線 fixture，依固定 updater-sidecar-v1 allowlist 與受保護 ownership 聲明收集配置／持久 state；以 0700／0600 新表示及原始 source role ledger 供既有 Writer／Manifest v1／Verifier 使用，明列省略、預算、no-replace 發布與身份清理限制，未接入 updater／production、trust catalog 或 restore。
 - 新增 Linux native snapshot publication 的合成測試與 updater 整合評估，涵蓋真實 no-replace、descriptor no-follow、fsync、衝突清理與 kernel ENOSYS refusal；評估受限 opt-in verified sidecar，保留 legacy backup，尚未實作整合、trust store 或 restore。
 - 新增獨立 Offline Verified Snapshot Writer，僅從明確指定的 quiet 離線目錄建立全新私人備份，重新檢查來源與 stored bytes，以 Manifest v1 verifier 驗證後 no-replace 原子發布；明列 payload 省略的 exclusions、資源預算、失敗清理與獨立 digest handoff，固定 restore_proven=false，未接入 production updater。
 - 新增 Manifest v1 protocol、JSON Schema 與離線 verifier，檢查規範化清單、完整宣告範圍、檔案 SHA-256 與 permission metadata，明確區分內部一致、外部 trust anchor 和 exclusions；固定 restore_proven=false，不補寫歷史備份，未整合既有部署備份流程。

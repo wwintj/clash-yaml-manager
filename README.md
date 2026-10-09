@@ -54,7 +54,9 @@ v1.8.0 Phase 3A 開發功能新增 [Manifest v1 離線 verifier](docs/BACKUP_MAN
 
 v1.8.0 Phase 3B 開發功能新增 [Offline Verified Snapshot Writer](docs/BACKUP_WRITER.md)，從明確指定的 quiet 離線目錄建立私人 staging，以既有 Manifest v1 verifier 驗證後原子發布全新目的地；明列 exclusions、資源與失敗清理邊界。Manifest digest 必須另行獨立保存才可作 trust anchor，restore 仍未驗證；未接入 updater／production，尚未發布，Latest Stable 仍為 v1.7.0。
 
-v1.8.0 Phase 3C 僅新增 Linux 合成驗證與 [updater 整合評估](docs/BACKUP_UPDATER_INTEGRATION_PLAN.md)：建議未來以明確 opt-in 的受限 verified sidecar 保留 legacy backup，不能取代 venv／原權限的恢復材料。尚未實作 collector、trust store 或 updater 整合，未驗證 restore；Latest Stable 仍為 v1.7.0。
+v1.8.0 Phase 3C 僅新增 Linux 合成驗證與 [updater 整合評估](docs/BACKUP_UPDATER_INTEGRATION_PLAN.md)：建議未來以明確 opt-in 的受限 verified sidecar 保留 legacy backup，不能取代 venv／原權限的恢復材料。Phase 3C 當時未實作 collector；後續 Phase 3D-1 的離線工具見下段，trust store、updater 整合與 restore 仍未完成；Latest Stable 仍為 v1.7.0。
+
+v1.8.0 Phase 3D-1 開發功能新增獨立 [Offline Sidecar Collector](docs/BACKUP_COLLECTOR.md)：只接受操作者明確指定、已確認 quiet 的離線 fixture，依固定 allowlist 保存配置及已審閱 persistent state，嚴格核對原始 ownership／source role，以新私人 representation 供既有 Writer／Manifest v1／Verifier 使用。明列省略、資源與清理界線；`FULL_TREE` 只表示 representation 全樹，不是完整 VPS 或 rollback ready。未接入 updater／production，未建立 trust catalog，restore 仍未驗證；尚未發布，Latest Stable 仍為 v1.7.0。
 
 ## 一鍵安裝
 

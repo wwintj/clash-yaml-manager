@@ -140,3 +140,18 @@ Writer 不建立 trust store，不在同 snapshot 內寫 checksum 當作 anchor�
 既有 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、備份格式及歷史備份
 完全不變。舊備份使用 [Phase 2 結構 audit](BACKUP_READINESS.md)，新 Manifest v1
 snapshot 使用 [既有 verifier](BACKUP_MANIFEST_V1.md)；舊 CLI 不自動辨識新格式。
+
+## Phase 3D-1 離線 Collector 輸入
+
+獨立 [Offline Sidecar Collector](BACKUP_COLLECTOR.md) 使用固定 allowlist 與 root-controlled
+離線 ownership 聲明，從 quiet fixture 建立新的 executor-owned 0700／0600 representation，
+包含 `COLLECTION_SCOPE.json`、`SOURCE_OWNERSHIP.json` 及原始 payload bytes。
+它不修改 Writer 的來源 UID、path、budget、Manifest 或 verifier 契約；mixed-owner
+原樹仍不能直接交 root Writer。Collector 不 chown 原始 state／legacy backup。
+
+Writer 使用 `FULL_TREE` 時只涵蓋這份 collected representation，包括兩個普通
+metadata 檔案；不表示原始 installation／VPS 全量保存。Ledger 的 original UID/GID/mode
+與 Manifest 的實際 stored metadata 是不同資料，沒有自動 restore mapping。
+Collector capacity budgets 為 Writer／Manifest 預留空間，但後續 Writer timing、
+完整業務 closure、external provenance、independent anchor 與 restore 仍須另行確認。
+這不是 updater 整合、production backup approval 或 legacy replacement。
