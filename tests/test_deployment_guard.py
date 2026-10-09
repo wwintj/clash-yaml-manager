@@ -322,6 +322,9 @@ def test_process_exit_releases_persistent_inode(isolated_guard, tmp_path, termin
 def test_default_off_script_body_and_legacy_cp_a_order_unchanged():
     old = subprocess.run(['git','show',START+':update.sh'],cwd=ROOT,capture_output=True,text=True,check=True).stdout
     current = (ROOT / 'update.sh').read_text()
+    # New opt-in blocks are absent from OFF execution. Preserve the original
+    # exact-body check after removing only the explicitly delimited additions.
+    current = re.sub(r'(?m)^\s*# BEGIN VERIFIED SIDECAR[^\n]*\n.*?^\s*# END VERIFIED SIDECAR[^\n]*\n', '', current, flags=re.S)
     insertion = current[current.index('# Admission precedes'):current.index('source "${CURRENT_DIR}/scripts/deploy-common.sh"')]
     assert current.replace(insertion, '', 1) == old
     assert 'backup_create' not in current and 'backup_collect' not in current
