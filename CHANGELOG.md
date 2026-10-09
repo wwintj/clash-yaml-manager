@@ -4,6 +4,8 @@
 
 ### Added
 
+- 新增獨立 Upload／Output／Web Overlay Backup `timed`／`keep` policy，預設保留舊 hours／days fallback、0 不代表永久；啟動前拒絕無效 policy，keep 跳過 age cleanup，Runtime 唯讀提示磁碟容量責任。Temporary link 可設獨立有限 `TEMP_LINK_LIFETIME_HOURS`，未設定仍沿用 Output lifetime；保留到期／撤銷／tombstone 與 Fixed lifecycle。
+- Generate 本機草稿可明確 opt-in `Keep draft until I clear it`，舊 v1／30 天預設相容；不復活到期或刪除資料，Clear 阻止後續 autosave 重建，敏感欄位使用 allowlist，明列共享瀏覽器隱私與 storage failure 限制。
 - 新增有限 `SESSION_LIFETIME_DAYS` 啟動設定（預設 30、合法 1–3650 天），Cookie expiry／簽章 max age 共用生效值，Runtime 顯示實際期限；保留滑動續期與原 Logout／密碼／Secret Key 撤銷，不新增認證 state 或永不過期憑證，明列瀏覽器保存限制。
 - 新增新版 updater 的共同 Deployment Guard：固定 root 私人持久目錄／空 lock、descriptor-relative no-follow／inode／ownership 檢查與 nonblocking flock；direct／remote 共用已驗證 FD，涵蓋 remote post-update metadata，衝突固定返回 75 且在部署副作用前拒絕。預設 OFF 僅增加此授權入場例外，保留 legacy backup／venv／auth／service/timer 順序；未接入 Sidecar，歷史 updater 與其他 writer 不自動受保護，production／restore 未驗證。
 - 新增只讀 Time Limit Inventory，分開列出 Session／Cookie／草稿／臨時下載／retention、安全控制、作業 timeout、scheduler／backoff／freshness 與後續可配置方案；原 Phase 3D-3G 不改時間語義，Phase 3T-1 實作有限 Session 設定與 CSRF UX。
@@ -16,6 +18,7 @@
 
 ### Changed
 
+- Web age cleanup 僅在固定目錄有界掃描安全普通 YAML，使用 no-follow／descriptor-relative identity checks，跳過 symlink、多 hardlink、特殊／未知物件與不安全 ownership／mode；不涉及 state、Fixed cache、legacy updater 備份或 offline Snapshot／Catalog。
 - 已認證表單與 Parse／Diff AJAX 在明確操作時取得 same-origin、no-store fresh CSRF token，保留有限驗證；多表單共用 nonce，失敗保留當前輸入／Generate 草稿，不背景 polling、重新認證或重送拒絕的 POST。
 
 ### Fixed

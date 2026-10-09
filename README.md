@@ -64,6 +64,8 @@ v1.8.0 Phase 3D-3G 開發功能新增 [Shared Deployment Guard](docs/DEPLOYMENT_
 
 v1.8.0 Phase 3T-1 開發功能提供[可配置的有限長期登入](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章有效期一致，Runtime 顯示生效值；登出、密碼與 Secret Key 撤銷語義保留。已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，保留一小時令牌期限及草稿，不背景續命、不重送已拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。尚未發布或部署，Latest Stable 仍為 v1.7.0。
 
+v1.8.0 Phase 3T-2 開發功能新增[可選資料保留策略](docs/RETENTION_POLICY.md)：Upload／Generated Output／Web Overlay Backup 各自選擇 `timed` 或 `keep`，預設與舊 hours／days fallback 保留；Runtime 提示 keep 的磁碟容量責任。`/t/` 授權仍有限且可撤銷，與檔案保存分離；Fixed Subscription 不變。Generate 本機草稿可明確勾選 `Keep draft until I clear it`，預設仍 30 天，提示共享瀏覽器可讀敏感節點 URL；不保存帳戶密碼、CSRF、Cookie 或檔案 bytes。未發布或部署，不表示無限容量或 restore 已驗證，Latest Stable 仍為 v1.7.0。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：
