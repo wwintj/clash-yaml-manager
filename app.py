@@ -20,7 +20,7 @@ from core.state import StateError, file_lock, atomic_write
 from core.temporary_links import TemporaryLinks
 from core.fixed_subscriptions import FixedSubscriptions, FixedBearerFilter, SLUG as FIXED_SLUG
 from core.fixed_views import blueprint as fixed_blueprint
-from core.retention import seconds_from_env
+from core.retention import seconds_from_env, policies_from_env, link_seconds_from_env, cleanup_directory
 from core.session_config import lifetime_days
 from core.rate_limit import LoginLimiter
 from core import policy_engine, geoip, yaml_diff, node_update
@@ -57,6 +57,11 @@ UPLOAD_RETENTION_SECONDS = seconds_from_env(os.environ, 'UPLOAD_RETENTION_HOURS'
 OUTPUT_RETENTION_SECONDS = seconds_from_env(os.environ, 'OUTPUT_RETENTION_HOURS', 24, 'FILE_RETENTION_DAYS')
 CLEANUP_INTERVAL_SECONDS = seconds_from_env(os.environ, 'CLEANUP_INTERVAL_HOURS', 1, 'CLEANUP_INTERVAL_DAYS')
 BACKUP_RETENTION_SECONDS = seconds_from_env(os.environ, 'BACKUP_RETENTION_HOURS', 168, 'BACKUP_RETENTION_DAYS')
+try:
+    UPLOAD_RETENTION_POLICY, OUTPUT_RETENTION_POLICY, BACKUP_RETENTION_POLICY = policies_from_env(os.environ)
+    TEMP_LINK_LIFETIME_SECONDS = link_seconds_from_env(os.environ, OUTPUT_RETENTION_SECONDS)
+except ValueError as error:
+    sys.exit(str(error))
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -127,20 +132,15 @@ def cleanup_old_files() -> None:
             if os.path.exists(CLEANUP_MARKER) and now - os.path.getmtime(CLEANUP_MARKER) < CLEANUP_INTERVAL_SECONDS:
                 return
             deleted_count = 0
-            for directory, retention in ((DIR_UPLOADS, UPLOAD_RETENTION_SECONDS),
-                                         (DIR_OUTPUTS, OUTPUT_RETENTION_SECONDS),
-                                         (DIR_BACKUPS, BACKUP_RETENTION_SECONDS)):
-                for entry in os.scandir(directory):
-                    if not entry.is_file(follow_symlinks=False):
-                        continue
-                    try:
-                        if now - entry.stat(follow_symlinks=False).st_mtime >= retention:
-                            os.remove(entry.path)
-                            if directory == DIR_OUTPUTS:
-                                temporary_links.revoke_file(entry.name)
-                            deleted_count += 1
-                    except FileNotFoundError:
-                        continue  # Concurrent explicit deletion is harmless.
+            policies = (UPLOAD_RETENTION_POLICY, OUTPUT_RETENTION_POLICY, BACKUP_RETENTION_POLICY)
+            if any(policy not in ('timed', 'keep') for policy in policies):
+                raise ValueError('Retention policies must be timed or keep.')
+            for directory, retention, policy in (
+                    (DIR_UPLOADS, UPLOAD_RETENTION_SECONDS, policies[0]),
+                    (DIR_OUTPUTS, OUTPUT_RETENTION_SECONDS, policies[1]),
+                    (DIR_BACKUPS, BACKUP_RETENTION_SECONDS, policies[2])):
+                deleted_count += cleanup_directory(directory, retention, policy, now,
+                    temporary_links.revoke_file if directory == DIR_OUTPUTS else None)
             temporary_links.prune(now)
             atomic_write(CLEANUP_MARKER, str(now).encode())
             if deleted_count:
@@ -651,7 +651,7 @@ def process_config():
 
     context["success_message"] = "配置已成功更新，您可以下载或清理临时文件。"
     context["output_filename"] = output_filename
-    short_id, metadata = temporary_links.create(output_filename, OUTPUT_RETENTION_SECONDS)
+    short_id, metadata = temporary_links.create(output_filename, TEMP_LINK_LIFETIME_SECONDS)
     path = url_for('temporary_subscribe', short_id=short_id)
     context['download_url'] = (DOWNLOAD_BASE_URL + path if DOWNLOAD_BASE_URL else
         url_for('temporary_subscribe', short_id=short_id, _external=True, _scheme=DOWNLOAD_URL_SCHEME or request.scheme))
@@ -793,6 +793,8 @@ def settings_runtime():
         download_scheme=DOWNLOAD_URL_SCHEME, upload_retention=UPLOAD_RETENTION_SECONDS,
         output_retention=OUTPUT_RETENTION_SECONDS, cleanup_interval=CLEANUP_INTERVAL_SECONDS,
         backup_retention=BACKUP_RETENTION_SECONDS, bind=APP_BIND_HOST,
+        retention_policies=(UPLOAD_RETENTION_POLICY, OUTPUT_RETENTION_POLICY, BACKUP_RETENTION_POLICY),
+        temporary_link_lifetime=TEMP_LINK_LIFETIME_SECONDS,
         managed_https=https_metadata.status(BASE_DIR),
         session_lifetime_days=int(app.permanent_session_lifetime.total_seconds() // 86400))
 

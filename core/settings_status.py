@@ -38,7 +38,8 @@ def probe_fields(form, prefix='global_'):
 
 def runtime(*, port, cookie_secure, trust_proxy, download_base, download_scheme,
             upload_retention, output_retention, cleanup_interval, backup_retention, bind="0.0.0.0", managed_https=None,
-            session_lifetime_days=30):
+            session_lifetime_days=30, retention_policies=('timed', 'timed', 'timed'),
+            temporary_link_lifetime=None):
     # Never return arbitrary environment strings, even escaped URLs or origins.
     https = download_scheme == 'https' if not download_base else False
     if download_base:
@@ -64,4 +65,16 @@ def runtime(*, port, cookie_secure, trust_proxy, download_base, download_scheme,
     for field, value in dict(upload_retention=upload_retention, output_retention=output_retention,
                             cleanup_interval=cleanup_interval, backup_retention=backup_retention).items():
         values[field] = format(value, 'g') + ' seconds' if type(value) in (int, float) and math.isfinite(value) and value >= 0 else 'Unavailable'
+    if not isinstance(retention_policies, (tuple, list)) or len(retention_policies) != 3:
+        retention_policies = (None, None, None)
+    for field, policy in zip(('upload_retention', 'output_retention', 'backup_retention'), retention_policies):
+        if policy == 'keep':
+            values[field] = 'Keep — no age-based deletion; manage disk capacity yourself.'
+        elif policy != 'timed':
+            values[field] = 'Unavailable'
+    if retention_policies[1] == 'keep':
+        link = (format(temporary_link_lifetime, 'g') + ' seconds'
+                if type(temporary_link_lifetime) in (int, float) and math.isfinite(temporary_link_lifetime)
+                and temporary_link_lifetime > 0 else 'Unavailable')
+        values['output_retention'] += ' Temporary link lifetime: ' + link + '.'
     return values

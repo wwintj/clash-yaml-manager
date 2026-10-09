@@ -40,9 +40,13 @@ class TemporaryLinks:
                 data['links'][key] = None  # Permanent reservation, never bind this ID again.
 
     def create(self, filename, lifetime=86400, now=None):
-        if not safe_filename(filename) or lifetime <= 0:
+        if (not safe_filename(filename) or type(lifetime) not in (int, float)
+                or not math.isfinite(lifetime) or lifetime <= 0):
             raise ValueError('Invalid temporary output.')
         now = time.time() if now is None else now
+        if (type(now) not in (int, float) or not math.isfinite(now)
+                or not math.isfinite(now + lifetime) or now + lifetime <= now):
+            raise ValueError('Invalid temporary output.')
         with file_lock(self.lock):
             data = self._read()
             self._prune(data, now)

@@ -104,6 +104,11 @@
           </div>
 
           <div class="ui-actions mb-3"><span id="draft-status" class="form-text" role="status">Draft autosave / 30 days / this browser</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm">Clear Draft</button></div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="keep-draft" aria-describedby="draft-privacy">
+            <label class="form-check-label" for="keep-draft">Keep draft until I clear it</label>
+          </div>
+          <p id="draft-privacy" class="form-text mb-3">Drafts may contain sensitive node URLs. Anyone using this browser on a shared computer may read them. Stored only in this browser; Clear Draft removes saved inputs. Browser storage may still be cleared or unavailable.</p>
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
             {% include '_generator_fields.html' %}
             <label class="form-label">05 / Generate YAML</label>
@@ -138,7 +143,7 @@
               </div>
             {% endif %}
 
-            <p>Expires: <time datetime="{{ result.expires_at }}">{{ result.expires_at }} (UTC)</time></p>
+            <p>Temporary link expires: <time datetime="{{ result.expires_at }}">{{ result.expires_at }} (UTC)</time></p>
             <button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm mb-3">Clear Draft</button>
             <div class="status-grid mb-4">
               <div class="status-cell">
