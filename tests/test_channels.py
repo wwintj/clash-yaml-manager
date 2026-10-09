@@ -16,7 +16,7 @@ A, B, STABLE = 'a' * 40, 'b' * 40, 'c' * 40
 
 
 @pytest.fixture
-def channel_harness(tmp_path, monkeypatch):
+def channel_harness(tmp_path, monkeypatch, isolated_guard):
     monkeypatch.setattr(life.os, 'geteuid', lambda: 0)
     installed = tmp_path / 'installed'; installed.mkdir()
     (installed / 'VERSION').write_text('1.0.2\n')

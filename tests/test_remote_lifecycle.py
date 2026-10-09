@@ -6,6 +6,7 @@ import subprocess
 import tarfile
 
 import pytest
+from conftest import local_guard_copy
 
 from scripts import remote_lifecycle as life
 
@@ -26,7 +27,7 @@ def archive(path, version='1.0.1', extra=None, overrides=None):
 
 
 @pytest.fixture
-def harness(tmp_path, monkeypatch):
+def harness(tmp_path, monkeypatch, isolated_guard):
     monkeypatch.setattr(life.os, 'geteuid', lambda: 0)
     installed = tmp_path / 'installed'
     installed.mkdir()
@@ -220,6 +221,7 @@ print('200', end='')
     assert 'os.geteuid() != 0' in script
     script = script.replace("INSTALL_DIR = Path('/opt/clash-yaml-manager')", f'INSTALL_DIR = Path({str(installed)!r})')
     script = script.replace('os.geteuid() != 0', 'False')
+    script = local_guard_copy(script, tmp_path / 'deployment-guard')
     result = subprocess.run(['bash', '-s', '--', '--channel', channel], input=script,
                             cwd=tmp_path, env=dict(os.environ, TEST_ARCHIVE=str(package),
                                 PATH=str(commands) + os.pathsep + os.environ['PATH']),

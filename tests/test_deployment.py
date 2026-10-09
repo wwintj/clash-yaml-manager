@@ -11,7 +11,7 @@ import shutil
 
 import pytest
 
-from conftest import ROOT
+from conftest import ROOT, local_guard_copy
 
 
 @pytest.mark.parametrize('script_name', ['install.sh', 'update.sh'])
@@ -64,6 +64,8 @@ def deployment(tmp_path):
         directory.mkdir()
     shutil.copytree(ROOT / 'core', source / 'core', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copytree(ROOT / 'scripts', source / 'scripts')
+    guard = source / 'scripts/deployment_guard.py'
+    guard.write_text(local_guard_copy(guard.read_text(), tmp_path / 'deployment-guard'))
     shutil.copy2(ROOT / 'VERSION', source / 'VERSION')
     shutil.copy2(ROOT / 'mihomoctl.sh', source / 'mihomoctl.sh')
     shutil.copy2(ROOT / 'httpsctl.sh', source / 'httpsctl.sh')
@@ -88,6 +90,7 @@ def deployment(tmp_path):
     service.write_text('[Service]\nUser=root\n')
     events = tmp_path / 'events'
     env = os.environ.copy()
+    env.pop('CLASH_DEPLOYMENT_GUARD_FDS', None)
     env.update(PATH=str(commands) + os.pathsep + env['PATH'], TEST_EVENTS=str(events),
                TMPDIR=str(tmp_path), TEST_PIP_FAIL='0', TEST_HEALTH_FAIL='0',
                TEST_ACCOUNT=str(tmp_path / 'account.db'), TEST_PYTHON=sys.executable)
@@ -138,8 +141,8 @@ echo 'clashyaml:x:998:998:Clash YAML Manager service:/nonexistent:/usr/sbin/nolo
     executable(commands / 'pgrep', 'exit 1\n')
     executable(commands / 'chown', 'echo "chown $*" >> "$TEST_EVENTS"\n')
 
-    def run(script_name='update.sh', cwd=None, input_text=None):
-        script = (ROOT / script_name).read_text()
+    def run(script_name='update.sh', cwd=None, input_text=None, script_text=None, prepare_only=False):
+        script = (ROOT / script_name).read_text() if script_text is None else script_text
         assert 'if [[ "${EUID}" -ne 0 ]]; then' in script
         script = script.replace('if [[ "${EUID}" -ne 0 ]]; then', 'if false; then')
         script = script.replace('INSTALL_DIR="/opt/clash-yaml-manager"', f'INSTALL_DIR="{installed}"')
@@ -155,6 +158,8 @@ echo 'clashyaml:x:998:998:Clash YAML Manager service:/nonexistent:/usr/sbin/nolo
                                 'sleep() { SECONDS=$((SECONDS + $1)); }\n', 1)
         path = tmp_path / ('run-' + script_name)
         path.write_text(script)
+        if prepare_only:
+            return path
         return subprocess.run(['bash', str(path)], cwd=cwd or source, env=env,
                               input=input_text, capture_output=True, text=True, timeout=20)
     return installed, source, service, events, env, run
