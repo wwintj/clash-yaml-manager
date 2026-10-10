@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.8.0 - 2026-10-10
+
 ### Added
 
 - 可配置有限 `SESSION_LIFETIME_DAYS`（預設 30、合法 1–3650 天），Cookie／簽章有效期一致、活動滑動續期，Runtime 顯示生效值；登出、密碼及 Secret Key 撤銷保持，瀏覽器可能縮短 Cookie 保存時間。
