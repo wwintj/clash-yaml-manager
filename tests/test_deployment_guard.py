@@ -19,6 +19,7 @@ import time
 import pytest
 
 from conftest import ROOT, local_guard_copy
+from core.version import normalize_tag, read_version
 from scripts import deployment_guard as guard
 from test_deployment import deployment, executable
 
@@ -196,6 +197,7 @@ def test_killed_supervisor_does_not_admit_while_child_still_holds_fds(isolated_g
 
 def remote_program(fixture, tmp_path, metadata_pause=False):
     installed, source, _, _, env, run = fixture
+    release_tag = normalize_tag(read_version(source / 'VERSION'))
     # Execute the real update.sh (temporary paths, external command doubles)
     # as the remote child, then run the real post-update metadata finalizer.
     update = run(prepare_only=True)
@@ -212,7 +214,7 @@ g.guard_require_root=lambda:None
 life.os.geteuid=lambda:0
 installed=Path({str(installed)!r});source=Path({str(source)!r})
 def fetch(url,path):
-    if '/releases/' in url:path.write_text(json.dumps(dict(tag_name='v1.7.0',draft=False,prerelease=False)))
+    if '/releases/' in url:path.write_text(json.dumps(dict(tag_name={release_tag!r},draft=False,prerelease=False)))
     else:path.write_text(json.dumps(dict(sha='a'*40)))
 life.extract_archive=lambda *args:source
 # Use the actual FD-passing implementation, never a test "already locked" flag.
@@ -280,13 +282,14 @@ exit 99
 
 
 def test_remote_metadata_window_remains_locked(deployment, tmp_path):
-    installed, _, _, events, _, _ = deployment
+    installed, source, _, events, _, _ = deployment
+    target_version = read_version(source / 'VERSION')
     (installed / 'VERSION').write_text('1.0.0\n')
     first = start_remote(deployment, tmp_path, metadata_pause=True)
     try:
         wait_path(tmp_path / 'metadata-ready', first)
         assert 'systemctl restart clash-yaml-manager\n' in events.read_text()
-        assert (installed / 'VERSION').read_text().strip() == '1.7.0'
+        assert read_version(installed / 'VERSION') == target_version
         before = (installed / 'INSTALLATION.json').read_bytes()
         log = events.read_bytes()
         second = start_direct(deployment)

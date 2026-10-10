@@ -238,6 +238,8 @@ writer.Writer.copy=_fault_copy
             finally:sys.argv=old_arguments
             enosys=scope['diagnostic']
         if case=='remote-success':
+            from core.version import normalize_tag, read_version
+            release_tag=normalize_tag(read_version(source/'VERSION'))
             (source/'update.sh').write_bytes(script.read_bytes())
             ready=parent/'metadata-ready';release=parent/'metadata-release'
             program=parent/'remote.py'
@@ -248,7 +250,7 @@ from scripts import deployment_guard as g,remote_lifecycle as life
 g.GUARD_ROOT={str(parent/'deployment-guard')!r}
 source=Path({str(source)!r});installed=Path({str(installed)!r})
 def fetch(url,path):
-    path.write_text(json.dumps(dict(tag_name='v1.7.0',draft=False,prerelease=False) if '/releases/' in url else dict(sha='a'*40)))
+    path.write_text(json.dumps(dict(tag_name={release_tag!r},draft=False,prerelease=False) if '/releases/' in url else dict(sha='a'*40)))
 life.extract_archive=lambda *args:source
 original=life.write_install_info
 def finalize(path,info):
