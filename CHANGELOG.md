@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- 下一個開發週期新增獨立 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與唯讀基礎 Verifier；保存來源角色／原始 metadata、受驗證的 venv link metadata、固定 scope 與同機 root-private external digest handoff。這不是完整 VPS snapshot，尚未評估 recovery requirements，ACL/xattr/capabilities 恢復不受支持；沒有 Restore Apply、Prune 或 updater 整合，既有 Sidecar 預設 OFF 與 Legacy Backup 保留。
+
 ## v1.8.0 - 2026-10-10
 
 ### Added

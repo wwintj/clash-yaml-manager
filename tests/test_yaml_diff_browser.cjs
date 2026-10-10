@@ -1,6 +1,11 @@
 /* Real DOM + real Flask in the disposable runner. Never contact a VPS/provider. */
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
+const {createHash} = require('node:crypto');
+const {readFileSync} = require('node:fs');
+const {join} = require('node:path');
+const version = readFileSync(join(__dirname, '..', 'VERSION'), 'utf8').trim();
+assert(/^\d+\.\d+\.\d+$/.test(version));
 const base = process.env.PREVIEW_TEST_URL;
 assert(base && new URL(base).hostname === '127.0.0.1');
 const routePath = '/api/preview-yaml-diff';
@@ -11,8 +16,16 @@ const sentinel = '<script>alert(1)</script><img data-diff-xss src=x> & Ω';
 const source = 'proxies: [{name: old, type: vless, server: old.example, port: 443, uuid: fake}]\nproxy-groups: []\nrules: [MATCH,DIRECT]\nx-private: "'+sentinel+' '+ 'W'.repeat(5000)+'"\n';
 async function setup(browser,width) {
   const context=await browser.newContext({viewport:{width,height:900}});
-  const page=await context.newPage(), posts=[];
+  const page=await context.newPage(), posts=[], processResponses=[], consoleSummary=[], pageErrors=[];
   page.on('request',r=>{if(r.method()==='POST')posts.push(new URL(r.url()).pathname);});
+  const summary=message=>createHash('sha256').update(message).digest('hex');
+  page.on('console',m=>{if(consoleSummary.length<8)consoleSummary.push({type:m.type(),message_sha256:summary(m.text())});});
+  page.on('pageerror',e=>{if(pageErrors.length<8)pageErrors.push({name:e.name,message_sha256:summary(e.message)});});
+  page.on('response',r=>{
+    if(new URL(r.url()).pathname==='/process' && processResponses.length<8)processResponses.push({status:r.status(),
+      content_type:r.headers()['content-type']?.split(';')[0],
+      redirect_path:r.headers().location?new URL(r.headers().location,base).pathname:null});
+  });
   page.on('dialog',async dialog=>{await dialog.dismiss();throw Error('Unexpected script/dialog execution');});
   await page.route('**/*',route=>{
     const url=route.request().url();
@@ -23,13 +36,98 @@ async function setup(browser,width) {
   });
   await page.goto(base);await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
   await Promise.all([page.waitForNavigation(),page.locator('#password').press('Enter')]);
-  return {page,context,posts,count:path=>posts.filter(p=>p===path).length};
+  async function diagnose(phase,navigation=null,force=false) {
+    if(!force && process.env.BROWSER_DIAGNOSTICS!=='1')return;
+    const dom=await page.evaluate(()=>{
+      const result=document.getElementById('generate-result'), title=result?.querySelector('.panel-title-row .panel-subtitle')?.textContent?.trim();
+      const body=Array.from(document.querySelectorAll('[role="alert"]')).slice(0,8).map(e=>e.textContent.slice(0,2048)).join('\n'), form=document.getElementById('process-form');
+      const known=['Custom YAML needs to be selected again.','No valid new nodes provided.',
+        'Invalid Policy settings.','Session expired','Security token','Unsupported country code.'];
+      const categories=[
+        ['MODE_INVALID','Node Update Mode is invalid.'],
+        ['POLICY_INVALID','Invalid Policy settings.'],
+        ['SOURCE_SELECTION','Custom YAML needs to be selected again.'],
+        ['SOURCE_FORMAT','Unsupported file format.'],
+        ['COUNTRY_SETTINGS','Country Detection settings are invalid.'],
+        ['FORM_NODES','Invalid auxiliary nodes or edits.'],
+        ['NODE_PARSE','Unable to parse the node.'],
+        ['NO_NODES','No valid new nodes provided.'],
+        ['DEFAULT_MISSING','default template is missing.'],
+        ['UPLOAD_SAVE','Unable to save the file.'],
+        ['YAML_FORMAT','Invalid YAML. Check indentation, quotes and duplicate keys.'],
+        ['YAML_PROCESSING','Unable to process YAML.'],
+        ['YAML_STRUCTURE','YAML root must be a mapping.'],
+        ['YAML_REFERENCES','contains an invalid node or proxy group reference.'],
+        ['YAML_CONFLICT','New node name conflicts with a proxy group'],
+        ['CSRF_NOTICE','Security token refreshed.'],
+        ['SESSION_NOTICE','Log in again;'],
+      ].filter(([,message])=>body.includes(message)).map(([category])=>category);
+      const enumValue=(id,allowed)=>{const value=document.getElementById(id)?.value;return allowed.includes(value)?value:'OTHER_OR_ABSENT';};
+      return {download_count:document.querySelectorAll('#download-url').length,
+        generate_result_present:!!result,generate_result_status:['Ready','Waiting'].includes(title)?title:'ABSENT_OR_OTHER',
+        error_count:document.querySelectorAll('[role="alert"]').length,known_errors:known.filter(v=>body.includes(v)),
+        business_error_categories:categories.length?categories:(body.trim()?['UNCLASSIFIED_ALERT']:[]),
+        login_present:!!document.getElementById('password'),csrf_feedback_present:!!document.querySelector('[data-csrf-feedback]'),
+        form_present:!!form,yaml_source:enumValue('yaml-source',['default','custom']),
+        node_update_mode:enumValue('node-update-mode',['replace','merge'])};
+    });
+    console.log('DIAG_CLIENT '+JSON.stringify({version,suite:'yaml_diff',phase,viewport:page.viewportSize(),pathname:new URL(page.url()).pathname,
+      navigation_status:navigation?.status()??null,process_count:posts.filter(p=>p==='/process').length,
+      process_responses:processResponses,download_visible:await page.locator('#download-url').isVisible(),
+      dom,console_summary:consoleSummary,page_errors:pageErrors}));
+  }
+  return {page,context,posts,diagnose,count:path=>posts.filter(p=>p===path).length};
+}
+async function generateChecked(fixture,phase,source) {
+  const {page,diagnose}=fixture;
+  const metadata={version,suite:'yaml_diff',viewport:page.viewportSize(),phase};
+  let stage='form-preconditions',navigation=null;
+  console.log('GENERATE_CHECK '+JSON.stringify({...metadata,stage}));
+  try {
+    const form=await page.evaluate(()=>{
+      const value=(id,allowed)=>{const v=document.getElementById(id)?.value;return allowed.includes(v)?v:'OTHER_OR_ABSENT';};
+      return {source:value('yaml-source',['default','custom']),mode:value('node-update-mode',['replace','merge']),
+        country:value('country-geoip',['off','literal-ip']),
+        country_policy:value('policy_country_groups_type',['preserve','select','url-test','fallback','load-balance']),
+        special_policy:value('policy_special_groups_type',['preserve','select','url-test','fallback','load-balance']),
+        batch_present:!!document.getElementById('batch_nodes')?.value.trim()};
+    });
+    console.log('GENERATE_CHECK '+JSON.stringify({...metadata,stage,form}));
+    assert.deepEqual(form,{source,mode:'replace',country:'off',country_policy:'preserve',special_policy:'preserve',batch_present:true});
+    stage='process-response';
+    const results=await Promise.all([page.waitForNavigation(),
+      page.waitForResponse(r=>r.request().method()==='POST' && new URL(r.url()).pathname==='/process'),
+      page.locator('#generate-yaml').click()]);
+    navigation=results[0];const response=results[1],status=response.status();
+    const contentType=response.headers()['content-type']?.split(';')[0];
+    const redirect=response.headers().location?new URL(response.headers().location,base).pathname:null;
+    const httpClass=status===400?'VALIDATION_400':status===401?'AUTH_401':status===403?'FORBIDDEN_403':
+      status>=500?'SERVER_5XX':status===302?'EXPECTED_REDIRECT':'UNEXPECTED_STATUS';
+    console.log('GENERATE_CHECK '+JSON.stringify({...metadata,stage,status,http_class:httpClass,
+      pathname:new URL(response.url()).pathname,content_type:contentType,redirect_path:redirect}));
+    assert.equal(status,302,'Generate must return its successful 302 redirect');
+    assert.equal(contentType,'text/html');assert.equal(redirect,'/');
+    stage='result-navigation';
+    assert.equal(navigation.status(),200);assert.equal(new URL(page.url()).pathname,'/');
+    stage='download-visibility';
+    assert.equal(await page.locator('#download-url').count(),1,'Generate download element must exist exactly once');
+    assert(await page.locator('#download-url').isVisible());
+    await diagnose(phase+':passed',navigation);
+    console.log('GENERATE_CHECK '+JSON.stringify({...metadata,stage:'passed'}));
+  } catch(error) {
+    console.log('GENERATE_CHECK '+JSON.stringify({...metadata,stage,outcome:'failed'}));
+    await diagnose(phase+':'+stage+':failed',navigation,true).catch(()=>{
+      console.log('GENERATE_CHECK '+JSON.stringify({...metadata,stage,diagnostic_unavailable:true}));
+    });
+    throw error;
+  }
 }
 (async()=>{
  const browser=await chromium.launch({headless:true});
  try {
   for(const width of [1440,390]) {
-   const {page,context,posts,count}=await setup(browser,width);
+   const fixture=await setup(browser,width);
+   const {page,context,posts,count}=fixture;
    const button=page.locator('#preview-yaml-diff'), status=page.locator('#yaml-diff-status');
    assert(await button.isVisible());assert.equal(await button.getAttribute('type'),'button');
    async function preview(expected=200) {
@@ -77,7 +175,7 @@ async function setup(browser,width) {
    assert.equal(await status.textContent(),'Inputs changed; preview again.');
    assert.equal(await page.locator('#yaml-diff-code').textContent(),'');await page.unroute('**/api/preview-yaml-diff');
    await page.locator('#batch_nodes').fill(latest);
-   await Promise.all([page.waitForNavigation(),page.locator('#generate-yaml').click()]);
+   await generateChecked(fixture,'custom-generate','custom');
    assert.equal(count('/process'),before+1);
    const download=await context.request.get(await page.locator('#download-url').inputValue());
    assert(download.ok());const generated=await download.text();
@@ -110,7 +208,7 @@ async function setup(browser,width) {
    // Independent normal generation never requires Diff Preview.
    const direct=await setup(browser,width);
    await direct.page.locator('#batch_nodes').fill(batch);
-   await Promise.all([direct.page.waitForNavigation(),direct.page.locator('#generate-yaml').click()]);
+   await generateChecked(direct,'direct-generate','default');
    assert.equal(direct.count(routePath),0);assert.equal(direct.count('/process'),1);
    assert(await direct.page.locator('#download-url').isVisible());await direct.context.close();
    console.log(`YAML diff browser PASS: ${width}px; latest/default/custom/no-change/XSS/overflow/implicit-submit/CSRF/session/stale-response/direct Generate`);

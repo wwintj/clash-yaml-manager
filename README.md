@@ -58,6 +58,8 @@ Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 dir
 
 ## 一鍵安裝
 
+下一個開發週期的 [Managed Recovery Package Phase B](docs/MANAGED_RECOVERY_PACKAGE.md) 為獨立的離線格式與基礎內容驗證，僅處理明確準備的 quiet fixture；保存 venv link metadata，不執行備份程式。尚未評估 recovery-ready，沒有 Restore／Prune／updater 整合，不代表已發布 v1.8.0 或 production 能力；同機私人 record 不是異地 DR。Linux 原生驗收待後續授權。
+
 在 Ubuntu VPS 上執行：
 
 <!-- INSTALL:START -->
