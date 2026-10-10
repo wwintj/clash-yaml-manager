@@ -1,6 +1,6 @@
 # Updater opt-in verified Sidecar
 
-v1.8.0 Phase 3D-3R 開發功能，尚未發布或部署；Latest Stable 保持 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 `update.sh` 的獨立 `backup_sidecar_update.py` hook 串接既有 Collector、Writer、
 Manifest v1 Verifier 與 Protected Catalog。只驗證離線 subset 的完整性，
 **legacy cp -a backup 仍是原人工 rollback 材料**；沒有 restore、備份刪除或完整 VPS 保證。
@@ -185,7 +185,7 @@ NON_CANONICAL_PATH，實際 BACKUP_CHANGED／NOT_VERIFIED／RESTORE_NOT_PROVEN�
 後續通過不能宣稱已修復；本輪重跑 macOS 與 Ubuntu，任何再失敗即保留首個證據並 STOP。
 沒有 xfail／skip／放寬該斷言／更改 Verifier 拒絕碼。
 
-VERSION／Latest Stable 仍為 1.7.0／v1.7.0；沒有 SSH tim、production state collection、
+Phase 3D-3R／R1／R2 歷史驗收時 VERSION／Latest Stable 為 1.7.0／v1.7.0；沒有 SSH tim、production state collection、
 deployment、restore、真實備份刪除、tag 或 Release。Session／Retention、其他 runtime
 schema、Default 與部署工具的既有安全契約維持不變。READY 僅表示合成開發驗收，
 不代表 production backup ready、完整 VPS consistency、rollback ready 或 restore proven。

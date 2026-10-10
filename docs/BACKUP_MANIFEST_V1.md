@@ -1,9 +1,10 @@
 # Backup Manifest v1 — Offline Verification Protocol
 
-v1.8.0 Phase 3A／3B 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 Phase 3A 提供獨立 protocol、[JSON Schema](../schemas/backup-manifest-v1.schema.json)
 及離線 verifier；Phase 3B 新增 [Offline Verified Snapshot Writer](BACKUP_WRITER.md)，
-僅在隔離合成 fixtures 驗證。沒有 production backup writer、restore 或 updater 整合。
+僅在隔離合成 fixtures 驗證。後續 [opt-in Sidecar](BACKUP_UPDATER_SIDECAR.md)
+重用本 verifier；沒有 production／restore 證明，也不把 legacy backup 當 Manifest snapshot。
 所有結果固定 `restore_proven=false`。
 
 ## Schema 與範圍
@@ -176,12 +177,13 @@ Phase 3B 的獨立 writer 會從 quiet 離線來源建立新樹、記錄實際 s
 Digest 只作獨立保存的 handoff，不自動成為 trusted anchor；失敗清理、exclusions
 與資源要求見 [Writer 契約](BACKUP_WRITER.md)。Writer 不改變本頁 verifier 的信任模型。
 
-既有 updater／uninstall／manual snapshots 仍沒有 Manifest v1。
+Legacy updater／uninstall／manual snapshots 仍沒有 Manifest v1；新版 opt-in Sidecar
+另建獨立 representation／Snapshot／Catalog，不回填或改寫 legacy。
 請用 [Phase 2 結構 audit](BACKUP_READINESS.md)，不能事後補寫 manifest 並宣稱
 它是備份當時的可信原始校驗資料。缺少 control file 時 verifier 只回報
 `MANIFEST_MISSING`／`NOT_VERIFIED`，不產生任何檔案。
 Phase 2 的舊分類規則不因此放寬；具有新 manifest 的 fixture 使用本 verifier，
-不能假定舊 CLI 已整合新格式。現有 backup writer 檔案完全未改動。
+不能假定舊 CLI 已整合新格式。Legacy backup writer 不改，另加 Sidecar hook。
 
 未來 production writer 至少需要：
 

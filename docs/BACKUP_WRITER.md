@@ -1,13 +1,14 @@
 # Offline Verified Snapshot Writer
 
-v1.8.0 Phase 3B 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 `scripts/backup_create.py` 是獨立的 stdlib CLI，只從操作者明確指定、已停止寫入的
-離線目錄建立全新 snapshot。本 Phase 僅在隔離合成 fixtures 執行，沒有 production
-updater 整合、SSH、部署、restore、state／authentication migration 或自動回滾。
+離線目錄建立全新 snapshot。Writer 本身不控制 production writers、auth migration
+或自動回滾；後續 [opt-in updater Sidecar](BACKUP_UPDATER_SIDECAR.md) 重用本工具。
+驗收僅使用隔離合成 fixtures，production／restore 尚未證明。
 
 ## 使用與來源
 
-在開發版本原始碼中執行；下列路徑是操作者準備的離線資料與私人備份 parent：
+在專案原始碼中執行；下列路徑是操作者準備的離線資料與私人備份 parent：
 
 ```bash
 python3 scripts/backup_create.py \
@@ -145,8 +146,9 @@ DR 或 restore。FULL_TREE 仍只代表實際輸入／collected representation �
 
 ## Legacy 相容性
 
-既有 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、備份格式及歷史備份
-完全不變。舊備份使用 [Phase 2 結構 audit](BACKUP_READINESS.md)，新 Manifest v1
+Legacy 備份形狀、原 rollback 材料及歷史備份保持；updater 新增的 guard／設定
+preflight／opt-in hook 見 [Sidecar 契約](BACKUP_UPDATER_SIDECAR.md)，不修改 Writer
+安全限制，也不取代 legacy backup。舊備份使用 [Phase 2 結構 audit](BACKUP_READINESS.md)，新 Manifest v1
 snapshot 使用 [既有 verifier](BACKUP_MANIFEST_V1.md)；舊 CLI 不自動辨識新格式。
 
 ## Phase 3D-1 離線 Collector 輸入
@@ -163,4 +165,5 @@ metadata 檔案；不表示原始 installation／VPS 全量保存。Ledger 的 o
 Collector capacity budgets 為 Writer／Manifest 預留空間，但後續 Writer timing、
 完整業務 closure、external provenance 與 restore 仍須另行確認；independent anchor
 登記可使用後續 Catalog，但操作者的獨立 handoff／來源核對不可省略。
-這不是 updater 整合、production backup approval 或 legacy replacement。
+Standalone Collector／Writer 不是 production backup approval 或 legacy replacement；
+目前 opt-in 整合見 [Sidecar 契約](BACKUP_UPDATER_SIDECAR.md)，restore 仍未證明。

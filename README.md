@@ -26,7 +26,7 @@ v1.6.0 功能範圍：內建預設 YAML 不再預建 HK/TW/SG/JP/US/KR 六個國
 
 | 功能 | 行為與文件 |
 | --- | --- |
-| Generate / Preview | [Replace（預設）／Merge](docs/MERGE_MODE.md)、VMess/VLESS/Trojan/Shadowsocks/Hysteria2 新輸入、可編輯國家／名稱預覽、[Full YAML Diff Preview](docs/YAML_DIFF_PREVIEW.md)、30 天本機草稿及預設 24 小時 `/t/` 臨時連結 |
+| Generate / Preview | [Replace（預設）／Merge](docs/MERGE_MODE.md)、VMess/VLESS/Trojan/Shadowsocks/Hysteria2 新輸入、可編輯國家／名稱預覽、[Full YAML Diff Preview](docs/YAML_DIFF_PREVIEW.md)、預設 30 天／可選 keep 本機草稿及預設 24 小時 `/t/` 臨時連結 |
 | [Fixed Subscriptions](docs/FIXED_SUBSCRIPTIONS.md) | 儲存 Default / Custom YAML 與節點；未變更 prefix 或執行 Regenerate / Delete 時，固定 `/s/<prefix>-fs_<secret>` 保持穩定，不受臨時清理影響；v1.5.0 提供搜尋、狀態篩選、六種排序、來源數量、Health 摘要、Copy URL 回饋與響應式管理排版，詳見 [Fixed UX](docs/FIXED_SUBSCRIPTIONS_UX.md) |
 | [External Sources](docs/EXTERNAL_SOURCES.md) | 合併 Manual、Remote URL、Uploaded；Clash YAML / Raw / Base64，last-good cache |
 | [Automatic Refresh](docs/AUTO_REFRESH.md) | Remote Source 預設 Off，七檔間隔、獨立 timer、失敗退避及有限歷史 |
@@ -46,27 +46,15 @@ Web UI 維持英文介面，使用共用字型、控制項與響應式排版，�
 
 v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊；Phase 3 精簡登入後的全域回饋，移除 `ERROR LOG`／`SUCCESS` 呈現標題，單條錯誤直接顯示、多條保留清單，維持訊息語義、escaping 與 accessibility。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；正式可用版本以頁首 Latest Stable 為準。
 
-v1.8.0 開發階段：修正 `POST /process` 直接回傳 HTTP 400 時，Generate YAML 主導覽缺少 `aria-current="page"` 的既有問題；僅調整導覽呈現語義，表單驗證、路由、redirect 與錯誤狀態碼不變。此修復尚未發布，Latest Stable 仍為 v1.7.0。
+v1.8.0 功能範圍新增有限長期登入、提交前 CSRF 更新、可選保留策略與離線備份安全工具；修正 `POST /process` HTTP 400 頁面的 Generate YAML 主導覽狀態。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
 
-v1.8.0 Phase 2 開發功能新增唯讀 [Backup Audit CLI](docs/BACKUP_READINESS.md)，區分 updater、uninstall data、UI overlay 與未知備份，回報有界結構檢查結果且固定 `restore_proven=false`。它不修改備份、不執行恢復；結構完整不代表真正可恢復。尚未發布，Latest Stable 仍為 v1.7.0。
+[長期登入與 CSRF](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章期限一致且活動續期，Runtime 顯示生效值。登出、密碼及 Secret Key 撤銷保持；已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，不背景續命或重送拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。
 
-v1.8.0 Phase 3A 開發功能新增 [Manifest v1 離線 verifier](docs/BACKUP_MANIFEST_V1.md)，檢查確定性清單、完整宣告範圍及檔案 hash，並區分內部一致與操作者獨立提供的 trust anchor。不補寫歷史 manifest、不執行 restore，固定 `restore_proven=false`；Latest Stable 仍為 v1.7.0。
+[資料保留策略](docs/RETENTION_POLICY.md)：Upload／Generated Output／Web Overlay Backup 各自選擇 `timed` 或 `keep`，預設及舊 hours／days fallback 保留，Runtime 提示 keep 的磁碟容量責任。`/t/` 授權仍有限、可撤銷，與檔案保存分離；Fixed lifecycle 不變。Generate 草稿可明確勾選 `Keep draft until I clear it`，預設仍 30 天；只存於本機瀏覽器，節點 URL 可能包含憑證，需留意共用裝置。
 
-v1.8.0 Phase 3B 開發功能新增 [Offline Verified Snapshot Writer](docs/BACKUP_WRITER.md)，從明確指定的 quiet 離線目錄建立私人 staging，以既有 Manifest v1 verifier 驗證後原子發布全新目的地；明列 exclusions、資源與失敗清理邊界。Manifest digest 必須另行獨立保存才可作 trust anchor，restore 仍未驗證；該階段未接入 updater；後續 opt-in adapter 見 Phase 3D-3R，production／restore 未驗證，尚未發布，Latest Stable 仍為 v1.7.0。
+離線備份工具包含唯讀 [Audit](docs/BACKUP_READINESS.md)、[Manifest v1 Verifier](docs/BACKUP_MANIFEST_V1.md)、[Snapshot Writer](docs/BACKUP_WRITER.md)、固定 `updater-sidecar-v1` allowlist 的 [Collector](docs/BACKUP_COLLECTOR.md) 與獨立私人 [Trust Anchor Catalog](docs/BACKUP_CATALOG.md)。明列來源 ownership／role、stored metadata、exclusions、資源與身份清理邊界；`FULL_TREE` 只表示提供的 representation 全樹，不是整台 VPS。Manifest digest 需保護來源及獨立保存，不從可修改 Snapshot 自行補造信任。
 
-v1.8.0 Phase 3C 僅新增 Linux 合成驗證與 [updater 整合評估](docs/BACKUP_UPDATER_INTEGRATION_PLAN.md)：建議未來以明確 opt-in 的受限 verified sidecar 保留 legacy backup，不能取代 venv／原權限的恢復材料。Phase 3C 當時未實作 collector／catalog；後續 Phase 3D 的獨立離線工具見下段，production 整合與 restore 仍未完成；Latest Stable 仍為 v1.7.0。
-
-v1.8.0 Phase 3D-1 開發功能新增獨立 [Offline Sidecar Collector](docs/BACKUP_COLLECTOR.md)：只接受操作者明確指定、已確認 quiet 的離線 fixture，依固定 allowlist 保存配置及已審閱 persistent state，嚴格核對原始 ownership／source role，以新私人 representation 供既有 Writer／Manifest v1／Verifier 使用。明列省略、資源與清理界線；`FULL_TREE` 只表示 representation 全樹，不是完整 VPS 或 rollback ready。當時尚未建立 trust catalog，後續工具見下段；該階段未接入 updater；後續 opt-in adapter 見 Phase 3D-3R，production／restore 仍未驗證；尚未發布，Latest Stable 仍為 v1.7.0。
-
-v1.8.0 Phase 3D-2 開發功能新增獨立 [Trust Anchor Catalog](docs/BACKUP_CATALOG.md)：操作者提供獨立核對的 digest，工具完整驗證已完成的離線 Snapshot，再將身份／digest 關聯以私人 record 登記於分離 Catalog；後續以受保護 record 的 expected digest 呼叫既有 Verifier。容量有界、no-replace／fsync 發布，明列 crash／孤兒與同主機 root 保護限制；不自動刪除資料，該階段未整合 updater；後續 opt-in adapter 見 Phase 3D-3R，production、restore 與 off-host DR 未驗證。尚未發布，Latest Stable 仍為 v1.7.0。
-
-v1.8.0 Phase 3D-3G 開發功能新增 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md)：新版 direct／remote updater 在 legacy backup 前共同取得 root 私人 nonblocking flock，涵蓋 remote 最終 metadata 寫入；衝突返回 75 且不執行部署副作用。這是預設 OFF 的唯一入場例外，原備份、venv、auth 與 service/timer 順序保持不變；歷史 updater、install/uninstall 與外部 root writer 未自動受保護。該階段未接入 Sidecar，後續 opt-in hook 見下段；尚未部署 production 或驗證 restore，Latest Stable 仍為 v1.7.0。[Time Limit Inventory](docs/TIME_LIMIT_INVENTORY.md) 起初僅盤點時間限制；Phase 3T-1 的 Session／CSRF 變更已另行標明，其他時間語義不變。
-
-v1.8.0 Phase 3D-3R 開發功能新增[明確 opt-in 的 updater verified Sidecar](docs/BACKUP_UPDATER_SIDECAR.md)：OFF 預設保留原升級流程，OPTIONAL／STRICT 僅從已完成的離線 legacy subset 串接 Collector、Writer、Verifier 與獨立私人 Catalog。正面檢查已知 writers quiet、共同 guard 與磁碟餘量，保留原 cp -a／venv／人工 rollback；分開記錄 captured ownership 與新 metadata，不忽略全域安全／ENOSPC 失敗，不自動刪除不確定發布或舊備份。這只驗證 collected representation，沒有完整 VPS／restore 保證；歷史 macOS Verifier 拒絕碼差異保持開放觀察。僅合成開發驗收，未發布或部署，Latest Stable 仍為 v1.7.0。
-
-v1.8.0 Phase 3T-1 開發功能提供[可配置的有限長期登入](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章有效期一致，Runtime 顯示生效值；登出、密碼與 Secret Key 撤銷語義保留。已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，保留一小時令牌期限及草稿，不背景續命、不重送已拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。尚未發布或部署，Latest Stable 仍為 v1.7.0。
-
-v1.8.0 Phase 3T-2 開發功能新增[可選資料保留策略](docs/RETENTION_POLICY.md)：Upload／Generated Output／Web Overlay Backup 各自選擇 `timed` 或 `keep`，預設與舊 hours／days fallback 保留；Runtime 提示 keep 的磁碟容量責任。`/t/` 授權仍有限且可撤銷，與檔案保存分離；Fixed Subscription 不變。Generate 本機草稿可明確勾選 `Keep draft until I clear it`，預設仍 30 天，提示共享瀏覽器可讀敏感節點 URL；不保存帳戶密碼、CSRF、Cookie 或檔案 bytes。未發布或部署，不表示無限容量或 restore 已驗證，Latest Stable 仍為 v1.7.0。
+Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 direct／remote 入場至最終 metadata；[verified Sidecar](docs/BACKUP_UPDATER_SIDECAR.md) **預設 OFF**，首次正式升級維持 OFF。OPTIONAL／STRICT 需明確 opt-in、精確 `CLASH_BACKUP_EXTERNAL_WRITERS_QUIET=YES`，並通過後段真正 quiet／ownership／disk gates；非法設定在部署副作用前拒絕。Sidecar 僅從已完成的離線 legacy subset 收集，**Legacy Backup、venv 與人工 rollback 材料保留**。不忽略全域安全／IO 失敗，不自動刪除不確定物件或舊備份，也不自動 restore。僅完成合成開發驗收，production／完整 VPS consistency／Restore 尚未證明；歷史 macOS Verifier 拒絕碼差異仍為 `ROOT_CAUSE_UNKNOWN`。[整合評估](docs/BACKUP_UPDATER_INTEGRATION_PLAN.md)與[時間限制盤點](docs/TIME_LIMIT_INVENTORY.md)保留詳細契約及歷史證據。
 
 ## 一鍵安裝
 
@@ -213,9 +201,9 @@ Generate 的 **Node Update Mode** 預設 **Replace existing nodes**；明確選 
 
 ## 草稿
 
-Batch、全部 Auxiliary rows、Policy Options、YAML source、Node Update Mode 和 Preview 手動修正自動儲存到同一瀏覽器、同一網站 origin 的 localStorage，保留最後儲存後 30 天。提交前同步儲存；重新整理、登出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。沒有模式欄位的舊草稿恢復為 Replace。成功生成不清空；**Clear Draft** 需確認，清除後模式回到 Replace。
+Batch、全部 Auxiliary rows、Policy Options、YAML source、Node Update Mode 和 Preview 手動修正自動儲存到同一瀏覽器、同一網站 origin 的 localStorage，預設保留最後儲存後 30 天；勾選 **Keep draft until I clear it** 才跳過本機 age expiry，瀏覽器仍可能清除資料。提交前同步儲存；重新整理、登出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。沒有模式欄位的舊草稿恢復為 Replace。成功生成不清空；**Clear Draft** 需確認，清除後模式回到 Replace。
 
-不儲存上傳 YAML 的內容；恢復 Custom YAML 時必須重新選檔，不會靜默使用預設 YAML。CSRF 保護仍在，token 過期時重新整理，session 過期時登入後恢復。
+不儲存上傳 YAML 的內容；恢復 Custom YAML 時必須重新選檔，不會靜默使用預設 YAML。CSRF 保護仍在；JavaScript 啟用時在明確操作前刷新 token，失敗不提交、不重送 POST，保留當前輸入。Session 過期需登入後恢復；JavaScript 停用時仍可重新整理恢復草稿。
 
 草稿含分享連結，儲存在瀏覽器本機且未加密；共用裝置用完請 Clear Draft。停用儲存、容量不足或瀏覽器清除資料會影響恢復，儲存失敗會顯示提示。更換網域或連接埠不會跨 origin 恢復草稿。
 
@@ -255,7 +243,7 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。
-- Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示 Expires（UTC）、Download YAML / Copy Temporary Link / Clear Draft。舊 `/s/` 仍相容。
+- Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示 Temporary link expires（UTC）、Download YAML / Copy Temporary Link / Clear Draft。舊 `/s/` 仍相容。
 - 產生 YAML 時顯示處理提示。
 - 內建瀏覽器 favicon，開啟面板時瀏覽器標籤頁會顯示圖示。
 - 盡量保留原設定裡的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自訂欄位。
@@ -331,7 +319,7 @@ BACKUP_RETENTION_DAYS=7
 
 升級保留原 `.env`：如果舊安裝是直接 HTTP，卻已有 `DOWNLOAD_URL_SCHEME=https`，請手動改為空值或 `http` 並重啟服務。固定 `SECRET_KEY` 必須在所有 worker 間一致，且不能隨意更換，否則既有簽名訂閱和 session 會失效。
 
-POST 表單與解析 API 使用 Flask-WTF CSRF 保護；Stable v1.7.0 表單過期可重新整理恢復草稿。登出只接受 POST。Session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；預設為 30 天滑動有效，每次活動延長有效期。HTTPS 部署需設定 `COOKIE_SECURE=true`。
+POST 表單與解析 API 使用 Flask-WTF 有限 CSRF 保護；已認證且同源的明確操作可先刷新 token，失敗保留輸入且不自動重送 POST。登出只接受 POST。Session 使用 HttpOnly、SameSite=Lax，登入時清除舊狀態；預設 30 天滑動有效，`SESSION_LIFETIME_DAYS` 可設 1–3650，活動請求延長 Cookie／簽章的共同期限。HTTPS 部署需 `COOKIE_SECURE=true`；瀏覽器仍可能提早清除 Cookie。
 
 新安裝只將 Werkzeug PBKDF2-SHA256（1,000,000 次）密碼雜湊存入 `state/auth.json`，不將明文或 Base64 密碼寫入 `.env`。所有 worker 每次認證都讀取共享檔案，修改密碼後立即生效，無需重啟；其他瀏覽器的舊 session 在下一次請求時失效。runtime 不修改 `.env`。只更新程式而略過升級腳本時，可以從舊環境憑據初始化 state，但仍需管理員完成 `.env` 清理。
 
@@ -341,7 +329,7 @@ systemd 使用專用 `clashyaml:clashyaml`，無登入 shell。程式、預設 Y
 
 新輸出檔名為 `tim_YYYYMMDD_N_<128-bit nonce>.yaml`，V2 短鏈使用 128-bit HMAC。刪除後再生成會得到新隨機 identity，原地址不會因序號重設而讀到新輸出。歷史 8/12 hex 簽名只相容舊檔名，新檔不接受弱 token；完整 64 hex 下載 token 仍可使用。訂閱地址屬於持有者憑據，請勿公開；改管理密碼不撤銷訂閱地址，刪除對應輸出可以撤銷。詳細設計與驗收限制見 [Phase 2](docs/PHASE2.md)。
 
-預設上傳保留 **1 小時**、輸出 **24 小時**、備份 **7 天**。啟動/請求可觸發 cleanup，跨 worker 鎖與 `state/.last_cleanup` 保證預設每小時最多掃描一次；沒有背景 daemon，無請求時實體檔案留到下次觸發。`/t/` 獨立檢查到期時間，檔案尚未刪除也回傳 404。上傳刪除不影響已生成輸出。Logs 獨立，state/auth.json 等狀態不進入檔案清理。
+預設上傳保留 **1 小時**、輸出 **24 小時**、Web Overlay Backup **7 天**；各自的 `UPLOAD_RETENTION_POLICY`／`OUTPUT_RETENTION_POLICY`／`BACKUP_RETENTION_POLICY` 預設 `timed`，明確 `keep` 跳過對應目錄的 age cleanup，須自行管理磁碟容量。啟動/請求可觸發 cleanup，跨 worker 鎖與 `state/.last_cleanup` 保證預設每小時最多掃描一次；沒有背景 daemon，無請求時實體檔案留到下次觸發。`/t/` 獨立檢查到期時間，檔案尚未刪除也回傳 404；`TEMP_LINK_LIFETIME_HOURS` 可設 1–87600 的有限整數小時，未設定沿用原 Output lifetime，不追溯更新既有 link。上傳刪除不影響已生成輸出。Logs 獨立，state/auth.json 等狀態不進入檔案清理。
 
 HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS`，cleanup 回退 `CLEANUP_INTERVAL_DAYS`。升級保留舊 `.env` 的值；要改成新預設，加入上方三個 HOURS 設定並重啟。無效或非正值回退安全預設，不因歷史配置格式而啟動失敗。備份獨立使用 `BACKUP_RETENTION_DAYS`（或優先 `BACKUP_RETENTION_HOURS`），預設 7 天。
 
@@ -351,7 +339,7 @@ HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS
 
 已有安裝請使用 `update.sh` 或 `remote-update.sh`；`install.sh` 會拒絕覆蓋已有應用或 `.env`。本地升級必須從獨立的新版本原始碼目錄執行，不能在 `/opt/clash-yaml-manager` 原地執行。`remote-update.sh` 使用獨立臨時目錄，下載失敗不執行升級。
 
-升級前會檢查原始碼語法、既有 `.env`、連接埠、固定 SECRET_KEY 及必要工具；備份程式、templates、static、部署腳本與共用 helper、requirements、venv、`.env`、預設 YAML、帳戶標記和原 systemd service。備份放在腳本輸出的 `/root/clash-yaml-manager-update-backup-*` 私有目錄。接著更新依賴並 `pip check`，再確認專用帳戶、停止服務、備份既有 state，先提交認證雜湊再原子刪除舊憑據，然後複製程式、修復所有權與權限、daemon-reload、重啟並檢查本機 HTTP 回應。備份 venv 需要額外磁碟空間。依賴仍在現有 venv 更新，失敗可能部分改動依賴；尚未實作完整 staging 或自動回滾。
+新版 direct／remote updater 先取得共同 Deployment Guard，並在副作用前驗證 Sidecar opt-in 設定；預設 OFF，沒有 Sidecar 收集。升級前會檢查原始碼語法、既有 `.env`、連接埠、固定 SECRET_KEY 及必要工具；備份程式、templates、static、部署腳本與共用 helper、requirements、venv、`.env`、預設 YAML、帳戶標記和原 systemd service。備份放在腳本輸出的 `/root/clash-yaml-manager-update-backup-*` 私有目錄。接著更新依賴並 `pip check`，再確認專用帳戶、停止服務、備份既有 state，先提交認證雜湊再原子刪除舊憑據，然後複製程式、修復所有權與權限、daemon-reload、重啟並檢查本機 HTTP 回應。備份 venv 需要額外磁碟空間。依賴仍在現有 venv 更新，失敗可能部分改動依賴；尚未實作完整 staging 或自動回滾。
 
 新版的安裝與升級會等待應用就緒：在約 30 秒期限內每秒重試公開的 `/healthz`，只有 HTTP 200 且 systemd active 才報告完成。失敗會顯示服務狀態與最近日誌，升級備份保留供手動回滾。v1.0.2 未包含此修復；新版的部署環境需 Python ≥3.10（Gunicorn ≥25.1.0）。
 

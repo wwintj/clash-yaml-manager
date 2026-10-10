@@ -1,6 +1,6 @@
 # 可選的資料保留策略
 
-v1.8.0 Phase 3T-2 開發功能，尚未發布或部署；Latest Stable 仍為 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 
 ## 舊預設與私人設定
 
@@ -137,6 +137,6 @@ fail-closed startup、legacy fallback、symlink／hardlink／FIFO／socket／目
 實際 Playwright 驗證預設／keep、Chromium process restart、Clear、不復活、隱私欄位、
 quota／access-denied 與 mobile fit；所有資料與 profile 均為 disposable synthetic fixtures。
 
-Session／CSRF 安全邊界與原測試保持；VERSION／Latest Stable 仍為 1.7.0／v1.7.0。
+Phase 3T-2 歷史驗收保持 Session／CSRF 邊界與原測試，當時 VERSION／Latest Stable 為 1.7.0／v1.7.0。
 沒有 SSH tim、production deployment、真實備份／刪除或 restore。
 永久保存不代表無限磁碟、完整 runtime 一致性、backup ready、restore proven 或永久可恢復。

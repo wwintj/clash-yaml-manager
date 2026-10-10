@@ -1,9 +1,10 @@
 # Independent Trust Anchor Catalog
 
-v1.8.0 Phase 3D-2 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 `scripts/backup_catalog.py` 是獨立、有界、離線工具，只登記操作者明確指定且已完成的
 Manifest v1 Snapshot，或從受保護 record 取得 expected digest 交既有 Verifier 查驗。
-沒有 updater hook、live collection、network、retention pruning、rollback 或 restore。
+Catalog 本身不做 live collection、network、retention pruning、rollback 或 restore；
+目前 [opt-in Sidecar](BACKUP_UPDATER_SIDECAR.md) 重用 register／verify，安全契約不變。
 
 ## Trust bootstrap 與身份
 
@@ -205,7 +206,7 @@ Register 最多三次其完整 payload reads、verify 一次，未擴大限制�
 額外 Catalog/metadata 讀取預算。合併各項上限不保證最大容量在 timing/read budget 內
 成功，超限拒絕，不截斷、不自動 prune。
 
-## 驗證及 release boundary
+## 驗證與限制
 
 Synthetic tests 包含真實 Collector→Writer→Manifest→Catalog→Verifier 與 data/manifest/
 record tampering、complete identity/schema、ownership、special objects、容量、race、
@@ -215,7 +216,7 @@ seccomp prefix 的真實 ENOSYS 與 no-fallback tripwires 延伸到 Catalog，�
 另以 root temporary fixture 和 fork/drop numeric UID/GID 證明服務讀寫拒絕；無帳戶建立。
 macOS Linux-only skip 不當作 native PASS，exact-SHA Ubuntu RC 結果另存本輪驗收報告。
 
-原 Collector／Writer／Verifier／Manifest 安全限制、runtime、updater 與 Default 不變。
-未 SSH tim、部署或讀取真實備份；無 VERSION bump/tag/Release。完整 VPS backup、完整
-updater rollback、認證／資料庫可恢復、real restore tested 與 off-host disaster recovery
-均未證明；production quiet/exclusivity、hook、retention 與 restore acceptance 需另行授權。
+Phase 3D-2 歷史驗收未改原 Collector／Writer／Verifier／Manifest、runtime、updater
+或 Default，未 SSH、部署、讀取真實備份或發布版本。後續 opt-in hook 見 Sidecar 文件。
+完整 VPS backup、完整 updater rollback、認證／資料庫可恢復、real restore tested
+與 off-host disaster recovery 均未證明；production／restore acceptance 需另行授權。

@@ -4,28 +4,25 @@
 
 ### Added
 
-- 新增明確 opt-in 的 updater verified Sidecar（預設 OFF／OPTIONAL／STRICT），僅在原 legacy state backup 完成後、auth migration 前，從離線 legacy subset 串接既有 Collector／Writer／Verifier／Protected Catalog；保留 legacy cp -a、venv 與原 rollback 材料，正面檢查 writers quiet／共同 guard／磁碟餘量，分開回報失敗／發布／清理／升級狀態。原始 captured ownership、Adapter source 與 stored metadata 分開；不明 IO／ENOSPC 全域阻擋，發布不確定物件保留，沒有自動 restore／刪備份或完整 VPS 保證。僅合成開發驗收，未發布或部署。
-- 新增獨立 Upload／Output／Web Overlay Backup `timed`／`keep` policy，預設保留舊 hours／days fallback、0 不代表永久；啟動前拒絕無效 policy，keep 跳過 age cleanup，Runtime 唯讀提示磁碟容量責任。Temporary link 可設獨立有限 `TEMP_LINK_LIFETIME_HOURS`，未設定仍沿用 Output lifetime；保留到期／撤銷／tombstone 與 Fixed lifecycle。
-- Generate 本機草稿可明確 opt-in `Keep draft until I clear it`，舊 v1／30 天預設相容；不復活到期或刪除資料，Clear 阻止後續 autosave 重建，敏感欄位使用 allowlist，明列共享瀏覽器隱私與 storage failure 限制。
-- 新增有限 `SESSION_LIFETIME_DAYS` 啟動設定（預設 30、合法 1–3650 天），Cookie expiry／簽章 max age 共用生效值，Runtime 顯示實際期限；保留滑動續期與原 Logout／密碼／Secret Key 撤銷，不新增認證 state 或永不過期憑證，明列瀏覽器保存限制。
-- 新增新版 updater 的共同 Deployment Guard：固定 root 私人持久目錄／空 lock、descriptor-relative no-follow／inode／ownership 檢查與 nonblocking flock；direct／remote 共用已驗證 FD，涵蓋 remote post-update metadata，衝突固定返回 75 且在部署副作用前拒絕。預設 OFF 僅增加此授權入場例外，保留 legacy backup／venv／auth／service/timer 順序；Phase 3D-3G 本身未接入 Sidecar，後續 opt-in hook 見上項，歷史 updater 與其他 writer 不自動受保護，production／restore 未驗證。
-- 新增只讀 Time Limit Inventory，分開列出 Session／Cookie／草稿／臨時下載／retention、安全控制、作業 timeout、scheduler／backoff／freshness 與後續可配置方案；原 Phase 3D-3G 不改時間語義，Phase 3T-1 實作有限 Session 設定與 CSRF UX。
-- 新增獨立 Trust Anchor Catalog，要求操作者提供獨立核對的 digest，完整驗證已完成的離線 Snapshot，再於分離私人 Catalog 以嚴格 schema 綁定身份／scope／digest；支援 register／verify／inspect、有界容量、排他鎖、fsync／no-replace 與 crash／orphan 診斷，不自動刪除資料；後續 updater adapter 見上項，production、restore 與 off-host DR 未驗證。
-- 新增獨立 Offline Sidecar Collector，僅從明確指定且已確認 quiet 的離線 fixture，依固定 updater-sidecar-v1 allowlist 與受保護 ownership 聲明收集配置／持久 state；以 0700／0600 新表示及原始 source role ledger 供既有 Writer／Manifest v1／Verifier 使用，明列省略、預算、no-replace 發布與身份清理限制；後續 Catalog／updater adapter 見其他 Added 項目，production 與 restore 未驗證。
-- 新增 Linux native snapshot publication 的合成測試與 updater 整合評估，涵蓋真實 no-replace、descriptor no-follow、fsync、衝突清理與 kernel ENOSYS refusal；評估受限 opt-in verified sidecar，保留 legacy backup，尚未實作 production 整合或 restore；後續獨立 Collector／Catalog 見其他 Added 項目。
-- 新增獨立 Offline Verified Snapshot Writer，僅從明確指定的 quiet 離線目錄建立全新私人備份，重新檢查來源與 stored bytes，以 Manifest v1 verifier 驗證後 no-replace 原子發布；明列 payload 省略的 exclusions、資源預算、失敗清理與獨立 digest handoff，固定 restore_proven=false，未接入 production updater。
-- 新增 Manifest v1 protocol、JSON Schema 與離線 verifier，檢查規範化清單、完整宣告範圍、檔案 SHA-256 與 permission metadata，明確區分內部一致、外部 trust anchor 和 exclusions；固定 restore_proven=false，不補寫歷史備份，未整合既有部署備份流程。
-- 新增唯讀 Backup Audit CLI，區分 updater、uninstall data、UI overlay 與未知備份，提供有界結構、安全路徑與私密輸出檢查；結果固定 restore_proven=false，不代表真正可恢復，也不修改既有備份流程。
+- 可配置有限 `SESSION_LIFETIME_DAYS`（預設 30、合法 1–3650 天），Cookie／簽章有效期一致、活動滑動續期，Runtime 顯示生效值；登出、密碼及 Secret Key 撤銷保持，瀏覽器可能縮短 Cookie 保存時間。
+- Upload／Generated Output／Web Overlay Backup 各自支援 `timed`／`keep`，舊預設與 hours／days fallback 保留；`TEMP_LINK_LIFETIME_HOURS` 可獨立設定有限 `/t/` 授權，不改既有到期、撤銷、tombstone 或 Fixed lifecycle。
+- Generate 草稿新增明確本機 `Keep draft until I clear it`，預設仍 30 天；Clear 不會被待執行 autosave 復活，僅保存 allowlist 欄位，明列節點 URL 的共享瀏覽器隱私與儲存失敗限制。
+- 新增唯讀 Backup Audit、Manifest v1 Verifier、Offline Snapshot Writer、固定 allowlist 的 Collector 與私人 Trust Anchor Catalog；以有界 no-follow IO、來源 ownership／role、canonical digest、no-replace 發布及身份清理驗證明確離線範圍。`FULL_TREE` 僅表示輸入 representation，所有工具固定 `restore_proven=false`。
 
 ### Changed
 
-- Web age cleanup 僅在固定目錄有界掃描安全普通 YAML，使用 no-follow／descriptor-relative identity checks，跳過 symlink、多 hardlink、特殊／未知物件與不安全 ownership／mode；不涉及 state、Fixed cache、legacy updater 備份或 offline Snapshot／Catalog。
-- 已認證表單與 Parse／Diff AJAX 在明確操作時取得 same-origin、no-store fresh CSRF token，保留有限驗證；多表單共用 nonce，失敗保留當前輸入／Generate 草稿，不背景 polling、重新認證或重送拒絕的 POST。
+- 已認證表單與 Parse／Diff AJAX 在明確操作前取得 same-origin、no-store fresh CSRF token；保留有限驗證與草稿，不背景 polling、重新認證或重送拒絕的 POST。
+- Web timed cleanup 僅有界掃描固定目錄的安全普通 YAML，核對 no-follow／filesystem／inode／owner／hardlink；keep 不掃描，未知或不安全物件保留，不清理 state、Fixed cache 或 protected backups。
+
+### Deployment
+
+- 新版 direct／remote updater 共用 root 私人 Deployment Guard 與已驗證 FD，保護至 remote 最終 metadata；衝突返回 75，不可由普通環境字串跳過。歷史 updater、install/uninstall 與外部 writer 不自動受保護。
+- 新增明確 opt-in verified Sidecar，**預設 OFF**；OPTIONAL／STRICT 需精確外部 writers quiet 聲明及真正 systemd/cgroup、ownership、來源與磁碟 gates。僅在 legacy state backup 後、auth migration 前串接 Collector → Writer → Verifier → Catalog；**Legacy Backup、venv 與人工 rollback 材料保留**。全域安全／未知 IO／ENOSPC 失敗阻擋；不確定發布保留，不自動 restore 或刪備份。僅合成驗收，production、完整 VPS consistency、Restore 尚未證明；歷史 macOS Verifier 拒絕碼差異仍為 `ROOT_CAUSE_UNKNOWN`。
 
 ### Fixed
 
-- Sidecar opt-in 設定改在共同 guard 入場後、任何部署副作用前驗證；未設定仍 OFF，明確空值／未知／大小寫或空白變體拒絕，OPTIONAL／STRICT 必須精確 YES。Direct 與 remote parent 同步檢查，包含 remote no-op／歷史 child 路徑；保留 75／78、channel／SHA／FD／metadata finalization 與後段真正 quiet gate，不改安全工具或 Restore 契約。
-- Keep Generate YAML navigation marked as the current page when POST /process returns validation errors directly with HTTP 400.
+- Sidecar 無效 mode、明確空字串／大小寫／空白變體或缺少精確 YES，在共同 guard 入場後、任何部署副作用前拒絕；Direct 與 remote no-op／歷史 child 同步檢查，保留原 75／78、channel／SHA／FD 與後段 quiet gate。
+- `POST /process` 直接回傳 HTTP 400 驗證錯誤時，Generate YAML 導覽保持 `aria-current="page"`；其他導覽、驗證、redirect 與狀態碼不變。
 
 ## v1.7.0 - 2026-10-08
 

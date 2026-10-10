@@ -1,9 +1,10 @@
 # Offline Sidecar Collector
 
-v1.8.0 Phase 3D-1 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 `scripts/backup_collect.py` 是獨立 stdlib 工具，從操作者明確指定、已確認 quiet 的
 本機離線 fixture，依固定 `updater-sidecar-v1` allowlist 建立新的私人 representation。
-沒有 updater 整合、production collection、服務控制、帳戶建立、restore 或備份 retention。
+Collector 本身不做 live collection、服務控制、帳戶建立、restore 或備份 retention；
+目前 [opt-in Sidecar](BACKUP_UPDATER_SIDECAR.md) 只把已完成的離線 legacy subset 交給它。
 成功不表示完整 runtime 一致、完整 updater backup、rollback ready 或 restore proven。
 
 ## 使用與可信離線聲明
@@ -239,6 +240,7 @@ ownership，再證明真實 root/service 混合、marker missing/mismatch、陌�
 原 Writer／Verifier pipeline；不建立系統帳戶，結束後恢復 fixture ownership 供測試清理。
 macOS 的 Linux-only skip 不等於 native PASS；最終 exact-SHA Ubuntu RC 證據另記驗收報告。
 
-Updater hook、全域 quiet/exclusivity、完整業務 closure、production collector provenance、
-獨立 catalog／anchor transactions、retention、off-host DR 及 restore 均未實作／未驗證。
+Standalone Collector 不提供 updater quiet/exclusivity；後續 Sidecar 另有受限 quiet gate
+與 Catalog 整合，沒有原子 Snapshot／Catalog 雙重交易。完整業務 closure、production
+provenance、retention、off-host DR 及 restore 仍未證明。
 原 legacy updater backup／venv／權限與 rollback 材料不變。

@@ -1,6 +1,6 @@
 # 長期登入與 CSRF 表單體驗
 
-v1.8.0 Phase 3T-1 開發功能，尚未發布或部署；Latest Stable 仍為 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 
 ## 有限、可配置的 Session
 
@@ -65,7 +65,7 @@ JavaScript 停用時仍使用原有表單及有限 CSRF 錯誤復原流程。
 
 刷新失敗時沒有 business POST、重試迴圈或自動導覽；表單保留目前輸入與所選檔案，
 顯示可存取的錯誤，操作者可明確重試／重載／登入。Generate 的既有本機草稿仍可在
-登入或重載後恢復，期限仍為 30 天，不儲存檔案、帳戶密碼、CSRF 或 Session Cookie。
+登入或重載後恢復，預設期限為 30 天（可選 keep 見 [Retention Policy](RETENTION_POLICY.md)），不儲存檔案、帳戶密碼、CSRF 或 Session Cookie。
 Fixed／Settings 不新增私人內容的瀏覽器持久草稿：刷新失敗時保持目前頁面輸入，
 手動重載仍可能失去未儲存的輸入；上傳檔案也須在重載後重新選取。
 

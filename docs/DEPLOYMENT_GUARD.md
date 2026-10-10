@@ -1,7 +1,8 @@
-# Shared Deployment Guard（v1.8.0 Phase 3D-3G 開發功能）
+# Shared Deployment Guard
 
-Latest Stable 仍為 v1.7.0。本功能只保護參與新協定的 updater，尚未部署到
-production；沒有接入 Sidecar、改變備份格式或證明 restore。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
+本 guard 只保護參與新協定的 updater；後續 [opt-in Sidecar](BACKUP_UPDATER_SIDECAR.md)
+重用它，不取代真正 quiet gate。僅合成驗收，production／restore 尚未證明。
 
 ## 入場與鎖的生命週期
 
@@ -53,9 +54,9 @@ Detached descendant 若保留 FD，鎖也會保守延長，需人工確認作業
 保留原行為。Guard 拒絕不回報「備份已建立」，也不建立 legacy backup、不執行 pip、
 不停止 systemd、不進入 core.migrate、不複製程式、不寫安裝 metadata、不清理備份。
 
-使用者明確授權的唯一 OFF 例外是共同入場 guard 與衝突拒絕。無衝突時原 update.sh
-body 保持逐字相同，保留 cp -a、venv、auth migration 與 service/timer 的原順序。
-沒有新的 Sidecar／Collector／Writer／Catalog 呼叫。`build_bootstraps.py` 只增加共用
+OFF 的共同入場 guard 與純設定 preflight 在部署副作用前執行；無衝突且設定合法時，
+保留原 cp -a、venv、auth migration 與 service/timer 順序。OFF 不呼叫
+Sidecar／Collector／Writer／Verifier／Catalog；OPTIONAL／STRICT 契約見 Sidecar 文件。`build_bootstraps.py` 只增加共用
 helper 的 standalone embedding，依倉庫同步規則機械重建兩個 bootstrap；install
 分支及 resolve-only 不取得鎖，不增加 install admission policy。
 
@@ -87,5 +88,5 @@ supervisor 死亡但 child 仍持鎖。Linux gate 額外用 sudo 在 `/tmp` 的 
 執行真實 root UID/GID、0700／0600、flock／O_NOFOLLOW 與降權 child 的 read/write
 拒絕；不操作系統服務、帳戶、/opt、固定 production 鎖或 VPS。
 
-READY 只代表新版共同協定的合成開發驗收，歷史並發、production、Sidecar 和 restore
-仍不在本輪驗收內。
+Phase 3D-3G 的歷史 READY 只代表共同協定的合成驗收，當時未驗收 Sidecar；
+後續整合見專用文件。Production 與 restore 仍未證明。

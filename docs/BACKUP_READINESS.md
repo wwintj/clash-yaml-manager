@@ -1,24 +1,24 @@
 # Backup Audit & Restore Readiness
 
-v1.8.0 Phase 2 開發功能，尚未發布；Latest Stable 保持 v1.7.0。
+v1.8.0 功能範圍；正式可用版本以 [README Latest Stable](../README.md) 為準。
 `scripts/backup_audit.py` 使用 Python 標準函式庫，只讀檢查指定的本機備份。
 它不建立備份、不修改備份格式，也不恢復任何資料。
 
 v1.8.0 Phase 3A 另提供 [Manifest v1 離線 verifier](BACKUP_MANIFEST_V1.md)，
 只驗證有清單的合成離線 fixture，區分 file hashes、manifest digest 與操作者
-提供的外部 trust anchor。未整合至 updater／uninstall，也不替歷史備份補寫
+提供的外部 trust anchor。Phase 3A 當時未整合至 updater／uninstall，也不替歷史備份補寫
 manifest；本頁的 Phase 2 結構檢查行為保持不變，所有工具仍是 `restore_proven=false`。
 
-Phase 3B 新增 [Offline Verified Snapshot Writer](BACKUP_WRITER.md)，僅從操作者
+Phase 3B 當時新增 [Offline Verified Snapshot Writer](BACKUP_WRITER.md)，僅從操作者
 指定的 quiet 離線來源建立全新私人 staging，經既有 verifier 驗證後原子發布；
-明列 exclusions、資源、清理與外部 digest handoff。本 Phase 僅執行合成 fixtures，
+明列 exclusions、資源、清理與外部 digest handoff。該階段僅執行合成 fixtures，
 未修改既有 updater／uninstall writer、備份格式或歷史備份，也未執行 restore。
 
 ## 既有備份契約
 
-本輪已審閱 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、
+Phase 2 歷史審閱涵蓋 `update.sh`、`uninstall.sh`、`scripts/deploy-common.sh`、
 `core/state.py`、[認證與遷移契約](PHASE2.md#e-migration)及
-[版本回滾邊界](RELEASE.md#downgrade-and-rollback)。這些既有實作維持不變。
+[版本回滾邊界](RELEASE.md#downgrade-and-rollback)。Legacy 備份形狀保持；v1.8.0 的 Guard／opt-in Sidecar 見 [目前 updater 契約](BACKUP_UPDATER_SIDECAR.md)，不取代本頁結構 audit 或人工 rollback。
 
 | 類型 | 既有結構與時間點 | 一致性及恢復限制 |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ Uninstall 也在停止 writers 後使用此 helper。Helper 不產生 manifest�
 
 ## 使用方式
 
-在開發版本原始碼內執行，指向已完成且不再寫入的本機備份：
+在專案原始碼內執行，指向已完成且不再寫入的本機備份：
 
 ```bash
 python3 scripts/backup_audit.py --path /path/to/backup

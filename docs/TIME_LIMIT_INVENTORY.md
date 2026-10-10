@@ -1,9 +1,9 @@
-# Time Limit Inventory（v1.8.0 開發）
+# Time Limit Inventory（v1.8.0）
 
 原 Phase 3D-3G 為只讀盤點。Phase 3T-1 現在新增有限 Session 設定與提交前 CSRF 更新，
 詳見 [Session Lifetime](SESSION_LIFETIME.md)。Phase 3T-2 新增可選 retention policy，
 詳見 [Retention Policy](RETENTION_POLICY.md)；scheduler、network timeout 與其他安全 budget 不變。
-Stable 仍為 v1.7.0。以下根據 app.py、core/、scripts/、shell entrypoints、static/、
+正式可用版本以 README Latest Stable 為準。以下根據 app.py、core/、scripts/、shell entrypoints、static/、
 templates/ 與依賴設定盤點；生成 bootstrap 與原 source 的重複項合併。
 歷史報告時間／測試等待／CI 執行時間不屬於產品使用期限，另外說明於文末。
 
@@ -78,7 +78,7 @@ Release CLI 的 git／gh 子程序未另设 Python timeout；CI／browser suite 
 180秒、測試 doubles 的 timeout、fixture barrier、Playwright wait、GitHub-hosted runner
 預設 job 上限等是開發驗證界限，不是部署產品的登入或分享期限。本輪維持全數。
 
-Phase 3T-1 已實作下列第1、2項，Phase 3T-2 已實作第3項；尚未發布／部署，第4項維持原契約：
+v1.8.0 已實作下列第1–3項，第4項維持原契約；production 驗收仍需另行授權：
 
 1. 新增明確可配置的有限 Session lifetime，先保留預設30天與每請求續期；測試 Cookie
    expiry／server signature max age 同步、restart 保持登入、logout／密碼變更即撤銷。
@@ -89,4 +89,4 @@ Phase 3T-1 已實作下列第1、2項，Phase 3T-2 已實作第3項；尚未發�
 4. 長期 subscription 優先使用已無 TTL 的 Fixed；不要復活 retired bearer、重用 /t/ ID
    或把 scheduler/backoff、Health freshness、network／worker timeout 刪除。
 
-Session／CSRF 與 retention 開發變更見各專用文件；其他時間語義未改。沒有部署 production，也沒有縮放或放寬任何 Backup 工具的 security budget。
+Session／CSRF 與 retention 契約見各專用文件；其他時間語義未改。沒有部署 production，也沒有縮放或放寬任何 Backup 工具的 security budget。
