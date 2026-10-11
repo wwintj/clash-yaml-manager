@@ -37,6 +37,31 @@ def private(info, directory=False):
                    and (directory or info.st_nlink == 1), 'UNSAFE_STORED_METADATA')
 
 
+def directory_identity(info):
+    # Directory entries may legitimately change while the Writer creates files.
+    # Compare security metadata, not mutable size/nlink/mtime/ctime here.
+    return (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode),
+            stat.S_IMODE(info.st_mode), info.st_uid, info.st_gid)
+
+
+def ancestor(info):
+    schema.require(stat.S_ISDIR(info.st_mode), 'UNSAFE_PATH')
+    schema.require(info.st_uid in (0, ROOT_UID), 'UNSAFE_ANCESTOR')
+    writable = stat.S_IMODE(info.st_mode) & 0o022
+    schema.require(not writable or (info.st_uid == 0 and info.st_mode & stat.S_ISVTX), 'UNSAFE_ANCESTOR')
+
+
+def revalidate_directory(parent, name, fd, before, stored=False, ancestry=False):
+    current = os.fstat(fd)
+    if stored:
+        private(current, True)
+    if ancestry:
+        ancestor(current)
+    schema.require(directory_identity(current) == directory_identity(before), 'OBJECT_CHANGED')
+    after = os.stat(name, dir_fd=parent, follow_symlinks=False)
+    schema.require(directory_identity(after) == directory_identity(current), 'OBJECT_CHANGED')
+
+
 @contextmanager
 def absolute_directory(value):
     # No environment overrides, normalization, symlink traversal or writable ancestors.
@@ -45,20 +70,27 @@ def absolute_directory(value):
     parts = value.split('/')[1:]
     schema.require(all(p not in ('', '.', '..') for p in parts) and len(parts) <= 64, 'INVALID_PATH')
     fd = os.open('/', flags(True))
+    descriptors = [fd]
+    bindings = []
     try:
+        root_before = os.fstat(fd)
+        ancestor(root_before)
         for part in parts:
             before = os.stat(part, dir_fd=fd, follow_symlinks=False)
-            schema.require(stat.S_ISDIR(before.st_mode), 'UNSAFE_PATH')
-            schema.require(before.st_uid in (0, ROOT_UID), 'UNSAFE_ANCESTOR')
-            writable = stat.S_IMODE(before.st_mode) & 0o022
-            schema.require(not writable or (before.st_uid == 0 and before.st_mode & stat.S_ISVTX), 'UNSAFE_ANCESTOR')
+            ancestor(before)
             child = os.open(part, flags(True), dir_fd=fd)
+            descriptors.append(child)
             same(before, os.fstat(child))
-            os.close(fd)
+            bindings.append((fd, part, child, before))
             fd = child
         yield fd
+        for parent, name, child, before in reversed(bindings):
+            revalidate_directory(parent, name, child, before, ancestry=True)
+        ancestor(os.fstat(descriptors[0]))
+        schema.require(directory_identity(root_before) == directory_identity(os.fstat(descriptors[0])), 'OBJECT_CHANGED')
     finally:
-        os.close(fd)
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
 
 
 @contextmanager
@@ -73,8 +105,7 @@ def child_directory(parent, name, expected=None, stored=False):
             private(os.fstat(fd), True)
         yield fd
         # Rebinding a pathname must not let an old, detached descriptor verify success.
-        after = os.stat(name, dir_fd=parent, follow_symlinks=False)
-        schema.require((after.st_dev, after.st_ino) == (before.st_dev, before.st_ino), 'OBJECT_CHANGED')
+        revalidate_directory(parent, name, fd, before, stored=stored)
     finally:
         os.close(fd)
 

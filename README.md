@@ -60,6 +60,8 @@ Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 dir
 
 下一個開發週期的 [Managed Recovery Package Phase B](docs/MANAGED_RECOVERY_PACKAGE.md) 為獨立的離線格式與基礎內容驗證，僅處理明確準備的 quiet fixture；保存 venv link metadata，不執行備份程式。尚未評估 recovery-ready，沒有 Restore／Prune／updater 整合，不代表已發布 v1.8.0 或 production 能力；同機私人 record 不是異地 DR。Linux 原生驗收待後續授權。
 
+[Phase C 唯讀檢視與恢復前提計畫](docs/RECOVERY_INSPECTION.md) 是未發布的本地候選，可獨立於 Flask／備份 venv 執行 List、Verify、Status 和合成目標 Dry-run。它區分完整性與私人 Record 綁定，明列 ABI、依賴、state 相容性及擴充 metadata 的未證明條件；計畫仍不可執行，沒有 Restore Apply 或 Auto Prune。歷史 Browser HTTP 400 仍未解釋，僅獲接受繼續離線開發。
+
 在 Ubuntu VPS 上執行：
 
 <!-- INSTALL:START -->
