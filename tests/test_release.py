@@ -1,4 +1,6 @@
 from pathlib import Path
+import copy
+import re
 import subprocess
 
 import pytest
@@ -279,20 +281,139 @@ def test_validate_only_rejects_all_publication_modes(arguments, monkeypatch):
     assert error.value.code == 2
 
 
-def test_release_candidate_workflow_is_manual_read_only_and_reuses_validation():
+def release_candidate_workflow():
     from ruamel.yaml import YAML
-    workflow = YAML(typ='safe').load((ROOT / '.github/workflows/release-candidate.yml').read_text())
+    return YAML(typ='safe').load((ROOT / '.github/workflows/release-candidate.yml').read_text())
+
+
+def assert_release_candidate_contract(workflow):
+    """Check execution semantics independently of the order of preparation steps."""
     assert set(workflow['on']) == {'workflow_dispatch'}
-    assert workflow['on']['workflow_dispatch']['inputs']['ref']['default'] == 'main'
+    inputs = workflow['on']['workflow_dispatch']['inputs']
+    assert inputs['ref']['default'] == 'main'
+    assert inputs['phase_c_evidence']['type'] == 'boolean'
+    assert inputs['phase_c_evidence']['default'] is False
     assert workflow['permissions'] == {'contents': 'read'}
+    assert set(workflow['jobs']) == {'validate'}
     job = workflow['jobs']['validate']
     assert job['runs-on'] == 'ubuntu-latest'
+    assert job.get('permissions', workflow['permissions']) == {'contents': 'read'}
+    assert 'if' not in job
     steps = job['steps']
-    assert steps[0]['with'] == {'ref': "${{ inputs.ref || 'main' }}", 'fetch-depth': 0,
-                                'persist-credentials': False}
-    assert 'Validated commit SHA:' in steps[1]['run'] and 'git rev-parse HEAD' in steps[1]['run']
-    assert 'shellcheck --version' in steps[1]['run']
-    assert steps[2]['with']['python-version'] == '3.12'
-    assert steps[3]['run'] == 'python -m pip install -r requirements-dev.txt'
-    assert steps[4]['run'] == 'python scripts/release.py --validate-only'
-    assert not any('GH_TOKEN' in step.get('env', {}) for step in steps)
+    names = [step['name'] for step in steps if 'name' in step]
+    assert len(names) == len(set(names)), 'duplicate step name'
+    named = {step['name']: step for step in steps if 'name' in step}
+
+    def required(name):
+        assert name in named, 'missing step: ' + name
+        return named[name]
+
+    def action(uses):
+        matches = [step for step in steps if step.get('uses') == uses]
+        assert len(matches) == 1, 'missing or duplicate action: ' + uses
+        return matches[0]
+
+    checkout = action('actions/checkout@v4')
+    assert checkout['with'] == {'ref': "${{ inputs.ref || 'main' }}", 'fetch-depth': 0,
+                               'persist-credentials': False}
+    assert 'if' not in checkout
+    python = action('actions/setup-python@v5')
+    assert python['with']['python-version'] == '3.12' and 'if' not in python
+    tools = required('Show validated commit and available check tools')
+    assert 'Validated commit SHA:' in tools['run'] and 'git rev-parse HEAD' in tools['run']
+    assert 'shellcheck --version' in tools['run']
+    dependencies = required('Install test dependencies')
+    assert dependencies['run'] == 'python -m pip install -r requirements-dev.txt'
+    assert 'if' not in dependencies
+
+    normal = required('Validate without publication')
+    evidence = required('Validate with Phase C evidence')
+    # Boolean opt-in and complementary conditions: exactly one mode for both input values.
+    assert normal.get('if') == '${{ !inputs.phase_c_evidence }}'
+    assert evidence.get('if') == '${{ inputs.phase_c_evidence }}'
+    validate = 'python scripts/release.py --validate-only'
+    pipeline = validate + ' 2>&1 | tee "$RUNNER_TEMP/recovery-evidence/validate.log"'
+    assert normal['run'] == validate
+    assert evidence['run'].splitlines() == ['set -euo pipefail', 'umask 022', pipeline]
+    assert evidence['env']['PYTEST_ADDOPTS'] == '-x --junitxml=${{ runner.temp }}/recovery-evidence/full.xml'
+
+    focused = required('Verify Phase C evidence paths')
+    assert focused.get('if') == '${{ inputs.phase_c_evidence }}'
+    assert focused['run'].splitlines() == [
+        'set -euo pipefail', 'umask 022',
+        'python -m pytest -q -s -x -p no:cacheprovider tests/test_recovery_directory_security.py '
+        '--junitxml="$RUNNER_TEMP/recovery-evidence/focused.xml" 2>&1 | tee "$RUNNER_TEMP/recovery-evidence/focused.log"',
+        'git rev-parse HEAD > "$RUNNER_TEMP/recovery-evidence/validated.sha"',
+        'python tests/recovery_ci_evidence.py "$RUNNER_TEMP/recovery-evidence" '
+        '| tee "$RUNNER_TEMP/recovery-evidence/proof-summary.log"',
+        'test -z "$(git status --porcelain)"',
+    ]
+    artifact = required('Preserve Phase C evidence')
+    assert artifact is action('actions/upload-artifact@v4')
+    assert artifact.get('if') == '${{ always() && inputs.phase_c_evidence }}'
+    assert artifact['with'] == {
+        'name': 'phase-c-linux-evidence-${{ github.run_id }}',
+        'path': '${{ runner.temp }}/recovery-evidence/', 'if-no-files-found': 'error',
+    }
+    assert {s['uses'] for s in steps if 'uses' in s} == {
+        'actions/checkout@v4', 'actions/setup-python@v5', 'actions/upload-artifact@v4',
+    }
+    assert 'GH_TOKEN' not in workflow.get('env', {}) and 'GH_TOKEN' not in job.get('env', {})
+    assert '${{ secrets.' not in repr(workflow)
+    for step in steps:
+        assert 'GH_TOKEN' not in step.get('env', {})
+        assert 'permissions' not in step
+        script = step.get('run', '')
+        assert not re.search(r'\b(?:systemctl|ssh|scp|rsync)\b|\bgh\s+release\b|'
+                             r'\bgit\s+(?:push|tag|commit|reset|clean)\b|'
+                             r'\b(?:install|update|uninstall|remote-update|deploy)\.sh\b', script)
+        for line in script.splitlines():
+            if 'scripts/release.py' in line:
+                assert line in (validate, pipeline), 'publication or altered validation command'
+
+
+def test_release_candidate_workflow_is_manual_read_only_and_reuses_validation():
+    assert_release_candidate_contract(release_candidate_workflow())
+
+
+def test_release_candidate_contract_accepts_inserted_preparation():
+    workflow = copy.deepcopy(release_candidate_workflow())
+    steps = workflow['jobs']['validate']['steps']
+    position = next(i for i, s in enumerate(steps) if s.get('name') == 'Validate without publication')
+    steps.insert(position, {'name': 'Harmless synthetic preparation', 'run': 'echo preparing validation'})
+    assert_release_candidate_contract(workflow)
+
+
+@pytest.mark.parametrize('change', [
+    'missing_normal', 'missing_evidence', 'missing_pipefail', 'write_permission',
+    'job_write_permission', 'persist_credentials', 'both_modes_run', 'both_modes_skip',
+    'missing_focused', 'focused_unconditional', 'artifact_not_always', 'duplicate_name',
+    'publication', 'deployment', 'tag_creation', 'extra_action', 'swallowed_failure',
+])
+def test_release_candidate_contract_rejects_unsafe_structure(change):
+    workflow = copy.deepcopy(release_candidate_workflow())
+    steps = workflow['jobs']['validate']['steps']
+    named = {s['name']: s for s in steps if 'name' in s}
+    if change == 'missing_normal': steps.remove(named['Validate without publication'])
+    elif change == 'missing_evidence': steps.remove(named['Validate with Phase C evidence'])
+    elif change == 'missing_pipefail':
+        named['Validate with Phase C evidence']['run'] = named['Validate with Phase C evidence']['run'].replace('set -euo pipefail', 'set -eu')
+    elif change == 'write_permission': workflow['permissions']['contents'] = 'write'
+    elif change == 'job_write_permission': workflow['jobs']['validate']['permissions'] = {'contents': 'write'}
+    elif change == 'persist_credentials':
+        next(s for s in steps if s.get('uses') == 'actions/checkout@v4')['with'].pop('persist-credentials')
+    elif change in ('both_modes_run', 'both_modes_skip'):
+        condition = '${{ inputs.phase_c_evidence }}' if change == 'both_modes_run' else '${{ !inputs.phase_c_evidence }}'
+        named['Validate without publication']['if'] = condition
+        named['Validate with Phase C evidence']['if'] = condition
+    elif change == 'missing_focused': steps.remove(named['Verify Phase C evidence paths'])
+    elif change == 'focused_unconditional': named['Verify Phase C evidence paths'].pop('if')
+    elif change == 'artifact_not_always': named['Preserve Phase C evidence']['if'] = '${{ inputs.phase_c_evidence }}'
+    elif change == 'duplicate_name': steps.append(copy.deepcopy(named['Validate without publication']))
+    elif change == 'publication': steps.append({'name': 'Unsafe publication', 'run': 'python scripts/release.py minor'})
+    elif change == 'deployment': steps.append({'name': 'Unsafe deployment', 'run': 'bash update.sh'})
+    elif change == 'tag_creation': steps.append({'name': 'Unsafe tag', 'run': 'git tag v99.0.0'})
+    elif change == 'extra_action': steps.append({'name': 'Unsafe action', 'uses': 'external/deploy@v1'})
+    elif change == 'swallowed_failure': named['Validate with Phase C evidence']['run'] += 'true\n'
+    with pytest.raises(AssertionError):
+        assert_release_candidate_contract(workflow)
