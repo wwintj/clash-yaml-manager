@@ -62,6 +62,8 @@ Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 dir
 
 [Phase C 唯讀檢視與恢復前提計畫](docs/RECOVERY_INSPECTION.md) 是未發布的本地候選，可獨立於 Flask／備份 venv 執行 List、Verify、Status 和合成目標 Dry-run。它區分完整性與私人 Record 綁定，明列 ABI、依賴、state 相容性及擴充 metadata 的未證明條件；計畫仍不可執行，沒有 Restore Apply 或 Auto Prune。歷史 Browser HTTP 400 仍未解釋，僅獲接受繼續離線開發。
 
+下一個開發週期的 [Phase D2 獨立唯讀評估](docs/RECOVERY_ASSESSMENT.md) 分開真正工具 runtime 觀測、Package 已驗資料、独立 Release 證據與合成聲明，以有界 DATA 解析排除明顯 Runtime／State 不相容。證據不足仍阻擋，不執行備份程式、不恢復或清理資料；完整 Runtime／Restore Ready 與 Restore Proven 均未成立。Phase C 的 Mac／Ubuntu 原生驗收不代表 D2 Linux-native 已完成。
+
 在 Ubuntu VPS 上執行：
 
 <!-- INSTALL:START -->
