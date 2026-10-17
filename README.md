@@ -5,7 +5,7 @@
 可上傳現有 YAML，也可直接使用內建預設 YAML。新節點輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2（`vmess://` / `vless://` / `trojan://` / `ss://` / `hysteria2://` / `hy2://`）；Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
-**Latest Stable: [v1.8.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.8.1)**
+**Latest Stable: [v1.8.2](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.8.2)**
 <!-- RELEASE:END -->
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。只有明確指定 `--channel main` 才使用開發通道，測試命令見下方「開發通道與測試」。
@@ -49,6 +49,8 @@ v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支�
 v1.8.0 功能範圍新增有限長期登入、提交前 CSRF 更新、可選保留策略與離線備份安全工具；修正 `POST /process` HTTP 400 頁面的 Generate YAML 主導覽狀態。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
 
 v1.8.1 為節點連結相容性修正版：VLESS 分享連結的 `flow`（例如 `xtls-rprx-vision`）會寫入節點，Reality + Vision 節點可正常連線；VMess／VLESS 的 gRPC 與 H2 傳輸會產生 `grpc-opts`（`grpc-service-name`）及 `h2-opts`（`host`、`path`）；手動輸入與外部 Raw／Base64 來源中，備註含 `|` 的連結（例如 `#HK | 01`）可正確解析。Trojan、Shadowsocks、Hysteria2 的輸入契約不變。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
+
+v1.8.2 為穩定性修正版：Trojan 連結接受常見客戶端匯出的 `fp`、`alpn`、`allowInsecure`／`insecure` 與 `headerType=none`；外部來源抓取可改試其他已核准位址，並拒絕 HTTPS 降級為 HTTP 的重新導向；臨時連結 tombstone 設上限；依賴加上主版本上限；推送 main 與 Pull Request 會自動執行完整驗證。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
 
 [長期登入與 CSRF](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章期限一致且活動續期，Runtime 顯示生效值。登出、密碼及 Secret Key 撤銷保持；已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，不背景續命或重送拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。
 
@@ -345,7 +347,7 @@ systemd 使用專用 `clashyaml:clashyaml`，無登入 shell。程式、預設 Y
 
 HOURS 配置優先；未配置時 UPLOAD / OUTPUT 回退舊 `FILE_RETENTION_DAYS`，cleanup 回退 `CLEANUP_INTERVAL_DAYS`。升級保留舊 `.env` 的值；要改成新預設，加入上方三個 HOURS 設定並重啟。無效或非正值回退安全預設，不因歷史配置格式而啟動失敗。備份獨立使用 `BACKUP_RETENTION_DAYS`（或優先 `BACKUP_RETENTION_HOURS`），預設 7 天。
 
-`state/temporary_links.json` 原子保存 ID → filename / created_at / expires_at。到期或刪除清掉映射內容但永久保留 ID tombstone，禁止歷史 ID 重新綁定。請保留這份 state，不要刪除或回滾；ID 使用 secrets 的 96-bit 隨機數。新下載按鈕同樣使用 `/t/`，有效期一致。歷史 `/s/v2...`、legacy `/s/...`、`/sub/`、完整簽名下載仍在檔案存在時按原規則有效，其實體刪除受輸出清理控制。完整 URL 尊重 DOWNLOAD_BASE_URL / request host，保留 HTTP 非標準連接埠。
+`state/temporary_links.json` 原子保存 ID → filename / created_at / expires_at。到期或刪除清掉映射內容並保留 ID tombstone，禁止歷史 ID 重新綁定；自 v1.8.2 起最多保留 10,000 筆 tombstone，避免狀態檔無限增長。請保留這份 state，不要刪除或回滾；ID 使用 secrets 的 96-bit 隨機數。新下載按鈕同樣使用 `/t/`，有效期一致。歷史 `/s/v2...`、legacy `/s/...`、`/sub/`、完整簽名下載仍在檔案存在時按原規則有效，其實體刪除受輸出清理控制。完整 URL 尊重 DOWNLOAD_BASE_URL / request host，保留 HTTP 非標準連接埠。
 
 ## 升級保護與回滾
 

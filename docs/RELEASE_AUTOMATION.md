@@ -107,6 +107,13 @@ Formal execution performs the same preflight again and rechecks remote conflicts
 
 ## GitHub Actions
 
+### Continuous validation
+
+`.github/workflows/ci.yml` (since v1.8.2) runs on pushes to main and on pull requests with
+`contents: read` only. It installs `requirements-dev.txt` on Python 3.12 and runs
+`python scripts/release.py --validate-only`, the same checks as the manual gate. It never
+plans, tags or publishes a release, and a green run does not authorize publication.
+
 ### Manual pre-release Ubuntu gate
 
 `.github/workflows/release-candidate.yml` uses only `workflow_dispatch` and `contents: read`.

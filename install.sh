@@ -164,6 +164,7 @@ systemctl restart "${SERVICE_NAME}"
 
 if ! wait_for_application 30; then
   echo "错误：安装后应用未就绪，安装失败，请检查上述服务状态和日志。" >&2
+  echo "排查后如需重新安装：先在本源码目录执行 sudo bash uninstall.sh（会询问并默认备份数据），再执行 sudo bash install.sh。" >&2
   exit 1
 fi
 
@@ -177,6 +178,9 @@ echo "=========================================================="
 echo "clash-yaml-manager v${SOURCE_VERSION} 安装成功！"
 echo "=========================================================="
 echo "访问地址: http://${SERVER_IP}:${APP_PORT}"
+echo ""
+echo "安全提示：当前为 HTTP，登录密码会以明文传输。建议尽快用 httpsctl.sh 配置 HTTPS，"
+echo "或仅通过 SSH 隧道 / VPN 访问。说明见 docs/HTTPS.md。"
 echo ""
 echo "服务管理命令:"
 echo "  systemctl status ${SERVICE_NAME}"

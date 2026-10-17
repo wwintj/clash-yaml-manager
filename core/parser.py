@@ -345,6 +345,10 @@ def validate_trojan_options(node: Dict[str, Any]) -> None:
                 raise ValueError(invalid)
 
 
+TROJAN_QUERY_KEYS = ('type', 'security', 'sni', 'peer', 'path', 'host',
+                     'fp', 'alpn', 'allowInsecure', 'insecure', 'headerType')
+
+
 def parse_trojan_link(link: str, display_name: str) -> Dict[str, Any]:
     """Offline, unambiguous URI parsing; password is percent-decoded exactly once."""
     invalid = 'Trojan 链接无效或包含不支持的参数。'
@@ -372,12 +376,25 @@ def parse_trojan_link(link: str, display_name: str) -> Dict[str, Any]:
                                       errors='strict', max_num_fields=16)
         query = {}
         for key, value in pairs:
-            if key not in ('type', 'security', 'sni', 'peer', 'path', 'host') or key in query or not value:
+            if key not in TROJAN_QUERY_KEYS or key in query or not value:
                 raise ValueError
             query[key] = value
         network = query.get('type', 'tcp')
         if network not in ('tcp', 'ws') or query.get('security', 'tls') != 'tls':
             raise ValueError
+        # Common client-export fields: fp/alpn map to Mihomo options, the
+        # insecure flags map to skip-cert-verify, headerType=none is a no-op.
+        if query.get('headerType', 'none') != 'none':
+            raise ValueError
+        insecure = {query[key] for key in ('allowInsecure', 'insecure') if key in query}
+        if insecure - {'0', '1'} or len(insecure) > 1:
+            raise ValueError
+        if insecure:
+            node['skip-cert-verify'] = insecure == {'1'}
+        if 'fp' in query:
+            node['client-fingerprint'] = query['fp']
+        if 'alpn' in query:
+            node['alpn'] = query['alpn'].split(',')
         if 'sni' in query and 'peer' in query and query['sni'] != query['peer']:
             raise ValueError
         sni = query.get('sni', query.get('peer'))

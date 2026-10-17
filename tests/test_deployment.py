@@ -513,7 +513,7 @@ def test_gunicorn_flag_and_dependency_floor_are_compatible(deployment):
     from packaging.requirements import Requirement
     requirement = next(Requirement(line) for line in (ROOT / 'requirements.txt').read_text().splitlines()
                        if line.lower().startswith('gunicorn'))
-    assert str(requirement.specifier) == '>=25.1.0'
+    assert str(requirement.specifier) == '<27,>=25.1.0'
     assert not any(version in requirement.specifier for version in ('21.2.0', '22.0.0', '23.0.0', '25.0.0'))
     installed, source, service, events, _, run = deployment
     (installed / 'requirements.txt').write_text('gunicorn>=21.2.0\n')

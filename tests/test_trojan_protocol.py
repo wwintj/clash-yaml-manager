@@ -70,7 +70,8 @@ def test_requested_authority_examples(uri):
     '?sni=a.example&peer=b.example', '?sni=', '?peer=', '?host=cdn.example', '?path=%2Fws',
     '?type=ws&path=relative', '?type=ws&path=%2F%0d%0a', '?type=ws&host=evil%0d%0aHost',
     '?type=ws&host=', '?sni=bad%20host', '?plugin=exec', '?command=sh', '?file=%2Fetc%2Fpasswd',
-    '?config=x', '?proxy=env', '?unknown=value', '?alpn=h2', '?fp=chrome',
+    '?config=x', '?proxy=env', '?unknown=value', '?alpn=', '?fp=', '?alpn=h2,',
+    '?headerType=http', '?allowInsecure=2', '?allowInsecure=1&insecure=0', '?fp=chrome&fp=chrome',
     '?type', '?type=ws&', '?type=ws&path=%GG', '?sni=%ff',
 ])
 def test_rejected_queries_fixed_secret_free(suffix):
@@ -260,3 +261,14 @@ def test_malformed_clash_password_warning_is_private_instance_only(format):
         # The unrelated dependency instance still warns; no global suppression.
         assert YAML(typ='safe').load('%YAML 1.1\n---\nvalue: 1e9')['value']==1e9
         assert any(item.category is MantissaNoDotYAML1_1Warning for item in captured)
+
+
+def test_common_client_export_parameters():
+    node = parser.parse_trojan_link(TROJAN + '?security=tls&sni=tls.example&fp=chrome&alpn=h2,http/1.1'
+                                    '&type=tcp&headerType=none&allowInsecure=1', 'Test')
+    assert node['client-fingerprint'] == 'chrome'
+    assert node['alpn'] == ['h2', 'http/1.1']
+    assert node['skip-cert-verify'] is True
+    assert 'headerType' not in node and node.get('network', 'tcp') == 'tcp'
+    assert parser.parse_trojan_link(TROJAN + '?insecure=0', 'Test')['skip-cert-verify'] is False
+    assert parser.parse_trojan_link(TROJAN + '?allowInsecure=1&insecure=1', 'Test')['skip-cert-verify'] is True

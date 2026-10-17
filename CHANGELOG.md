@@ -9,6 +9,21 @@
 - 下一個開發週期 Phase C 新增標準庫唯讀 Package List／Verify／Status 及合成離線目標 Restore Dry-run；分開完整性、管理 Record、可信 digest 與恢復前提，保留 live state，未證明的 ABI／依賴／業務相容性及 metadata 明確阻擋。沒有 Apply、Prune、部署或 production 就緒聲明。
 - 下一個開發週期新增獨立 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與唯讀基礎 Verifier；保存來源角色／原始 metadata、受驗證的 venv link metadata、固定 scope 與同機 root-private external digest handoff。這不是完整 VPS snapshot，尚未評估 recovery requirements，ACL/xattr/capabilities 恢復不受支持；沒有 Restore Apply、Prune 或 updater 整合，既有 Sidecar 預設 OFF 與 Legacy Backup 保留。
 
+## v1.8.2 - 2026-10-17
+
+### Fixed
+
+- Trojan 分享連結接受常見客戶端匯出的 `fp`（→ `client-fingerprint`）、`alpn`、`allowInsecure`／`insecure`（`0`／`1` → `skip-cert-verify`）與 `headerType=none`；其他未知參數仍拒絕。
+- 外部訂閱來源抓取在第一個已核准位址連線失敗時，會依序嘗試其他已核准位址；HTTPS 來源不再允許被重新導向降級為 HTTP。
+- `state/temporary_links.json` 的 tombstone 最多保留 10,000 筆，狀態檔不再無限增長；ID 仍為 96-bit 隨機值。
+- 移除 Generate 表單中未使用的 `single_*` 欄位處理。
+
+### Deployment
+
+- `requirements.txt` 為 Flask、Werkzeug、ruamel.yaml、gunicorn 加上主版本上限，避免安裝／升級時拉入未驗證的不相容大版本。
+- 新增 `.github/workflows/ci.yml`：推送 main 與 Pull Request 時自動執行完整驗證（不發布）。
+- 安裝完成時提示 HTTP 明文風險與 `httpsctl.sh`；安裝失敗時說明以 `uninstall.sh` 清理後重試。
+
 ## v1.8.1 - 2026-10-17
 
 ### Fixed
