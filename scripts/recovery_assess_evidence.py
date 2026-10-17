@@ -21,9 +21,13 @@ ORIGINS = ('OBSERVED_TRUSTED_HOST_FACT', 'VERIFIED_PACKAGE_FACT',
            'SYNTHETIC_DECLARED', 'UNKNOWN', 'UNSUPPORTED')
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = '0309006537fde20030777e5603f5e2f3332406a1'
-# Accepted stable identity from D1's independently read remote refs. Not incoming data.
+# Accepted stable identities from independently read remote refs. Not incoming data.
 RELEASE_PINS = {'v1.8.0': ('7657f2302545e74b1e9c1544e27ead9491e0d2a1',
-                         '311f4fb65fd1fef08e39d3794562409fbfddc968')}
+                         '311f4fb65fd1fef08e39d3794562409fbfddc968'),
+                'v1.8.1': ('7c9adfd6304d5a8b5bfaf6e5071c529a6e9c5546',
+                         'fb95cd56e9d9e5b32832437eb1e67219c9d17279'),
+                'v1.8.2': ('e48d0f9a1eb114693805010735c727ad2793d8c9',
+                         '47d24d723b0c326fd05ac5ec77580e3961a89e23')}
 MAX_GIT_BYTES = 8 * 1024 * 1024
 
 

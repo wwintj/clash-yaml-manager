@@ -389,11 +389,13 @@ def test_evidence_sources_and_synthetic_cannot_promote():
     with pytest.raises(AuditFault, match='STALE_EVIDENCE'): evidence.summarize(stale)
 
 
-def test_independent_accepted_release_pin_is_not_package_digest():
-    identity = dict(version='1.8.0', channel='stable', tag='v1.8.0', commit=evidence.RELEASE_PINS['v1.8.0'][1])
+@pytest.mark.parametrize('tag', sorted(evidence.RELEASE_PINS))
+def test_independent_accepted_release_pin_is_not_package_digest(tag):
+    version = tag[1:]
+    identity = dict(version=version, channel='stable', tag=tag, commit=evidence.RELEASE_PINS[tag][1])
     result = evidence.PinnedLocalReleaseProvider().observe(identity, io.Budget())
     assert result['origin'] == 'VERIFIED_TRUSTED_RELEASE_FACT'
-    assert result['application']['application/VERSION'] == hashlib.sha256(b'1.8.0\n').hexdigest()
+    assert result['application']['application/VERSION'] == hashlib.sha256(version.encode() + b'\n').hexdigest()
     assert 'application/app.py' in result['application']
     wrong = dict(identity, commit='3'*40)
     assert evidence.PinnedLocalReleaseProvider().observe(wrong, io.Budget())['origin'] == 'UNKNOWN'

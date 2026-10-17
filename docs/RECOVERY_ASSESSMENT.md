@@ -22,7 +22,7 @@ python3 -B -m scripts.recovery_assess --id <operation-id> --target-fixture /priv
 | --- | --- |
 | OBSERVED_TRUSTED_HOST_FACT | 可信 assessment 程序的 OS／architecture／Python／SOABI；只描述目前 interpreter，絕不冒充 Ubuntu 服務 Target |
 | VERIFIED_PACKAGE_FACT | 真實 IO／Verifier 通過的 Package bytes 與 link metadata；不是 Release provenance |
-| VERIFIED_TRUSTED_RELEASE_FACT | 工具內先前獨立接受的 v1.8.0 annotated tag object／commit pin，加上本地唯讀 Git immutable blobs；只涵蓋 application bytes |
+| VERIFIED_TRUSTED_RELEASE_FACT | 工具內先前獨立接受的 Stable annotated tag object／commit pin（目前為 v1.8.0、v1.8.1、v1.8.2），加上本地唯讀 Git immutable blobs；只涵蓋 application bytes |
 | STATIC_DERIVED_FACT | bounded DATA 解析結果；不是 loader、ABI closure 或業務可恢復性 |
 | OPERATOR_DECLARED | Manifest runtime、帳戶、host 等聲明；未觀測 |
 | SYNTHETIC_DECLARED | Target environment.json；不能提升為真正 host 證明 |
