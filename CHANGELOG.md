@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.8.2 - 2026-10-17
+
 ### Fixed
 
 - Trojan 分享連結接受常見客戶端匯出的 `fp`（→ `client-fingerprint`）、`alpn`、`allowInsecure`／`insecure`（`0`／`1` → `skip-cert-verify`）與 `headerType=none`；其他未知參數仍拒絕。
