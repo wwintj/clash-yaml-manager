@@ -135,12 +135,19 @@ class _PinnedConnection(http.client.HTTPConnection):
         self.scheme, self.addresses, self.deadline = scheme, addresses, deadline
 
     def connect(self):
-        # No create_connection(host): the only connect target is the approved numeric sockaddr.
-        family, protocol, address = self.addresses[0]
-        sock = socket.socket(family, socket.SOCK_STREAM, protocol)
+        # No create_connection(host): connect targets are only the approved numeric
+        # sockaddrs, tried in resolver order until one accepts the TCP connection.
+        for index, (family, protocol, address) in enumerate(self.addresses):
+            sock = socket.socket(family, socket.SOCK_STREAM, protocol)
+            try:
+                sock.settimeout(min(CONNECT_TIMEOUT, remaining(self.deadline)))
+                sock.connect(address)
+                break
+            except BaseException as error:
+                sock.close()
+                if not isinstance(error, OSError) or index == len(self.addresses) - 1:
+                    raise
         try:
-            sock.settimeout(min(CONNECT_TIMEOUT, remaining(self.deadline)))
-            sock.connect(address)
             if self.scheme == 'https':
                 sock.settimeout(min(CONNECT_TIMEOUT, remaining(self.deadline)))
                 sock = ssl.create_default_context().wrap_socket(sock, server_hostname=self.host)
@@ -152,9 +159,13 @@ class _PinnedConnection(http.client.HTTPConnection):
 
 def fetch(url):
     deadline = time.monotonic() + TOTAL_TIMEOUT
+    secure = False
     try:
         for hop in range(MAX_REDIRECTS + 1):
             scheme, host, port, target = validate_url(url)
+            if secure and scheme != 'https':
+                raise SourceError('redirect')  # Never downgrade an HTTPS source to HTTP.
+            secure = scheme == 'https'
             addresses = _resolve(host, port, deadline)
             connection = _PinnedConnection(scheme, host, port, addresses, deadline)
             response = None

@@ -26,9 +26,6 @@ def parse_form_nodes(form, country_lookup=None):
             text += '\n' + (country + '|' if country else '') + name + '|' + link
     except (ValueError, TypeError):
         raise ValueError('辅助节点或手工修改格式无效，请检查名称、国家及链接。') from None
-    country, name, link = (form.get('single_' + k, '').strip() for k in ('country', 'name', 'link'))
-    if country and name and link:
-        text += f'\n{country}|{name}|{link}'
     return parser.parse_batch_nodes(text, overrides, country_lookup)
 
 

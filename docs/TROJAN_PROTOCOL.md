@@ -39,6 +39,10 @@ without lookup. Fragment is decoded once; empty names fall back to `Node-01` etc
 | `peer` | Alias of `sni`; if both exist they must match exactly, with `sni` selected. Conflicts fail. |
 | `path` | WS only; decoded once, must start with `/` and contain no controls; defaults to `/`. |
 | `host` | WS only; nonempty hostname/IP → `ws-opts.headers.Host`; no custom header injection. |
+| `fp` | Nonempty → `client-fingerprint` (v1.8.2+). |
+| `alpn` | Comma-separated nonblank values → `alpn` list (v1.8.2+). |
+| `allowInsecure` / `insecure` | `0` or `1` → `skip-cert-verify`; both may appear only with the same value (v1.8.2+). |
+| `headerType` | Only `none` is accepted and ignored, as exported by common clients (v1.8.2+). |
 
 All repeated query keys are rejected, including repeated identical values. Unknown
 keys are rejected rather than passed through or silently ignored. This narrower
@@ -46,7 +50,8 @@ Trojan contract leaves existing VMess/VLESS query behavior unchanged. The histor
 unsupported-input error text remains byte-compatible; the shared UI/manual advertise
 the actual expanded protocol set. No gRPC,
 HTTP/H2/XHTTP, Reality, plugin, command, file, environment-proxy or external-config
-query is accepted. ALPN/fingerprint URI parameters are outside this MVP.
+query is accepted. Since v1.8.2 the common client-export fields `fp`, `alpn`,
+`allowInsecure`/`insecure` and `headerType=none` are accepted as listed above.
 
 The generated core mapping is `name`, `type: trojan`, `server`, integer `port`,
 `password`, `udp: true`, `skip-cert-verify: false`; optional fields are `sni`,

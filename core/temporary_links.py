@@ -1,4 +1,4 @@
-"""Private, atomic, process-shared temporary bearer links with permanent tombstones."""
+"""Private, atomic, process-shared temporary bearer links with bounded tombstones."""
 import math
 import re
 import secrets
@@ -7,6 +7,7 @@ from core.state import StateError, file_lock, private_directory, read_json, writ
 from core.subscriptions import safe_filename
 
 ID_PATTERN = re.compile(r'[A-Za-z0-9_-]{16}\Z')
+MAX_TOMBSTONES = 10000
 
 
 class TemporaryLinks:
@@ -37,7 +38,13 @@ class TemporaryLinks:
     def _prune(data, now):
         for key, entry in data['links'].items():
             if entry is not None and entry['expires_at'] <= now:
-                data['links'][key] = None  # Permanent reservation, never bind this ID again.
+                data['links'][key] = None  # Reserve this ID; never bind it again.
+        # Bound state growth: drop tombstones beyond the cap (state is stored with
+        # sorted keys, so which ones go is arbitrary). IDs carry 96 random bits,
+        # so a dropped ID is never realistically generated again.
+        tombstones = [key for key, entry in data['links'].items() if entry is None]
+        for key in tombstones[:max(0, len(tombstones) - MAX_TOMBSTONES)]:
+            del data['links'][key]
 
     def create(self, filename, lifetime=86400, now=None):
         if (not safe_filename(filename) or type(lifetime) not in (int, float)
