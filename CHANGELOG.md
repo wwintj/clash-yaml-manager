@@ -4,10 +4,11 @@
 
 ### Added
 
-- 下一個開發週期 Phase D2 新增獨立唯讀相容性評估，區分可信工具觀測、Package／Release 證據與合成聲明；有界解析 pyvenv／Wheel／ELF／啟動資料及合成 State 關聯，缺少可信證據或不相容時拒絕。復用 Phase C 安全 IO，未修改既有完整性契約；Runtime Ready、Restore Plan／Proven 與 Apply 仍為 false，沒有 Prune 或 production 操作。
-
-- 下一個開發週期 Phase C 新增標準庫唯讀 Package List／Verify／Status 及合成離線目標 Restore Dry-run；分開完整性、管理 Record、可信 digest 與恢復前提，保留 live state，未證明的 ABI／依賴／業務相容性及 metadata 明確阻擋。沒有 Apply、Prune、部署或 production 就緒聲明。
-- 下一個開發週期新增獨立 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與唯讀基礎 Verifier；保存來源角色／原始 metadata、受驗證的 venv link metadata、固定 scope 與同機 root-private external digest handoff。這不是完整 VPS snapshot，尚未評估 recovery requirements，ACL/xattr/capabilities 恢復不受支持；沒有 Restore Apply、Prune 或 updater 整合，既有 Sidecar 預設 OFF 與 Legacy Backup 保留。
+- 新增三個離線恢復工具的**開發預覽**。它們隨程式碼提供，但沒有接入安裝、升級或 Web UI，只能由操作者從獨立、可信的 checkout 手動執行，來源必須是另外準備、已停止寫入的離線副本：
+- Managed Recovery Package（`managed-upgrade-v1`）：把離線副本中的程式與資料保存成私人 Package，寫入固定的 root 私人目錄，並可驗證內容未被改動。這不是完整的 VPS 快照，也不恢復 ACL／xattr／capabilities。
+- 唯讀檢視：列出、驗證 Package 並查看狀態，可對合成的離線目標做恢復 Dry-run，並列出 ABI、依賴、State 相容性等尚未證明的恢復前提。
+- 唯讀相容性評估：分辨可信的觀測與證據和 Package 自身的聲明，排除明顯不相容的 Runtime／State；目前評估結果一律為 `ASSESSMENT_BLOCKED`。
+- 以上工具都不做 Restore Apply 或 Prune，不代表 production 已可恢復；更新備份 Sidecar 仍預設關閉，Legacy Backup 不變。
 
 ### Fixed
 

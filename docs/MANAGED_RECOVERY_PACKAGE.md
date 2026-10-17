@@ -1,6 +1,6 @@
 # Managed Recovery Package — Phase B
 
-`managed-upgrade-v1` 是下一個開發週期的**獨立離線格式**，不是已發布 v1.8.0 的升級行為。它不改 Manifest v1、Sidecar、Catalog 或 Legacy Backup；Sidecar 仍預設 OFF。Phase B 只保存材料及驗證 bytes，不停止服務、不升級、不 Restore、不刪除、不啟用 Retention。
+`managed-upgrade-v1` 是**獨立離線格式**，自 v1.9.0 起以開發預覽隨程式碼提供，不是任何版本升級流程的一部分。它不改 Manifest v1、Sidecar、Catalog 或 Legacy Backup；Sidecar 仍預設 OFF。Phase B 只保存材料及驗證 bytes，不停止服務、不升級、不 Restore、不刪除、不啟用 Retention。
 
 ## 操作者與來源契約
 

@@ -1,6 +1,6 @@
 # Independent Backup Verification & Restore Readiness — Phase C
 
-此為本地離線開發候選，未發布、未部署。Phase B 已由使用者有條件接受供本地開發；歷史 Browser `/process` HTTP 400 仍為 `HISTORICAL_BROWSER_400_ROOT_CAUSE_UNKNOWN`，不是已修復。原永久失敗診斷保留。Linux 原生驗收尚未執行。
+此為離線開發預覽，自 v1.9.0 起隨程式碼提供，但未接入安裝、升級或 Web UI，也未在真實 VPS 部署驗收。Phase B 已由使用者有條件接受供本地開發；歷史 Browser `/process` HTTP 400 仍為 `HISTORICAL_BROWSER_400_ROOT_CAUSE_UNKNOWN`，不是已修復。原永久失敗診斷保留。Linux 原生驗收尚未執行。
 
 ## 可信工具與唯讀命令
 
