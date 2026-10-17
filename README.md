@@ -68,7 +68,7 @@ Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 dir
 
 - [Managed Recovery Package](docs/MANAGED_RECOVERY_PACKAGE.md)：獨立的 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與基礎內容 Verifier，保存 venv link metadata。Writer 只寫入固定的 root 私人目錄；同機私人 Record 不等於異地災難復原。
 - [唯讀檢視與恢復前提](docs/RECOVERY_INSPECTION.md)：不依賴 Flask 或備份 venv 的 List、Verify、Status 與合成目標 Dry-run，並列出 ABI、依賴、State 相容性及擴充 metadata 等尚未證明的條件；恢復計畫仍不可執行。
-- [唯讀相容性評估](docs/RECOVERY_ASSESSMENT.md)：區分可信工具觀測、Package 已驗證資料、Release 證據與合成聲明，排除明顯的 Runtime／State 不相容。評估結果目前一律是 `ASSESSMENT_BLOCKED`，原因包括 Package 無法獨立證明是同一台主機、未捕獲擴充 metadata、Runtime closure 未知及 Restore Apply 未實作；`RUNTIME_REQUIREMENTS_READY`、`RESTORE_PLAN_READY` 與 `RESTORE_PROVEN` 均為 false。
+- [唯讀相容性評估](docs/RECOVERY_ASSESSMENT.md)：區分可信工具觀測、Package 已驗證資料、Release 證據與合成聲明，排除明顯的 Runtime／State 不相容。可完成的評估目前一律是 `ASSESSMENT_BLOCKED`，原因包括 Package 無法獨立證明是同一台主機、未捕獲擴充 metadata、Runtime closure 未知及 Restore Apply 未實作；`RUNTIME_REQUIREMENTS_READY`、`RESTORE_PLAN_READY` 與 `RESTORE_PROVEN` 均為 false。
 
 唯讀檢視與相容性評估不寫入 Package、Record 或 Target。唯讀檢視的私人目錄競態測試已在 GitHub Actions 的 Ubuntu root 環境通過；三者的正式 Linux 原生驗收都尚未完成，也都未在真實 VPS 上驗收。
 
