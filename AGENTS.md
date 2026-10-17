@@ -32,7 +32,7 @@ be resolved. Never expose credentials.
    URLs and validation limits. Recover interrupted publication using the documented
    existing-tag flow; never delete or overwrite published objects.
 7. Add the new tag's recovery release pin in a follow-up commit, as described in
-   `docs/RELEASE_AUTOMATION.md`.
+   `docs/RELEASE_AUTOMATION.md`. Push it to main and report its SHA and CI result.
 
 ## Documentation maintenance
 
