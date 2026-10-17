@@ -37,7 +37,8 @@ python3 scripts/backup_create.py \
 路徑及所有祖先必須是實體目錄，拒絕 lexical `..`、symlink、FIFO、socket、device、
 普通檔案 hardlink、來源內跨 filesystem 的物件與不符合 Manifest v1 的 entry paths。
 macOS 請使用 `/private/tmp`，不要經由 symlink `/tmp` 或 `/var`。
-每一層採 directory fd 與 `O_NOFOLLOW`／`O_NONBLOCK`，開啟前後核對 fingerprint；
+每一層採 directory fd 與 `O_NOFOLLOW`／`O_NONBLOCK`；路徑祖先開啟前後核對 device、inode、類型、權限與 owner
+（`/tmp` 等共用目錄中無關項目的增減不視為變更），來源樹內每一層核對完整 fingerprint；
 複製後及發布前重新盤點來源，核對 inode、device、mode、owner、link count、size、
 mtime／ctime 和根路徑。可偵測的並發新增、刪除、替換或修改均 fail closed。
 來源只讀取 bytes，不 import／執行其 Python、shell、unit 或 `.env`；OS 可能更新 atime。

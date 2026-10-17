@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- 離線備份工具（`backup_create.py`、`backup_verify.py`、`backup_audit.py`、`backup_collect.py`、`backup_catalog.py` 與更新 sidecar）逐層開啟路徑時，不再因 `/tmp`、`/root` 等共用上層目錄同時新增或刪除無關項目而誤判 `BACKUP_CHANGED`；上層目錄被替換、改變類型、擁有者或權限時仍會拒絕。
+
 ## v1.8.2 - 2026-10-17
 
 ### Fixed

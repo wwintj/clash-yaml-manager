@@ -350,3 +350,33 @@ def test_off_end_to_end_exact_start_legacy_bytes_modes_ownership_and_events(tmp_
         assert 'SIDECAR_STATUS' not in outcome.stdout + outcome.stderr
         assert not list(installed.parent.glob('sidecars*'))
     assert reports[0] == reports[1]
+
+
+@pytest.mark.parametrize('change,code', [('churn', None), ('replace', 'BACKUP_CHANGED')])
+def test_physical_root_ignores_ancestor_churn_but_refuses_replacement(tmp_path, monkeypatch, change, code):
+    monkeypatch.setattr(adapter, 'EXECUTOR_UID', os.geteuid())
+    monkeypatch.setattr(adapter, 'EXECUTOR_GID', os.getegid())
+    shared = tmp_path / 'shared'
+    (shared / 'root').mkdir(parents=True, mode=0o700)
+    shared.chmod(0o700)
+    original_open = os.open
+    fired = []
+    def racing(path, flags, *args, **kwargs):
+        if path == shared.name and 'dir_fd' in kwargs and not fired:
+            fired.append(path)
+            if change == 'churn':
+                (shared / 'unrelated').write_text(SECRET)
+            else:
+                shared.rename(tmp_path / 'moved')
+                (shared / 'root').mkdir(parents=True, mode=0o700)
+        return original_open(path, flags, *args, **kwargs)
+    monkeypatch.setattr(os, 'open', racing)
+    if code is None:
+        with adapter.physical_root(str(shared / 'root'), True) as fd:
+            assert stat.S_IMODE(os.fstat(fd).st_mode) == 0o700
+    else:
+        with pytest.raises(adapter.AuditFault) as error:
+            with adapter.physical_root(str(shared / 'root'), True):
+                pass
+        assert error.value.code == code
+    assert fired == [shared.name]
