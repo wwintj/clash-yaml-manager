@@ -11,7 +11,7 @@
 
 ### Fixed
 
-- 離線備份工具（`backup_create.py`、`backup_verify.py`、`backup_audit.py`、`backup_collect.py`、`backup_catalog.py` 與更新 sidecar）逐層開啟路徑時，不再因 `/tmp`、`/root` 等共用上層目錄同時新增或刪除無關項目而誤判 `BACKUP_CHANGED`；上層目錄被替換、改變類型、擁有者或權限時仍會拒絕。
+- 建立、驗證或檢查離線備份時（包括預設關閉的更新備份 sidecar），如果 `/tmp`、`/root` 這類共用目錄裡剛好有其他程式在新增或刪除檔案，工具不會再誤報 `BACKUP_CHANGED` 而中止。路徑上的目錄若真的被換掉，或類型、擁有者、權限被改動，仍然會拒絕。
 
 ## v1.8.2 - 2026-10-17
 

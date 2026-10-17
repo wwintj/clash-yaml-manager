@@ -31,6 +31,8 @@ be resolved. Never expose credentials.
    and both remote lifecycle `--resolve-only` commands. Report the exact version, SHAs,
    URLs and validation limits. Recover interrupted publication using the documented
    existing-tag flow; never delete or overwrite published objects.
+7. Add the new tag's recovery release pin in a follow-up commit, as described in
+   `docs/RELEASE_AUTOMATION.md`.
 
 ## Documentation maintenance
 

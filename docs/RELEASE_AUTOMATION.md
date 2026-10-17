@@ -105,6 +105,17 @@ Formal execution performs the same preflight again and rechecks remote conflicts
 6. Verify the remote annotated tag commit, origin/main, Latest Release, title/body and both
    lifecycle stable resolvers. Report the actual URL.
 
+After publication, add the new Stable to `RELEASE_PINS` in
+`scripts/recovery_assess_evidence.py` in a separate follow-up commit. The pin can only be read
+once the tag exists, and the release commit stays limited to metadata files. Read the annotated
+tag object and its peeled commit with
+`git ls-remote origin refs/tags/vX.Y.Z 'refs/tags/vX.Y.Z^{}'`, check that both match the
+GitHub tag object and the verified Release, add the version to the pinned list in
+`docs/RECOVERY_ASSESSMENT.md`, and run `python3 -m pytest tests/test_recovery_assess.py` with
+the tag fetched locally. Until the pin lands, assessing a Package from that version reports
+`INDEPENDENT_RELEASE_IDENTITY_UNAVAILABLE` instead of trusting a digest from the Package. The
+follow-up changes no published tag or Release and does not authorize another release.
+
 ## GitHub Actions
 
 ### Continuous validation

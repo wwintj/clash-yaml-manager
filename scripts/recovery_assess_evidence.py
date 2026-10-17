@@ -22,6 +22,7 @@ ORIGINS = ('OBSERVED_TRUSTED_HOST_FACT', 'VERIFIED_PACKAGE_FACT',
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = '0309006537fde20030777e5603f5e2f3332406a1'
 # Accepted stable identities from independently read remote refs. Not incoming data.
+# Each new Stable is added after publication; see docs/RELEASE_AUTOMATION.md.
 RELEASE_PINS = {'v1.8.0': ('7657f2302545e74b1e9c1544e27ead9491e0d2a1',
                          '311f4fb65fd1fef08e39d3794562409fbfddc968'),
                 'v1.8.1': ('7c9adfd6304d5a8b5bfaf6e5071c529a6e9c5546',
