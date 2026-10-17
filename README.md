@@ -5,7 +5,7 @@
 可上傳現有 YAML，也可直接使用內建預設 YAML。新節點輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2（`vmess://` / `vless://` / `trojan://` / `ss://` / `hysteria2://` / `hy2://`）；Generate 預設 Replace 會替換 `proxies`、清理舊節點引用並補齊策略組；明確選擇 Merge 可保留來源節點並追加本次新節點，產生新的 Clash/Mihomo 設定檔。
 
 <!-- RELEASE:START -->
-**Latest Stable: [v1.8.0](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.8.0)**
+**Latest Stable: [v1.8.1](https://github.com/wwintj/clash-yaml-manager/releases/tag/v1.8.1)**
 <!-- RELEASE:END -->
 
 main 是開發分支；以下安裝與升級預設只使用 GitHub Latest Stable Release，API 失敗不會退回 main。只有明確指定 `--channel main` 才使用開發通道，測試命令見下方「開發通道與測試」。
@@ -47,6 +47,8 @@ Web UI 維持英文介面，使用共用字型、控制項與響應式排版，�
 v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊；Phase 3 精簡登入後的全域回饋，移除 `ERROR LOG`／`SUCCESS` 呈現標題，單條錯誤直接顯示、多條保留清單，維持訊息語義、escaping 與 accessibility。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；正式可用版本以頁首 Latest Stable 為準。
 
 v1.8.0 功能範圍新增有限長期登入、提交前 CSRF 更新、可選保留策略與離線備份安全工具；修正 `POST /process` HTTP 400 頁面的 Generate YAML 主導覽狀態。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
+
+v1.8.1 為節點連結相容性修正版：VLESS 分享連結的 `flow`（例如 `xtls-rprx-vision`）會寫入節點，Reality + Vision 節點可正常連線；VMess／VLESS 的 gRPC 與 H2 傳輸會產生 `grpc-opts`（`grpc-service-name`）及 `h2-opts`（`host`、`path`）；手動輸入與外部 Raw／Base64 來源中，備註含 `|` 的連結（例如 `#HK | 01`）可正確解析。Trojan、Shadowsocks、Hysteria2 的輸入契約不變。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
 
 [長期登入與 CSRF](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章期限一致且活動續期，Runtime 顯示生效值。登出、密碼及 Secret Key 撤銷保持；已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，不背景續命或重送拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。
 
@@ -199,7 +201,7 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-節點輸入支援三種格式混用。手動指定的 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。Hysteria2 / HY2 自 Stable v1.4.0 起提供，輸入、連接埠跳躍、obfs 及匯入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，[歷史驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md) 保留發布前記錄。這是支援的新輸入協定範圍，不代表支援所有 Clash proxy 類型。
+節點輸入支援三種格式混用。手動指定的 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。URI 備註可包含 `|`，從第一個受支援協定開頭的欄位起整段視為連結。VLESS 保留 `flow`，VMess／VLESS 的 gRPC／H2 會帶出對應傳輸選項。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。Hysteria2 / HY2 自 Stable v1.4.0 起提供，輸入、連接埠跳躍、obfs 及匯入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，[歷史驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md) 保留發布前記錄。這是支援的新輸入協定範圍，不代表支援所有 Clash proxy 類型。
 
 Generate 提供 **Preview YAML Changes**。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不儲存 diff 草稿。使用 Custom YAML 時需選取實際檔案；檔案過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 

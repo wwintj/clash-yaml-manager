@@ -252,6 +252,47 @@ def parse_vless_link(link: str, display_name: str) -> Dict[str, Any]:
     return node
 
 
+def add_transport_opts(node: Dict[str, Any], path: str, host: str) -> None:
+    """补全 gRPC / H2 传输参数，避免生成只有 network 而缺少选项的节点。"""
+    network = node.get("network")
+    path, host = str(path or "").strip(), str(host or "").strip()
+    if network == "grpc" and path:
+        node["grpc-opts"] = {"grpc-service-name": path}
+    elif network == "h2":
+        h2_opts: Dict[str, Any] = {}
+        hosts = [item.strip() for item in host.split(",") if item.strip()]
+        if hosts:
+            h2_opts["host"] = hosts
+        if path:
+            h2_opts["path"] = path
+        if h2_opts:
+            node["h2-opts"] = h2_opts
+
+
+def parse_vmess_node(link: str, display_name: str) -> Dict[str, Any]:
+    """parse_vmess_link 保持 v1.2.1 原样；在其结果上补全传输选项。"""
+    node = parse_vmess_link(link, display_name)
+    content = link[8:].replace("-", "+").replace("_", "/")
+    v_obj = json.loads(base64.b64decode(content + "=" * ((4 - len(content) % 4) % 4), validate=True).decode("utf-8"))
+    # VMess 分享链接用 path 字段承载 gRPC serviceName。
+    add_transport_opts(node, v_obj.get("path"), v_obj.get("host"))
+    return node
+
+
+def parse_vless_node(link: str, display_name: str) -> Dict[str, Any]:
+    """parse_vless_link 保持 v1.2.1 原样；在其结果上补全 flow 与传输选项。"""
+    node = parse_vless_link(link, display_name)
+    qs = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+
+    def get_qs(key: str) -> str:
+        return qs.get(key, [""])[0]
+
+    if get_qs("flow"):
+        node["flow"] = get_qs("flow")
+    add_transport_opts(node, get_qs("serviceName") or get_qs("path"), get_qs("host"))
+    return node
+
+
 def _trojan_host(value: str) -> bool:
     """Validate a literal or DNS name offline; never resolve it."""
     if not value or any(c.isspace() or ord(c) < 32 or ord(c) == 127 or c in '%/\\@?#' for c in value):
@@ -623,7 +664,15 @@ def node_key(line: str, occurrence: int = 0) -> str:
 
 
 def split_node_input(line: str, line_num: int):
-    parts = [part.strip() for part in line.split('|', 2)]
+    segments = line.split('|')
+    # Remarks often contain '|' ("HK | 01"). The link starts at the first segment
+    # with a supported scheme; everything after it belongs to the link.
+    start = next((index for index, segment in enumerate(segments)
+                  if segment.strip().startswith(SUPPORTED_URI_SCHEMES)), None)
+    if start is not None and start <= 2:
+        parts = [part.strip() for part in segments[:start]] + ['|'.join(segments[start:]).strip()]
+    else:
+        parts = [part.strip() for part in line.split('|', 2)]
     if len(parts) == 3:
         code, name, link = parts
         code = normalize_country_code(code)
@@ -679,11 +728,11 @@ def parse_node_line(line: str, line_num: int = 1, override=None, country_lookup=
         raise ValueError('协议不支持，仅接受 vmess:// 或 vless://。')
     display_name = build_display_name(code, raw_name)
     try:
-        node = (parse_vmess_link(link.split('#', 1)[0], display_name) if link.startswith('vmess://')
+        node = (parse_vmess_node(link.split('#', 1)[0], display_name) if link.startswith('vmess://')
                 else parse_ss_link(link, display_name) if link.startswith('ss://')
                 else parse_trojan_link(link, display_name) if link.startswith('trojan://')
                 else parse_hysteria2_link(link, display_name) if link.startswith(('hysteria2://', 'hy2://'))
-                else parse_vless_link(link, display_name))
+                else parse_vless_node(link, display_name))
     except (SSValidationError, Hysteria2ValidationError) as error:
         raise ValueError(str(error)) from None
     except Exception:

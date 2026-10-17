@@ -9,6 +9,14 @@
 - 下一個開發週期 Phase C 新增標準庫唯讀 Package List／Verify／Status 及合成離線目標 Restore Dry-run；分開完整性、管理 Record、可信 digest 與恢復前提，保留 live state，未證明的 ABI／依賴／業務相容性及 metadata 明確阻擋。沒有 Apply、Prune、部署或 production 就緒聲明。
 - 下一個開發週期新增獨立 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與唯讀基礎 Verifier；保存來源角色／原始 metadata、受驗證的 venv link metadata、固定 scope 與同機 root-private external digest handoff。這不是完整 VPS snapshot，尚未評估 recovery requirements，ACL/xattr/capabilities 恢復不受支持；沒有 Restore Apply、Prune 或 updater 整合，既有 Sidecar 預設 OFF 與 Legacy Backup 保留。
 
+## v1.8.1 - 2026-10-17
+
+### Fixed
+
+- VLESS 分享連結的 `flow`（例如 `xtls-rprx-vision`）會寫入節點，Reality + Vision 節點不再因缺少 flow 而無法連線。
+- VMess／VLESS 的 gRPC 與 H2 傳輸會產生 `grpc-opts`（`grpc-service-name`）及 `h2-opts`（`host`、`path`），不再只輸出 `network` 而缺少必要選項。
+- 備註含 `|` 的節點連結（例如 `#HK | 01`）在手動輸入與外部 Raw／Base64 來源中都能正確解析，不再誤報協議不支援或整個來源無效。
+
 ## v1.8.0 - 2026-10-10
 
 ### Added

@@ -91,3 +91,9 @@ def test_cross_source_duplicate_uses_final_display_name():
     first = sources.parse((LINK+'#Tokyo').encode())
     second = sources.parse(clash([node(name='🇯🇵 Tokyo')]))
     with pytest.raises(SourceError, match='Duplicate node name'): sources.combine([first,second])
+
+
+@pytest.mark.parametrize('format', ['raw', 'auto'])
+def test_raw_remark_with_pipe(format):
+    result = sources.parse((LINK + '#HK%20|%2001\n' + LINK + '#HK | 02').encode(), format)
+    assert [name.split(' ', 1)[-1] for name in result['node_names']] == ['HK | 01', 'HK | 02']
