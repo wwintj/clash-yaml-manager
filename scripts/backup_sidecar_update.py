@@ -26,14 +26,14 @@ if __package__:
     from . import backup_collect as collector, backup_create as writer
     from . import backup_verify as verifier, backup_catalog as catalog
     from . import deployment_guard as guard
-    from .backup_audit import AuditFault, SafeParser, fingerprint, flags, kind, parse_json
+    from .backup_audit import AuditFault, SafeParser, fingerprint, flags, kind, parse_json, traversal_identity
 else:
     import backup_collect as collector
     import backup_create as writer
     import backup_verify as verifier
     import backup_catalog as catalog
     import deployment_guard as guard
-    from backup_audit import AuditFault, SafeParser, fingerprint, flags, kind, parse_json
+    from backup_audit import AuditFault, SafeParser, fingerprint, flags, kind, parse_json, traversal_identity
 
 EXECUTOR_UID = 0
 EXECUTOR_GID = 0
@@ -81,7 +81,7 @@ def physical_root(path, private=False):
             protected_ancestor(before)
             following = os.open(name, flags(True), dir_fd=fd)
             try:
-                require(fingerprint(before) == fingerprint(os.fstat(following)), 'BACKUP_CHANGED')
+                require(traversal_identity(before) == traversal_identity(os.fstat(following)), 'BACKUP_CHANGED')
             except BaseException:
                 os.close(following)
                 raise
