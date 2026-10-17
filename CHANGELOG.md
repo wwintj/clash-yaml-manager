@@ -12,6 +12,7 @@
 ### Fixed
 
 - 建立、驗證或檢查離線備份時（包括預設關閉的更新備份 sidecar），如果路徑上層的 `/tmp`、`/root` 這類共用目錄裡剛好有其他程式在新增或刪除無關的檔案，工具不會再誤報 `BACKUP_CHANGED` 而中止。路徑上的目錄若真的被換掉，或類型、擁有者、權限被改動，仍然會拒絕。
+- VLESS／VMess 分享連結的傳輸方式改為對應 Mihomo 的寫法：`type=http`（H2）輸出 `network: h2`、`tcp` + `headerType=http` 輸出 `http-opts`、`httpupgrade` 輸出 `ws` 加 `v2ray-http-upgrade: true`、`xhttp` 帶出 `xhttp-opts`（`path`、`host`、`mode`）；過去這些節點會被 Mihomo 靜默當成 TCP 而無法連線。VLESS 的 `allowInsecure=1`／`insecure=1`（TLS／Reality）會寫入 `skip-cert-verify: true`。
 
 ## v1.8.2 - 2026-10-17
 

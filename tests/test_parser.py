@@ -135,6 +135,48 @@ def test_vmess_grpc_without_service_name_has_no_empty_options():
     assert 'grpc-opts' not in parse_vmess_node(vmess(net='grpc'), 'test')
 
 
+# Share links name transports differently from Mihomo, and Mihomo silently dials
+# plain TCP for a network it does not know, so these must be mapped, not copied.
+@pytest.mark.parametrize('query, network, key, value', [
+    ('type=http&host=a.example.com&path=%2Fh2', 'h2', 'h2-opts', {'host': ['a.example.com'], 'path': '/h2'}),
+    ('type=tcp&headerType=http&host=a.example.com&path=%2Fobfs', 'http', 'http-opts',
+     {'path': ['/obfs'], 'headers': {'Host': ['a.example.com']}}),
+    ('type=httpupgrade&host=a.example.com&path=%2Fhu', 'ws', 'ws-opts',
+     {'path': '/hu', 'headers': {'Host': 'a.example.com'}, 'v2ray-http-upgrade': True}),
+    ('type=xhttp&host=a.example.com&path=%2Fxh&mode=auto', 'xhttp', 'xhttp-opts',
+     {'path': '/xh', 'host': 'a.example.com', 'mode': 'auto'}),
+])
+def test_vless_share_link_transports_map_to_mihomo(query, network, key, value):
+    node = parse_vless_node(f'vless://test-uuid@192.0.2.1:443?security=tls&{query}', 'test')
+    assert node['network'] == network and node[key] == value
+
+
+def test_vless_tcp_without_http_header_stays_plain():
+    node = parse_vless_node('vless://test-uuid@192.0.2.1:443?security=tls&type=tcp&headerType=none', 'test')
+    assert 'network' not in node and 'http-opts' not in node
+
+
+@pytest.mark.parametrize('fields, network, key, value', [
+    (dict(net='http', host='cdn.example.com', path='/h2'), 'h2', 'h2-opts',
+     {'host': ['cdn.example.com'], 'path': '/h2'}),
+    (dict(net='tcp', type='http', host='cdn.example.com', path='/obfs'), 'http', 'http-opts',
+     {'path': ['/obfs'], 'headers': {'Host': ['cdn.example.com']}}),
+    (dict(net='httpupgrade', path='/hu'), 'ws', 'ws-opts',
+     {'path': '/hu', 'headers': {'Host': 'example.com'}, 'v2ray-http-upgrade': True}),
+])
+def test_vmess_share_link_transports_map_to_mihomo(fields, network, key, value):
+    node = parse_vmess_node(vmess(tls='tls', **fields), 'test')
+    assert node['network'] == network and node[key] == value
+
+
+@pytest.mark.parametrize('query, expected', [
+    ('security=tls&allowInsecure=1', True), ('security=tls&insecure=1', True),
+    ('security=tls&allowInsecure=0', False), ('security=none&allowInsecure=1', False),
+])
+def test_vless_allow_insecure(query, expected):
+    assert parse_vless_node(f'vless://test-uuid@192.0.2.1:443?{query}', 'test')['skip-cert-verify'] is expected
+
+
 @pytest.mark.parametrize('line, name', [
     ('vless://test-uuid@192.0.2.1:443?type=tcp#HK%20|%2001', 'HK | 01'),
     ('vless://test-uuid@192.0.2.1:443?type=tcp#HK | 02', 'HK | 02'),

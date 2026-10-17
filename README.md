@@ -203,7 +203,7 @@ JP|JP2|vless://xxxx
 HK|GIA|vmess://xxxx
 ```
 
-節點輸入支援三種格式混用。手動指定的 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。URI 備註可包含 `|`，從第一個受支援協定開頭的欄位起整段視為連結。VLESS 保留 `flow`，VMess／VLESS 的 gRPC／H2 會帶出對應傳輸選項。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。Hysteria2 / HY2 自 Stable v1.4.0 起提供，輸入、連接埠跳躍、obfs 及匯入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，[歷史驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md) 保留發布前記錄。這是支援的新輸入協定範圍，不代表支援所有 Clash proxy 類型。
+節點輸入支援三種格式混用。手動指定的 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。URI 備註可包含 `|`，從第一個受支援協定開頭的欄位起整段視為連結。VLESS 保留 `flow`，VMess／VLESS 的 gRPC／H2／HTTP 偽裝／HTTPUpgrade／XHTTP 會轉成 Mihomo 對應的傳輸選項，VLESS 的 `allowInsecure` 會對應 `skip-cert-verify`。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。Hysteria2 / HY2 自 Stable v1.4.0 起提供，輸入、連接埠跳躍、obfs 及匯入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，[歷史驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md) 保留發布前記錄。這是支援的新輸入協定範圍，不代表支援所有 Clash proxy 類型。
 
 Generate 提供 **Preview YAML Changes**。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不儲存 diff 草稿。使用 Custom YAML 時需選取實際檔案；檔案過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
