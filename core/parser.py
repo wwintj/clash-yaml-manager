@@ -252,21 +252,55 @@ def parse_vless_link(link: str, display_name: str) -> Dict[str, Any]:
     return node
 
 
-def add_transport_opts(node: Dict[str, Any], path: str, host: str) -> None:
-    """补全 gRPC / H2 传输参数，避免生成只有 network 而缺少选项的节点。"""
-    network = node.get("network")
+def add_transport_opts(node: Dict[str, Any], path: str, host: str, *, header_type: str = "",
+                       mode: str = "", ws_default_host: str = "") -> None:
+    """补全传输参数，避免生成只有 network 而缺少选项、或 Mihomo 不认识的节点。
+
+    分享链接与 Mihomo 的命名不同：链接里的 http 指 H2，tcp + headerType=http 才是
+    HTTP 伪装；httpupgrade 在 Mihomo 中是 ws + v2ray-http-upgrade。Mihomo 遇到未知
+    network 会静默按 TCP 连接，所以这些映射必须在这里完成。
+    """
+    network = node.get("network", "tcp")
     path, host = str(path or "").strip(), str(host or "").strip()
+    hosts = [item.strip() for item in host.split(",") if item.strip()]
+    if network == "tcp" and str(header_type or "").strip().lower() == "http":
+        node["network"] = "http"
+        http_opts: Dict[str, Any] = {"path": [path or "/"]}
+        if hosts:
+            http_opts["headers"] = {"Host": hosts}
+        node["http-opts"] = http_opts
+    elif network == "http":
+        node["network"] = network = "h2"
     if network == "grpc" and path:
         node["grpc-opts"] = {"grpc-service-name": path}
     elif network == "h2":
         h2_opts: Dict[str, Any] = {}
-        hosts = [item.strip() for item in host.split(",") if item.strip()]
         if hosts:
             h2_opts["host"] = hosts
         if path:
             h2_opts["path"] = path
         if h2_opts:
             node["h2-opts"] = h2_opts
+    elif network == "httpupgrade":
+        node["network"] = "ws"
+        ws_opts: Dict[str, Any] = {}
+        if path:
+            ws_opts["path"] = path
+        if host or ws_default_host:
+            ws_opts["headers"] = {"Host": host or ws_default_host}
+        ws_opts["v2ray-http-upgrade"] = True
+        node["ws-opts"] = ws_opts
+    elif network == "xhttp":
+        xhttp_opts: Dict[str, Any] = {}
+        if path:
+            xhttp_opts["path"] = path
+        if host:
+            xhttp_opts["host"] = host
+        mode = str(mode or "").strip()
+        if mode:
+            xhttp_opts["mode"] = mode
+        if xhttp_opts:
+            node["xhttp-opts"] = xhttp_opts
 
 
 def parse_vmess_node(link: str, display_name: str) -> Dict[str, Any]:
@@ -274,13 +308,14 @@ def parse_vmess_node(link: str, display_name: str) -> Dict[str, Any]:
     node = parse_vmess_link(link, display_name)
     content = link[8:].replace("-", "+").replace("_", "/")
     v_obj = json.loads(base64.b64decode(content + "=" * ((4 - len(content) % 4) % 4), validate=True).decode("utf-8"))
-    # VMess 分享链接用 path 字段承载 gRPC serviceName。
-    add_transport_opts(node, v_obj.get("path"), v_obj.get("host"))
+    # VMess 分享链接用 path 字段承载 gRPC serviceName，type 字段承载 TCP 伪装类型。
+    add_transport_opts(node, v_obj.get("path"), v_obj.get("host"), header_type=v_obj.get("type"),
+                       mode=v_obj.get("mode"), ws_default_host=node["server"])
     return node
 
 
 def parse_vless_node(link: str, display_name: str) -> Dict[str, Any]:
-    """parse_vless_link 保持 v1.2.1 原样；在其结果上补全 flow 与传输选项。"""
+    """parse_vless_link 保持 v1.2.1 原样；在其结果上补全 flow、证书校验与传输选项。"""
     node = parse_vless_link(link, display_name)
     qs = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
 
@@ -289,7 +324,10 @@ def parse_vless_node(link: str, display_name: str) -> Dict[str, Any]:
 
     if get_qs("flow"):
         node["flow"] = get_qs("flow")
-    add_transport_opts(node, get_qs("serviceName") or get_qs("path"), get_qs("host"))
+    if node.get("tls") and "1" in (get_qs("allowInsecure"), get_qs("insecure")):
+        node["skip-cert-verify"] = True
+    add_transport_opts(node, get_qs("serviceName") or get_qs("path"), get_qs("host"),
+                       header_type=get_qs("headerType"), mode=get_qs("mode"))
     return node
 
 
