@@ -34,7 +34,7 @@ python3 -B -m scripts.recovery_assess --id <operation-id> --target-fixture /priv
 
 ## 第一層 Runtime 排除
 
-pyvenv.cfg 要求唯一、已知且有界欄位；檢查 version、home、executable 和 include-system-site-packages。初始僅支持 `/usr/bin`／`/usr/local/bin` base interpreter 声明，system site packages 明確 UNSUPPORTED。link closure 沿用既有規則，外部 interpreter 只對 Target 聲明核對，不能證明實際存在。絕對 Python script shebang 必須符合聲明的 install prefix。
+pyvenv.cfg 要求唯一、已知且有界欄位；檢查 version、home、executable 和 include-system-site-packages。初始僅支持 `/usr/bin`／`/usr/local/bin` base interpreter 聲明，system site packages 明確 UNSUPPORTED。link closure 沿用既有規則，外部 interpreter 只對 Target 聲明核對，不能證明實際存在。絕對 Python script shebang 必須符合聲明的 install prefix。
 
 Wheel 基本 headers／tags、METADATA 基本欄位與 ELF64 header／machine 只排除明顯錯誤。未知組合 fail-closed；複合 tag／其他 native format 未支持。ELF machine、SOABI 名稱或 Wheel tags 一致不能證明 CPU 指令、libc／符號版本、動態載入路徑、完整 dependency closure。這些持續 UNKNOWN。
 
@@ -46,7 +46,7 @@ Wheel 基本 headers／tags、METADATA 基本欄位與 ELF64 header／machine �
 
 Temporary Link 結構／current output references 與舊 tombstone 保留；Package 未捕獲 archived outputs，所以其存在 UNKNOWN。GeoIP metadata／active.mmdb size/hash 關聯；Health v2 的 Fixed ID、fingerprint 形狀與 scheduler 邊界；Notifications／Login Attempts 的有限形狀及時間檢查。未知 State 路徑拒絕，不遷移、不補預設、不清理。
 
-YAML/cache 的完整業務語义、health fingerprint 對 YAML 節點的完整對應、notification transport、所有隱含配置依賴仍未證明。因此 State closure 不等於完整 state compatibility；合法舊 schema 但不在本次子集者 UNSUPPORTED。
+YAML/cache 的完整業務語義、health fingerprint 對 YAML 節點的完整對應、notification transport、所有隱含配置依賴仍未證明。因此 State closure 不等於完整 state compatibility；合法舊 schema 但不在本次子集者 UNSUPPORTED。
 
 ## 資源、安全及未實作能力
 
