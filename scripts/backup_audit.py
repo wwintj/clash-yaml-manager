@@ -66,6 +66,13 @@ def fingerprint(info):
             info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
+def traversal_identity(info):
+    """Path-walk swap check: a replaced, retyped, re-owned or re-permissioned directory
+    cannot pass. Entry churn (nlink, size, mtime, ctime) in a shared ancestor such as /tmp
+    is not a swap; callers compare their own root fingerprint for quietness."""
+    return info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid
+
+
 def kind(info):
     if stat.S_ISDIR(info.st_mode):
         return 'directory'
@@ -110,7 +117,7 @@ def root_directory(path):
                 raise AuditFault('UNSAFE_ROOT_PATH', True)
             next_fd = os.open(part, flags(True), dir_fd=fd)
             try:
-                if fingerprint(before) != fingerprint(os.fstat(next_fd)):
+                if traversal_identity(before) != traversal_identity(os.fstat(next_fd)):
                     raise AuditFault('BACKUP_CHANGED', True)
             except BaseException:
                 os.close(next_fd)

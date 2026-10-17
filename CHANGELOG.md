@@ -9,6 +9,10 @@
 - 下一個開發週期 Phase C 新增標準庫唯讀 Package List／Verify／Status 及合成離線目標 Restore Dry-run；分開完整性、管理 Record、可信 digest 與恢復前提，保留 live state，未證明的 ABI／依賴／業務相容性及 metadata 明確阻擋。沒有 Apply、Prune、部署或 production 就緒聲明。
 - 下一個開發週期新增獨立 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與唯讀基礎 Verifier；保存來源角色／原始 metadata、受驗證的 venv link metadata、固定 scope 與同機 root-private external digest handoff。這不是完整 VPS snapshot，尚未評估 recovery requirements，ACL/xattr/capabilities 恢復不受支持；沒有 Restore Apply、Prune 或 updater 整合，既有 Sidecar 預設 OFF 與 Legacy Backup 保留。
 
+### Fixed
+
+- 離線備份工具（`backup_create.py`、`backup_verify.py`、`backup_audit.py`、`backup_collect.py`、`backup_catalog.py` 與更新 sidecar）逐層開啟路徑時，不再因 `/tmp`、`/root` 等共用上層目錄同時新增或刪除無關項目而誤判 `BACKUP_CHANGED`；上層目錄被替換、改變類型、擁有者或權限時仍會拒絕。
+
 ## v1.8.2 - 2026-10-17
 
 ### Fixed

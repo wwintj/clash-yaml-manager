@@ -210,6 +210,65 @@ def test_root_or_ancestor_symlink(tmp_path, updater, ancestor):
     assert 'UNSAFE_ROOT_PATH' in codes(report)
 
 
+def race_on_open(monkeypatch, name, change):
+    """Run change() after root_directory stat()s component name and before it opens it."""
+    original_open = os.open
+    fired = []
+    def racing(path, flags, *args, **kwargs):
+        if path == name and 'dir_fd' in kwargs and not fired:
+            fired.append(path)
+            change()
+        return original_open(path, flags, *args, **kwargs)
+    monkeypatch.setattr(os, 'open', racing)
+    return fired
+
+
+@pytest.mark.parametrize('target', ['ancestor', 'root'])
+def test_unrelated_entry_churn_during_walk_is_not_a_swap(tmp_path, monkeypatch, target):
+    shared = tmp_path / 'shared'
+    root = shared / 'root'
+    root.mkdir(parents=True, mode=0o700)
+    changed = shared if target == 'ancestor' else root
+    def churn():
+        (changed / 'unrelated').write_text(SECRET)
+        (changed / 'unrelated-directory').mkdir()
+    fired = race_on_open(monkeypatch, changed.name, churn)
+    with audit.root_directory(root) as (fd, absolute):
+        assert absolute == str(root)
+        assert audit.traversal_identity(os.fstat(fd)) == audit.traversal_identity(root.stat())
+    assert fired == [changed.name]
+
+
+@pytest.mark.parametrize('change', ['replace', 'chmod', 'owner'])
+def test_ancestor_replaced_or_repermissioned_during_walk_refused(tmp_path, monkeypatch, change):
+    shared = tmp_path / 'shared'
+    (shared / 'root').mkdir(parents=True, mode=0o700)
+    shared.chmod(0o700)
+    def swap():
+        if change == 'replace':
+            shared.rename(tmp_path / 'moved')
+            (shared / 'root').mkdir(parents=True, mode=0o700)
+        elif change == 'chmod':
+            shared.chmod(0o711)
+        else:
+            # A chown in the window, without requiring root: report a new owner for this inode.
+            original_fstat, before = os.fstat, shared.stat()
+            def reowned(fd):
+                info = original_fstat(fd)
+                if (info.st_dev, info.st_ino) != (before.st_dev, before.st_ino):
+                    return info
+                values = list(info)
+                values[4:6] = [info.st_uid + 1, info.st_gid + 1]
+                return os.stat_result(values)
+            monkeypatch.setattr(os, 'fstat', reowned)
+    fired = race_on_open(monkeypatch, shared.name, swap)
+    with pytest.raises(audit.AuditFault) as error:
+        with audit.root_directory(shared / 'root'):
+            pass
+    assert fired == [shared.name]
+    assert error.value.code == 'BACKUP_CHANGED' and error.value.unsafe is True
+
+
 @pytest.mark.parametrize('object_kind', ['fifo', 'socket', 'directory'])
 def test_special_object_or_directory_in_file_position(updater, monkeypatch, object_kind):
     path = updater / '.env'
