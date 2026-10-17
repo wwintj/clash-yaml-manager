@@ -106,3 +106,16 @@ def test_deleted_url_never_serves_new_generation(web, logged_in):
     assert a['download_url'] != b['download_url']
     assert web.app.test_client().get(a['download_url']).status_code == 404
     assert web.app.test_client().get(b['download_url']).status_code == 200
+
+
+def test_tombstones_are_bounded(tmp_path, monkeypatch):
+    monkeypatch.setattr('core.temporary_links.MAX_TOMBSTONES', 3)
+    store = TemporaryLinks(tmp_path)
+    keys = [store.create(f'{index}.yaml', 10, now=100 + index)[0] for index in range(5)]
+    store.prune(now=1000)
+    links = read_json(store.path)['links']
+    assert len(links) == 3 and set(links) <= set(keys) and all(value is None for value in links.values())
+    assert all(store.resolve(key, now=1001) is None for key in keys)
+    live, _ = store.create('live.yaml', 10, now=1000)
+    assert store.resolve(live, now=1001)['filename'] == 'live.yaml'
+    assert len(read_json(store.path)['links']) == 4

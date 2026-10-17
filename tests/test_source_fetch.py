@@ -184,3 +184,42 @@ def test_global_literal_resolution_does_not_use_dns(monkeypatch,address):
     monkeypatch.setattr(fetcher.subprocess,'run',lambda *a,**kw: pytest.fail('literal address queried DNS'))
     approved=fetcher._resolve(address,443,time.monotonic()+15)
     assert approved[0][2]==(address,443)
+
+
+def test_https_to_http_redirect_downgrade_rejected(network, monkeypatch):
+    class Response:
+        status = 302
+        def getheader(self, name, default=None):
+            return 'http://source.example/plain' if name == 'Location' else default
+        def close(self): pass
+    class Connection:
+        def __init__(self, *args): pass
+        def request(self, *args, **kwargs): pass
+        def getresponse(self): return Response()
+        def close(self): pass
+    monkeypatch.setattr(fetcher, '_PinnedConnection', Connection)
+    with pytest.raises(SourceError, match='redirect'):
+        fetcher.fetch('https://source.example/feed')
+    assert network.resolutions == ['source.example']
+
+
+def test_connect_falls_back_to_next_approved_address(monkeypatch):
+    attempts = []
+    class FakeSocket:
+        def __init__(self, *args): self.closed = False
+        def settimeout(self, value): pass
+        def connect(self, address):
+            attempts.append(address)
+            if address[0] == '8.8.8.8':
+                raise ConnectionRefusedError
+        def close(self): self.closed = True
+    monkeypatch.setattr(fetcher.socket, 'socket', FakeSocket)
+    addresses = [(socket.AF_INET, 6, ('8.8.8.8', 80)), (socket.AF_INET, 6, ('1.1.1.1', 80))]
+    connection = fetcher._PinnedConnection('http', 'source.example', 80, addresses, time.monotonic() + 5)
+    connection.connect()
+    assert attempts == [('8.8.8.8', 80), ('1.1.1.1', 80)]
+    assert connection.sock.sock.closed is False
+    attempts.clear()
+    connection = fetcher._PinnedConnection('http', 'source.example', 80, addresses[:1], time.monotonic() + 5)
+    with pytest.raises(ConnectionRefusedError):
+        connection.connect()
