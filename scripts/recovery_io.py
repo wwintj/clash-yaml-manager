@@ -75,12 +75,18 @@ def absolute_directory(value):
     try:
         root_before = os.fstat(fd)
         ancestor(root_before)
-        for part in parts:
+        for index, part in enumerate(parts):
             before = os.stat(part, dir_fd=fd, follow_symlinks=False)
             ancestor(before)
             child = os.open(part, flags(True), dir_fd=fd)
             descriptors.append(child)
-            same(before, os.fstat(child))
+            if index == len(parts) - 1:
+                same(before, os.fstat(child))
+            else:
+                # Shared ancestors such as /tmp gain unrelated entries;
+                # only a replaced or re-permissioned directory is a change here.
+                schema.require(directory_identity(before) == directory_identity(os.fstat(child)),
+                               'OBJECT_CHANGED')
             bindings.append((fd, part, child, before))
             fd = child
         yield fd
@@ -100,7 +106,11 @@ def child_directory(parent, name, expected=None, stored=False):
         same(expected, before)
     fd = os.open(name, flags(True), dir_fd=parent)
     try:
-        same(before, os.fstat(fd))
+        if expected is not None:
+            same(before, os.fstat(fd))
+        else:
+            # No recorded entry to match: bind identity only, as on exit; callers check content.
+            schema.require(directory_identity(before) == directory_identity(os.fstat(fd)), 'OBJECT_CHANGED')
         if stored:
             private(os.fstat(fd), True)
         yield fd
