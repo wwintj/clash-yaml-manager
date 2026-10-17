@@ -60,6 +60,16 @@ v1.8.2 為穩定性修正版：Trojan 連結接受常見客戶端匯出的 `fp`�
 
 Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 direct／remote 入場至最終 metadata；[verified Sidecar](docs/BACKUP_UPDATER_SIDECAR.md) **預設 OFF**，首次正式升級維持 OFF。OPTIONAL／STRICT 需明確 opt-in、精確 `CLASH_BACKUP_EXTERNAL_WRITERS_QUIET=YES`，並通過後段真正 quiet／ownership／disk gates；非法設定在部署副作用前拒絕。Sidecar 僅從已完成的離線 legacy subset 收集，**Legacy Backup、venv 與人工 rollback 材料保留**。不忽略全域安全／IO 失敗，不自動刪除不確定物件或舊備份，也不自動 restore。僅完成合成開發驗收，production／完整 VPS consistency／Restore 尚未證明；歷史 macOS Verifier 拒絕碼差異仍為 `ROOT_CAUSE_UNKNOWN`。[整合評估](docs/BACKUP_UPDATER_INTEGRATION_PLAN.md)與[時間限制盤點](docs/TIME_LIMIT_INVENTORY.md)保留詳細契約及歷史證據。
 
+### 開發中（尚未發布）
+
+以下離線恢復工具仍在開發，尚未包含在任何 Stable Release，也沒有接入安裝、升級或 Web UI。工具須從獨立、可信的 checkout 執行，來源必須是操作者另外準備、已停止寫入的離線副本；工具不直接讀取正在運行的安裝，也不執行備份內的程式，不做 Restore Apply 或 Prune，不代表 production 已可恢復。
+
+- [Managed Recovery Package](docs/MANAGED_RECOVERY_PACKAGE.md)：獨立的 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與基礎內容 Verifier，保存 venv link metadata。Writer 只寫入固定的 root 私人目錄；同機私人 Record 不等於異地災難復原。
+- [唯讀檢視與恢復前提](docs/RECOVERY_INSPECTION.md)：不依賴 Flask 或備份 venv 的 List、Verify、Status 與合成目標 Dry-run，並列出 ABI、依賴、State 相容性及擴充 metadata 等尚未證明的條件；恢復計畫仍不可執行。
+- [唯讀相容性評估](docs/RECOVERY_ASSESSMENT.md)：區分可信工具觀測、Package 已驗證資料、Release 證據與合成聲明，排除明顯的 Runtime／State 不相容。評估結果目前一律是 `ASSESSMENT_BLOCKED`，原因包括 Package 無法獨立證明是同一台主機、未捕獲擴充 metadata、Runtime closure 未知及 Restore Apply 未實作；`RUNTIME_REQUIREMENTS_READY`、`RESTORE_PLAN_READY` 與 `RESTORE_PROVEN` 均為 false。
+
+唯讀檢視與相容性評估不寫入 Package、Record 或 Target。唯讀檢視的私人目錄競態測試已在 GitHub Actions 的 Ubuntu root 環境通過；三者的正式 Linux 原生驗收都尚未完成，也都未在真實 VPS 上驗收。
+
 ## 一鍵安裝
 
 在 Ubuntu VPS 上執行：

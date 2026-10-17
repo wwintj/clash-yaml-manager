@@ -205,12 +205,62 @@ def test_runtime_reports_effective_lifetime(web, logged_in, expected):
     assert web.settings_runtime()['session_lifetime'] == '2 days'
 
 
+def _gunicorn_failure_evidence(process, readiness, error_log, iteration, phase,
+                               sequence, statuses, error):
+    """Passive, bounded metadata only; called before the master is terminated."""
+    import json
+    import re
+    from importlib.metadata import version
+    try:
+        workers = []
+        for entry in sorted(readiness.iterdir())[:8]:
+            if not entry.name.isascii() or not entry.name.isdigit():
+                continue
+            pid = int(entry.name)
+            try:
+                os.kill(pid, 0)
+                exists = True
+            except ProcessLookupError:
+                exists = False
+            except OSError:
+                exists = 'UNKNOWN'
+            workers.append({'pid': pid, 'exists': exists})
+        # Never emit arbitrary stderr, traceback lines, headers or configuration.
+        tail = []
+        if error_log.exists():
+            with error_log.open('rb') as log:
+                log.seek(0, os.SEEK_END)
+                log.seek(max(0, log.tell() - 8192))
+                lines = log.read(8192).decode('utf-8', errors='replace').splitlines()[-20:]
+            allowed = r'(Starting gunicorn [0-9.]+|Using worker: [a-z]+|Booting worker with pid: [0-9]+|Worker exiting \(pid: [0-9]+\)|Handling signal: [a-z]+|Shutting down: Master|WORKER TIMEOUT \(pid:[0-9]+\))'
+            for line in lines:
+                match = re.search(allowed + r'$', line)
+                tail.append(match.group(0) if match else 'REDACTED_UNCLASSIFIED_LOG_LINE')
+        print('GUNICORN_PRE_CLEANUP ' + json.dumps({
+            'iteration': iteration, 'phase': phase, 'request_sequence': sequence,
+            'master_pid': process.pid, 'master_poll': process.poll(),
+            'workers': workers, 'observed_statuses': list(statuses),
+            'exception_type': type(error).__name__, 'stderr_tail': tail,
+            'temporary_directory_exists': readiness.parent.is_dir(),
+            'readiness_exists': readiness.is_dir(), 'error_log_exists': error_log.is_file(),
+            'python_version': sys.version.split()[0], 'gunicorn_version': version('gunicorn'),
+            'command': ['python', '-m', 'gunicorn', '--workers', '2',
+                        '--bind', 'fd://<inherited-listener-fd>', 'app:app'],
+        }), flush=True)
+    except Exception as diagnostic_error:
+        # Diagnostics must never replace or suppress the original failure.
+        print('GUNICORN_PRE_CLEANUP_DIAGNOSTIC_ERROR ' + type(diagnostic_error).__name__, flush=True)
+
+
 def test_real_gunicorn_workers_and_process_restart_share_login(web, logged_in):
     """Two real worker processes and a new master accept the same signed cookie."""
     from concurrent.futures import ThreadPoolExecutor
     import socket
     import time
-    from urllib.request import Request, urlopen
+    from urllib.request import Request, ProxyHandler, build_opener
+    # This synthetic loopback test must not inherit system/environment proxies
+    # or urllib's cached global opener; keep the client local to this test.
+    direct_opener = build_opener(ProxyHandler({}))
     # Test-copy instrumentation only, never add a worker PID endpoint to the app.
     app_file = Path(web.BASE_DIR)/'app.py'
     with app_file.open('a') as output:
@@ -234,22 +284,36 @@ def test_real_gunicorn_workers_and_process_restart_share_login(web, logged_in):
                 process = subprocess.Popen([sys.executable,'-m','gunicorn','--workers','2',
                     '--bind',f'fd://{listener.fileno()}','app:app'], cwd=web.BASE_DIR,
                     env=env, pass_fds=(listener.fileno(),), stdout=subprocess.DEVNULL, stderr=errors)
+                phase = 'READINESS'
+                statuses = []
                 try:
                     def check(_):
                         req = Request(f'http://127.0.0.1:{port}/api/csrf-token',
                             headers={'Cookie':'session='+saved,'X-CSRF-Refresh':'1','X-Test-Probe':'1'})
-                        with urlopen(req,timeout=5) as response:
-                            assert response.status == 200 and b'csrf_token' in response.read()
-                            return response.headers['X-Test-Worker']
+                        try:
+                            with direct_opener.open(req,timeout=5) as response:
+                                statuses.append({'sequence': _, 'status': response.status})
+                                assert response.status == 200 and b'csrf_token' in response.read()
+                                return response.headers['X-Test-Worker']
+                        except Exception as error:
+                            _gunicorn_failure_evidence(process, readiness, error_log,
+                                iteration, phase, _, statuses, error)
+                            raise
                     deadline = time.monotonic()+15
                     while len(list(readiness.iterdir())) != 2:
                         assert process.poll() is None and time.monotonic() < deadline
                         time.sleep(.05)
+                    phase = 'FIRST_REQUEST'
                     check(0)
+                    phase = 'CONCURRENT_REQUESTS'
                     with ThreadPoolExecutor(max_workers=8) as pool:
                         pids = set(pool.map(check,range(24)))
                     assert len(pids) == 2
                     observed.append(pids)
+                except Exception as error:
+                    _gunicorn_failure_evidence(process, readiness, error_log,
+                        iteration, phase, None, statuses, error)
+                    raise
                 finally:
                     process.terminate()
                     try: process.wait(timeout=10)
