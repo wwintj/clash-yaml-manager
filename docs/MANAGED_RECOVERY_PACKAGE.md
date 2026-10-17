@@ -1,6 +1,6 @@
 # Managed Recovery Package — Phase B
 
-`managed-upgrade-v1` 是下一個開發週期的**獨立離線格式**，不是已發布 v1.8.0 的升級行為。它不改 Manifest v1、Sidecar、Catalog 或 Legacy Backup；Sidecar 仍預設 OFF。Phase B 只保存材料及驗證 bytes，不停止服務、不升級、不 Restore、不刪除、不啟用 Retention。
+`managed-upgrade-v1` 是**獨立離線格式**，自 v1.9.0 起以開發預覽隨程式碼提供，不是任何版本升級流程的一部分。它不改 Manifest v1、Sidecar、Catalog 或 Legacy Backup；Sidecar 仍預設 OFF。Phase B 只保存材料及驗證 bytes，不停止服務、不升級、不 Restore、不刪除、不啟用 Retention。
 
 ## 操作者與來源契約
 
@@ -8,7 +8,7 @@
 
 CLI 固定 root UID/GID 0，固定 `/var/lib/clash-yaml-manager-upgrade-backups/{packages,records}`；父目錄必須已存在且安全。所有祖先 no-follow，拒絕不可信 owner、可寫祖先（root-owned sticky 臨時祖先除外）；受管目錄 `0700`，普通檔案 `0600`。沒有環境變數、CLI 管理路徑／UID override。Mac 測試只由可信 Python fixture monkeypatch 內部常數，不能從來源配置降低儲存安全限制。
 
-不提供從 live 安裝自動建立 fixture 的命令。未來控制器在部署副作用前捕獲失敗，必須恢復並核驗原 service/timer policy；本輪沒有控制器或 systemd 操作。
+不提供從 live 安裝自動建立 fixture 的命令。未來控制器在部署副作用前捕獲失敗，必須恢復並核驗原 service/timer policy；目前沒有控制器或 systemd 操作。
 
 ```bash
 # 僅限事先準備、已停止寫入的合成離線來源，並以可信已安裝工具執行
@@ -35,7 +35,7 @@ State path grammar 複用既有 Collector 的唯讀 path policy，但**不修改
 
 Installation binding 為 `{origin:ROOT_OPERATOR_DECLARATION,install_path,system_id}`。account_roles 的 root/service 均為 `{name,uid,gid,origin:ROOT_OPERATOR_DECLARATION}`，名稱分別 root/clashyaml，service UID/GID 不可等於 root。只有受信任 root declaration 授權混合 owner；不是因 root 能讀便接納任意 ownership。UID/GID 是操作者聲明，不是本機 account database 驗證，亦不自動建立／恢復帳戶。
 
-Runtime requirements 為 `{os,architecture,python_version,python_abi,system_libraries,origin:ROOT_OPERATOR_DECLARATION}`；libraries 最多 64 個、每個 bounded string。Runtime 與原 system_id 是聲明；本輪不執行 ABI／library 相容性檢查。
+Runtime requirements 為 `{os,architecture,python_version,python_abi,system_libraries,origin:ROOT_OPERATOR_DECLARATION}`；libraries 最多 64 個、每個 bounded string。Runtime 與原 system_id 是聲明；目前不執行 ABI／library 相容性檢查。
 
 ## Manifest / canonical 格式
 
@@ -79,4 +79,4 @@ Omissions 明確排除 Nginx、TLS、UFW、OS packages、external accounts、Mih
 
 只保存 `policy=strict,keep_count=1,hours=72,completed_at=null`。數量輪換與到期是獨立條件：未來全升級成功後可輪換未滿 72 小時的舊成功備份；成功備份到期後即使唯一一份也可刪除。失敗、未完成、不確定、busy／驗證異常保護。Writer 不建立整體升級完成事件，故不能起算 72 小時；journal、trash、prune timer、Restore Apply **均未實作**。
 
-Phase C 尚需另行授權：業務 state semantics／跨材料一致性、ABI/system dependencies、recovery-ready 評估與 Linux root-native 驗收。後續控制器、Restore／Retention 實作均不在本輪授權。Mac 的合成 POSIX 成功不能代表 production、Linux-native destructive features 或 Restore 已證明。歷史 macOS Verifier 差異繼續 `ROOT_CAUSE_UNKNOWN`。
+Phase C（[唯讀檢視](RECOVERY_INSPECTION.md)）與 Phase D2（[相容性評估](RECOVERY_ASSESSMENT.md)）自 v1.9.0 起以開發預覽提供，但業務 state semantics／跨材料一致性、ABI/system dependencies 實證、recovery-ready 與 Linux root-native 正式驗收仍未完成；後續控制器、Restore／Retention 實作均未授權。Mac 的合成 POSIX 成功不能代表 production、Linux-native destructive features 或 Restore 已證明。歷史 macOS Verifier 差異繼續 `ROOT_CAUSE_UNKNOWN`。

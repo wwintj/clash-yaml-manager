@@ -52,6 +52,8 @@ v1.8.1 為節點連結相容性修正版：VLESS 分享連結的 `flow`（例如
 
 v1.8.2 為穩定性修正版：Trojan 連結接受常見客戶端匯出的 `fp`、`alpn`、`allowInsecure`／`insecure` 與 `headerType=none`；外部來源抓取可改試其他已核准位址，並拒絕 HTTPS 降級為 HTTP 的重新導向；臨時連結 tombstone 設上限；依賴加上主版本上限；推送 main 與 Pull Request 會自動執行完整驗證。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
 
+v1.9.0 新增離線恢復工具的開發預覽（見下方「離線恢復工具（開發預覽）」），並修正 VLESS／VMess 分享連結的 H2、HTTP 偽裝、HTTPUpgrade 與 XHTTP 傳輸對應及 VLESS `allowInsecure`，以及備份工具在共用上層目錄有其他程式寫入時誤報 `BACKUP_CHANGED` 的問題。正式可用版本以頁首 Latest Stable 及 Release Notes 為準。
+
 [長期登入與 CSRF](docs/SESSION_LIFETIME.md)：私人 `.env` 的 `SESSION_LIFETIME_DAYS` 預設 30、可設 1–3650 天，Cookie／簽章期限一致且活動續期，Runtime 顯示生效值。登出、密碼及 Secret Key 撤銷保持；已登入表單／Parse／Diff 在明確提交前取得 fresh CSRF token，不背景續命或重送拒絕的 POST。瀏覽器可能限制 Cookie 保存時間，不保證閒置 3650 天仍登入。
 
 [資料保留策略](docs/RETENTION_POLICY.md)：Upload／Generated Output／Web Overlay Backup 各自選擇 `timed` 或 `keep`，預設及舊 hours／days fallback 保留，Runtime 提示 keep 的磁碟容量責任。`/t/` 授權仍有限、可撤銷，與檔案保存分離；Fixed lifecycle 不變。Generate 草稿可明確勾選 `Keep draft until I clear it`，預設仍 30 天；只存於本機瀏覽器，節點 URL 可能包含憑證，需留意共用裝置。
@@ -60,13 +62,13 @@ v1.8.2 為穩定性修正版：Trojan 連結接受常見客戶端匯出的 `fp`�
 
 Updater 的 [Shared Deployment Guard](docs/DEPLOYMENT_GUARD.md) 保護新版 direct／remote 入場至最終 metadata；[verified Sidecar](docs/BACKUP_UPDATER_SIDECAR.md) **預設 OFF**，首次正式升級維持 OFF。OPTIONAL／STRICT 需明確 opt-in、精確 `CLASH_BACKUP_EXTERNAL_WRITERS_QUIET=YES`，並通過後段真正 quiet／ownership／disk gates；非法設定在部署副作用前拒絕。Sidecar 僅從已完成的離線 legacy subset 收集，**Legacy Backup、venv 與人工 rollback 材料保留**。不忽略全域安全／IO 失敗，不自動刪除不確定物件或舊備份，也不自動 restore。僅完成合成開發驗收，production／完整 VPS consistency／Restore 尚未證明；歷史 macOS Verifier 拒絕碼差異仍為 `ROOT_CAUSE_UNKNOWN`。[整合評估](docs/BACKUP_UPDATER_INTEGRATION_PLAN.md)與[時間限制盤點](docs/TIME_LIMIT_INVENTORY.md)保留詳細契約及歷史證據。
 
-### 開發中（尚未發布）
+### 離線恢復工具（開發預覽）
 
-以下離線恢復工具仍在開發，尚未包含在任何 Stable Release，也沒有接入安裝、升級或 Web UI。工具須從獨立、可信的 checkout 執行，來源必須是操作者另外準備、已停止寫入的離線副本；工具不直接讀取正在運行的安裝，也不執行備份內的程式，不做 Restore Apply 或 Prune，不代表 production 已可恢復。
+自 v1.9.0 起，以下離線恢復工具隨程式碼一併提供，但仍在開發中，沒有接入安裝、升級或 Web UI，也不會自動執行。工具須從獨立、可信的 checkout 執行，來源必須是操作者另外準備、已停止寫入的離線副本；工具不直接讀取正在運行的安裝，也不執行備份內的程式，不做 Restore Apply 或 Prune，不代表 production 已可恢復。
 
 - [Managed Recovery Package](docs/MANAGED_RECOVERY_PACKAGE.md)：獨立的 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與基礎內容 Verifier，保存 venv link metadata。Writer 只寫入固定的 root 私人目錄；同機私人 Record 不等於異地災難復原。
 - [唯讀檢視與恢復前提](docs/RECOVERY_INSPECTION.md)：不依賴 Flask 或備份 venv 的 List、Verify、Status 與合成目標 Dry-run，並列出 ABI、依賴、State 相容性及擴充 metadata 等尚未證明的條件；恢復計畫仍不可執行。
-- [唯讀相容性評估](docs/RECOVERY_ASSESSMENT.md)：區分可信工具觀測、Package 已驗證資料、Release 證據與合成聲明，排除明顯的 Runtime／State 不相容。評估結果目前一律是 `ASSESSMENT_BLOCKED`，原因包括 Package 無法獨立證明是同一台主機、未捕獲擴充 metadata、Runtime closure 未知及 Restore Apply 未實作；`RUNTIME_REQUIREMENTS_READY`、`RESTORE_PLAN_READY` 與 `RESTORE_PROVEN` 均為 false。
+- [唯讀相容性評估](docs/RECOVERY_ASSESSMENT.md)：區分可信工具觀測、Package 已驗證資料、Release 證據與合成聲明，排除明顯的 Runtime／State 不相容。可完成的評估目前一律是 `ASSESSMENT_BLOCKED`，原因包括 Package 無法獨立證明是同一台主機、未捕獲擴充 metadata、Runtime closure 未知及 Restore Apply 未實作；`RUNTIME_REQUIREMENTS_READY`、`RESTORE_PLAN_READY` 與 `RESTORE_PROVEN` 均為 false。
 
 唯讀檢視與相容性評估不寫入 Package、Record 或 Target。唯讀檢視的私人目錄競態測試已在 GitHub Actions 的 Ubuntu root 環境通過；三者的正式 Linux 原生驗收都尚未完成，也都未在真實 VPS 上驗收。
 

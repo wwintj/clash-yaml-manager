@@ -1,6 +1,6 @@
 # Independent Backup Verification & Restore Readiness — Phase C
 
-此為本地離線開發候選，未發布、未部署。Phase B 已由使用者有條件接受供本地開發；歷史 Browser `/process` HTTP 400 仍為 `HISTORICAL_BROWSER_400_ROOT_CAUSE_UNKNOWN`，不是已修復。原永久失敗診斷保留。Linux 原生驗收尚未執行。
+此為離線開發預覽，自 v1.9.0 起隨程式碼提供，但未接入安裝、升級或 Web UI，也未在真實 VPS 部署驗收。Phase B 已由使用者有條件接受供本地開發；歷史 Browser `/process` HTTP 400 仍為 `HISTORICAL_BROWSER_400_ROOT_CAUSE_UNKNOWN`，不是已修復。原永久失敗診斷保留。私人目錄競態測試已在 GitHub Actions 的 Ubuntu root 環境通過；正式 Linux 原生驗收尚未完成。
 
 ## 可信工具與唯讀命令
 
@@ -57,16 +57,16 @@ python3 -B -m scripts.recovery_inspect restore latest --dry-run --target-fixture
 
 stdout 僅固定 codes、受 schema 約束的版本／ID／時間、固定分類／unit 與 counts；不含 input path、system_id、UID/GID、library 原文、password、token、cookie、URL、hash credentials 或完整 HTML。錯誤只回固定安全碼，不印原始 OSError／配置。拒絕時不修復、不刪除、不覆寫任何資料。
 
-## 私人目錄退出檢查（C-L2 本地候選）
+## 私人目錄退出檢查（C-L2）
 
 管理根、`packages`、`records` 及套件私人目錄在進入與正常退出時，均使用保留的 FD 核對 directory type、精確 `0700`、可信 UID/GID、device/inode；退出再以 parent FD 的 no-follow stat 比對原路徑身份。祖先 FD 同樣保留並重新檢查既有 owner／不可群組或其他使用者寫入策略（root-owned sticky 目錄沿用原例外）。Record 的兩次有界讀取綁定同一份原始 fingerprint；相同 bytes 的不同 inode 也拒絕。
 
 私人目錄權限或 ownership 不合法回 `UNSAFE_STORED_METADATA`；路徑或觀察身份改變回 `OBJECT_CHANGED`；不安全祖先沿用 `UNSAFE_ANCESTOR`／`UNSAFE_PATH`。所有退出檢查成功後，才提升 VERIFIED 與 trust 旗標。拒絕不自動 chmod/chown、刪除或重試。
 
-這是有界入口／退出觀察，並非持續凍結。目錄比較不要求 size、nlink、mtime、ctime 全部固定，因共同 IO helper 也供 Writer 合法建立 entries；C 另保留套件內容與 inventory 的完整檢查。短暫 metadata 修改後恢復原值的 ABA 可能逃過目錄安全欄位比較，退出後亦可能再變更。惡意 root 能操控資料及 Record；工具不承諾原子 snapshot、鎖定 writers、root 隔離或 Restore Proven。真實 Linux ownership 及原生 syscall 驗收仍未執行。
+這是有界入口／退出觀察，並非持續凍結。目錄比較不要求 size、nlink、mtime、ctime 全部固定，因共同 IO helper 也供 Writer 合法建立 entries；C 另保留套件內容與 inventory 的完整檢查。短暫 metadata 修改後恢復原值的 ABA 可能逃過目錄安全欄位比較，退出後亦可能再變更。惡意 root 能操控資料及 Record；工具不承諾原子 snapshot、鎖定 writers、root 隔離或 Restore Proven。私人目錄 ownership 競態測試已在 GitHub Actions 的 Ubuntu root 環境通過；正式 Linux 原生驗收及真實 VPS 驗收仍未執行。
 
 ## 限制與後續
 
 沿用 Phase B：4096 entries、depth 16、path 1024 bytes、128 MiB/file、512 MiB payload、8 MiB manifest；operation 60 秒 cooperative budget、總讀取 `8×512 MiB + 4×8 MiB`。最多 64 Records／128 package names；合成目標最多 512 entries、16 MiB total／state JSON、32 KiB environment JSON。不截斷後回報成功；不是 production capacity qualification。
 
-沒有 Restore Apply、Auto Prune、72-hour timer、服務操作、updater 整合、現場保全或自動回滾。Phase D–F 未授權。v1.8.0 Stable、Sidecar 預設 OFF、Legacy Backup 及 production tim 全部保持不變；歷史 macOS Verifier 差異仍 ROOT_CAUSE_UNKNOWN。
+沒有 Restore Apply、Auto Prune、72-hour timer、服務操作、updater 整合、現場保全或自動回滾。Phase D2 唯讀評估見 [RECOVERY_ASSESSMENT](RECOVERY_ASSESSMENT.md)；其餘 Phase D–F 未授權。既有 Stable 安裝／升級行為、Sidecar 預設 OFF、Legacy Backup 及 production timer 全部保持不變；歷史 macOS Verifier 差異仍 ROOT_CAUSE_UNKNOWN。

@@ -1,4 +1,4 @@
-# Phase D2：獨立唯讀相容性評估（未發布）
+# Phase D2：獨立唯讀相容性評估（開發預覽，自 v1.9.0 起提供）
 
 D2 在可信工具 checkout 中使用標準庫，復用 Phase C 的 descriptor-relative／no-follow IO、canonical Manifest、獨立 Record digest、Package 內容及私人目錄退出復核。它只分析操作者明確準備的離線 Package 與 `synthetic=true` Target；不是 live production probe、Restore Apply 或完整 runtime closure。
 

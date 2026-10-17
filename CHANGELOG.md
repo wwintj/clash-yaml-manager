@@ -4,15 +4,16 @@
 
 ### Added
 
-- 下一個開發週期 Phase D2 新增獨立唯讀相容性評估，區分可信工具觀測、Package／Release 證據與合成聲明；有界解析 pyvenv／Wheel／ELF／啟動資料及合成 State 關聯，缺少可信證據或不相容時拒絕。復用 Phase C 安全 IO，未修改既有完整性契約；Runtime Ready、Restore Plan／Proven 與 Apply 仍為 false，沒有 Prune 或 production 操作。
-
-- 下一個開發週期 Phase C 新增標準庫唯讀 Package List／Verify／Status 及合成離線目標 Restore Dry-run；分開完整性、管理 Record、可信 digest 與恢復前提，保留 live state，未證明的 ABI／依賴／業務相容性及 metadata 明確阻擋。沒有 Apply、Prune、部署或 production 就緒聲明。
-- 下一個開發週期新增獨立 `managed-upgrade-v1` 離線 Package 格式、私人 Blob Writer 與唯讀基礎 Verifier；保存來源角色／原始 metadata、受驗證的 venv link metadata、固定 scope 與同機 root-private external digest handoff。這不是完整 VPS snapshot，尚未評估 recovery requirements，ACL/xattr/capabilities 恢復不受支持；沒有 Restore Apply、Prune 或 updater 整合，既有 Sidecar 預設 OFF 與 Legacy Backup 保留。
+- 新增三個離線恢復工具的**開發預覽**。它們隨程式碼提供，但沒有接入安裝、升級或 Web UI，須由操作者從獨立、可信的 checkout 手動執行，來源必須是另外準備、已停止寫入的離線副本：
+- Managed Recovery Package（`managed-upgrade-v1`）：把離線副本中的程式與資料保存成私人 Package，寫入固定的 root 私人目錄，並可驗證內容未被改動。這不是完整的 VPS 快照，也不恢復 ACL／xattr／capabilities。
+- 唯讀檢視：列出、驗證 Package 並查看狀態，可對合成的離線目標做恢復 Dry-run，並列出 ABI、依賴、State 相容性等尚未證明的恢復前提。
+- 唯讀相容性評估：區分可信工具觀測、Package 已驗證資料、Release 證據與操作者／合成聲明，以具體拒絕碼排除明顯不相容的 Runtime／State；可完成的評估目前一律回報 `ASSESSMENT_BLOCKED`，`ASSESSMENT_SUPPORTED` 永遠為 false。
+- 以上工具都不做 Restore Apply 或 Prune，不代表 production 已可恢復；更新備份 Sidecar 仍預設關閉，Legacy Backup 不變。
 
 ### Fixed
 
 - 建立、驗證或檢查離線備份時（包括預設關閉的更新備份 sidecar），如果路徑上層的 `/tmp`、`/root` 這類共用目錄裡剛好有其他程式在新增或刪除無關的檔案，工具不會再誤報 `BACKUP_CHANGED` 而中止。路徑上的目錄若真的被換掉，或類型、擁有者、權限被改動，仍然會拒絕。
-- VLESS／VMess 分享連結的傳輸方式改為對應 Mihomo 的寫法：`type=http`（H2）輸出 `network: h2`、`tcp` + `headerType=http` 輸出 `http-opts`、`httpupgrade` 輸出 `ws` 加 `v2ray-http-upgrade: true`、`xhttp` 帶出 `xhttp-opts`（`path`、`host`、`mode`）；過去這些節點會被 Mihomo 靜默當成 TCP 而無法連線。VLESS 的 `allowInsecure=1`／`insecure=1`（TLS／Reality）會寫入 `skip-cert-verify: true`。
+- VLESS／VMess 分享連結的傳輸方式改為對應 Mihomo 的寫法：H2（VLESS `type=http`、VMess `net=http`）輸出 `network: h2`；TCP + HTTP 偽裝（VLESS `headerType=http`、VMess `type=http`）輸出 `network: http` 與 `http-opts`；`httpupgrade` 輸出 `ws` 加 `v2ray-http-upgrade: true`；`xhttp` 帶出 `xhttp-opts`（`path`、`host`、`mode`）。過去 HTTP 偽裝與 HTTPUpgrade 節點會被 Mihomo 當成純 TCP、H2 節點被當成 HTTP 偽裝、XHTTP 節點缺少 path／host／mode，因而無法連線。VLESS 的 `allowInsecure=1`／`insecure=1`（TLS／Reality）會寫入 `skip-cert-verify: true`。
 
 ## v1.8.2 - 2026-10-17
 
