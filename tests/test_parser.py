@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from core.parser import parse_batch_nodes, parse_vless_link, parse_vmess_link
+from core.parser import parse_batch_nodes, parse_vless_link, parse_vless_node, parse_vmess_link, parse_vmess_node
 from conftest import LINK
 
 
@@ -103,3 +103,46 @@ def test_vmess_json_must_be_object(payload):
 @pytest.mark.parametrize('field', ['add', 'id'])
 def test_vmess_null_required_fields(field):
     assert parse_batch_nodes('US|name|' + vmess(**{field: None}))['errors']
+
+
+def test_vless_reality_vision_flow():
+    node = parse_vless_node('vless://test-uuid@192.0.2.1:443?encryption=none&flow=xtls-rprx-vision'
+                            '&security=reality&sni=www.example.com&fp=chrome&pbk=public&sid=12&type=tcp', 'test')
+    assert node['flow'] == 'xtls-rprx-vision'
+    assert 'flow' not in parse_vless_node(LINK, 'test')
+
+
+@pytest.mark.parametrize('query, key, value', [
+    ('type=grpc&serviceName=svc', 'grpc-opts', {'grpc-service-name': 'svc'}),
+    ('type=h2&host=a.example.com,b.example.com&path=%2Fh2', 'h2-opts',
+     {'host': ['a.example.com', 'b.example.com'], 'path': '/h2'}),
+])
+def test_vless_transport_options(query, key, value):
+    node = parse_vless_node(f'vless://test-uuid@192.0.2.1:443?security=tls&{query}', 'test')
+    assert node[key] == value
+
+
+@pytest.mark.parametrize('net, key, value', [
+    ('grpc', 'grpc-opts', {'grpc-service-name': 'svc'}),
+    ('h2', 'h2-opts', {'host': ['cdn.example.com'], 'path': 'svc'}),
+])
+def test_vmess_transport_options(net, key, value):
+    node = parse_vmess_node(vmess(net=net, tls='tls', path='svc', host='cdn.example.com'), 'test')
+    assert node['network'] == net and node[key] == value
+
+
+def test_vmess_grpc_without_service_name_has_no_empty_options():
+    assert 'grpc-opts' not in parse_vmess_node(vmess(net='grpc'), 'test')
+
+
+@pytest.mark.parametrize('line, name', [
+    ('vless://test-uuid@192.0.2.1:443?type=tcp#HK%20|%2001', 'HK | 01'),
+    ('vless://test-uuid@192.0.2.1:443?type=tcp#HK | 02', 'HK | 02'),
+    ('自定义名称|vless://test-uuid@192.0.2.1:443?type=tcp#A|B', '自定义名称'),
+    ('US|名称|vless://test-uuid@192.0.2.1:443?type=tcp#A | B', '名称'),
+])
+def test_pipe_inside_link_remark(line, name):
+    result = parse_batch_nodes(line)
+    assert not result['errors']
+    assert result['nodes'][0]['name'].endswith(name)
+    assert result['nodes'][0]['server'] == '192.0.2.1'

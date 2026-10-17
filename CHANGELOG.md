@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- VLESS 分享連結的 `flow`（例如 `xtls-rprx-vision`）會寫入節點，Reality + Vision 節點不再因缺少 flow 而無法連線。
+- VMess／VLESS 的 gRPC 與 H2 傳輸會產生 `grpc-opts`（`grpc-service-name`）及 `h2-opts`（`host`、`path`），不再只輸出 `network` 而缺少必要選項。
+- 備註含 `|` 的節點連結（例如 `#HK | 01`）在手動輸入與外部 Raw／Base64 來源中都能正確解析，不再誤報協議不支援或整個來源無效。
+
 ## v1.8.0 - 2026-10-10
 
 ### Added

@@ -65,7 +65,7 @@ def _raw(text, country_lookup=None):
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.lstrip().startswith('#')]
     if not lines:
         raise SourceError('empty')
-    if any(not line.startswith(parser.SUPPORTED_URI_SCHEMES) or '|' in line for line in lines):
+    if any(not line.startswith(parser.SUPPORTED_URI_SCHEMES) for line in lines):
         raise SourceError('invalid')
     # Parse individually so duplicate failures retain a fixed, specific error code.
     results = []
