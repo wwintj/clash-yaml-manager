@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.8.1 - 2026-10-17
+
 ### Fixed
 
 - VLESS 分享連結的 `flow`（例如 `xtls-rprx-vision`）會寫入節點，Reality + Vision 節點不再因缺少 flow 而無法連線。
