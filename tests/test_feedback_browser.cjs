@@ -45,16 +45,16 @@ async function check(page,state,width,height,selector,messages,multiple=false){
    await navigate(page,()=>page.locator('#password').press('Enter'));
    await page.locator('#batch_nodes').fill('');
    const [single]=await navigate(page,()=>page.locator('#generate-yaml').click());assert.equal(single.status(),400);
-   await check(page,'error',width,height,globalError,['No valid new nodes provided.']);
+   await check(page,'error',width,height,globalError,['沒有提供任何有效的新節點。']);
    // Actual parser errors stay distinct; neither unsupported input is echoed.
    await page.locator('#batch_nodes').fill('PRIVATE_BAD_NODE_ONE\nPRIVATE_BAD_NODE_TWO');
    const [multiple]=await navigate(page,()=>page.locator('#generate-yaml').click());assert.equal(multiple.status(),400);
-   await check(page,'multiple-errors',width,height,globalError,['Line 1: Unsupported protocol.','Line 2: Unsupported protocol.'],true);
+   await check(page,'multiple-errors',width,height,globalError,['第 1 行錯誤：不支援的協定','第 2 行錯誤：不支援的協定'],true);
    assert(!(await page.locator(globalError).innerText()).includes('PRIVATE_BAD_NODE'));
    // Inert rendered-HTML fixture, matching the existing login long-message audit.
    // Server escaping is separately tested at Flask/Jinja's HTML boundary.
    const original=await page.content(),long='Long feedback '+ 'x'.repeat(900),markup='<img src=x onerror=alert(1)>';
-   const fixture=original.replace('Line 1: Unsupported protocol.',long).replace('Line 2: Unsupported protocol.','&lt;img src=x onerror=alert(1)&gt;');
+   const fixture=original.replace('第 1 行錯誤：不支援的協定，請使用 VMess、VLESS、Trojan、Shadowsocks 或 Hysteria2。',long).replace('第 2 行錯誤：不支援的協定，請使用 VMess、VLESS、Trojan、Shadowsocks 或 Hysteria2。','&lt;img src=x onerror=alert(1)&gt;');
    await page.route(base+'/__feedback-long-message',route=>route.fulfill({body:fixture,contentType:'text/html'}));
    await page.goto(base+'/__feedback-long-message');
    await check(page,'long-errors',width,height,globalError,[long,markup],true);
@@ -64,15 +64,15 @@ async function check(page,state,width,height,selector,messages,multiple=false){
    await page.locator('#batch_nodes').fill('US|Feedback Node|vless://11111111-1111-4111-8111-111111111111@example.com:443?type=tcp');
    await navigate(page,()=>page.locator('#generate-yaml').click());
    assert.equal(await page.locator(globalSuccess).count(),0,'Generated result owns its contextual feedback');
-   assert(await page.locator('#generate-result').getByText('Generation Complete',{exact:true}).isVisible());
-   assert(await page.locator('#generate-result .panel-subtitle').filter({hasText:/^Temporary Link$/}).isVisible());
-   assert(await page.getByRole('heading',{name:'Generate Result',exact:true}).isVisible());
-   assert(await page.getByRole('heading',{name:'YAML Changes',exact:true,includeHidden:true}).count()===1);
+   assert(await page.locator('#generate-result').getByText('產生完成',{exact:true}).isVisible());
+   assert(await page.locator('#generate-result .panel-subtitle').filter({hasText:/^臨時連結$/}).isVisible());
+   assert(await page.getByRole('heading',{name:'產生結果',exact:true}).isVisible());
+   assert(await page.getByRole('heading',{name:'YAML 變更',exact:true,includeHidden:true}).count()===1);
    const result=page.locator('#generate-result .terminal-alert.success');assert.equal(await result.getAttribute('role'),'status');
-   assert((await result.innerText()).includes('YAML generated. Download it or remove the temporary files.'));
+   assert((await result.innerText()).includes('YAML 已產生，可以下載或刪除暫存檔案。'));
    // Delete only this synthetic temporary upload/output through the actual UI.
-   await navigate(page,()=>page.getByRole('button',{name:'Delete Temp Files',exact:true}).click());
-   await check(page,'success',width,height,globalSuccess,['Deleted 2 temporary server files.']);
+   await navigate(page,()=>page.getByRole('button',{name:'刪除暫存檔案',exact:true}).click());
+   await check(page,'success',width,height,globalSuccess,['已刪除 2 個伺服器暫存檔案。']);
    await page.waitForTimeout(300);assert(await page.locator(globalSuccess).isVisible(),'Feedback persists without auto-dismiss');
    await page.reload();assert.equal(await page.locator(globalSuccess).count(),0,'Original server one-shot notice behavior');
    assert.deepEqual(errors,[]);assert.deepEqual(dialogs,[]);await context.close();

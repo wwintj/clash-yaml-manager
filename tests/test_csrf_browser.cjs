@@ -47,7 +47,7 @@ const link='US|Synthetic CSRF Draft|vless://11111111-1111-4111-8111-111111111111
   const failedParse=count('/parse-nodes');await page.locator('#parse-nodes').click();
   await page.waitForFunction(()=>!document.getElementById('parse-nodes').disabled);
   assert.equal(count('/parse-nodes'),failedParse);
-  assert((await page.locator('#parse-summary').textContent()).includes('Security token could not be refreshed'));
+  assert((await page.locator('#parse-summary').textContent()).includes('無法更新安全權杖'));
   assert(!(await page.locator('body').innerText()).includes(privateMarker));
   await context.unroute('**/api/csrf-token');
   // No background token polling, no unnecessary permanent session extension.
@@ -89,7 +89,7 @@ const link='US|Synthetic CSRF Draft|vless://11111111-1111-4111-8111-111111111111
   const parsed=count('/parse-nodes');await page.locator('#parse-nodes').click();assert.equal((await rejected).status(),400);
   await page.waitForFunction(()=>!document.getElementById('parse-nodes').disabled);
   await page.waitForTimeout(200);assert.equal(count('/parse-nodes'),parsed+1);
-  assert((await page.locator('#parse-summary').textContent()).includes('refresh or log in again'));
+  assert((await page.locator('#parse-summary').textContent()).includes('請重新整理或重新登入'));
   await page.unroute('**/parse-nodes');
   // Another long-open tab refreshes after that nonce rotation, with no navigation.
   const recovered=second.waitForResponse(r=>new URL(r.url()).pathname==='/parse-nodes');
@@ -100,12 +100,12 @@ const link='US|Synthetic CSRF Draft|vless://11111111-1111-4111-8111-111111111111
   const oldCount=count('/parse-nodes');await second.locator('#parse-nodes').click();assert.equal((await expired).status(),401);
   await second.waitForFunction(()=>!document.getElementById('parse-nodes').disabled);
   assert.equal(count('/parse-nodes'),oldCount);
-  assert((await second.locator('#parse-summary').textContent()).includes('Session expired'));
+  assert((await second.locator('#parse-summary').textContent()).includes('登入已逾時'));
   assert((await second.locator('#batch_nodes').inputValue()).includes('Other Tab'));
   // Login leaves existing local draft restoration available.
   await second.goto(base);await second.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
   await Promise.all([second.waitForNavigation(),second.locator('#password').press('Enter')]);
-  assert.equal(await second.locator('#draft-status').textContent(),'Draft restored');
+  assert.equal(await second.locator('#draft-status').textContent(),'草稿已還原');
   assert.deepEqual(errors,[]);await context.close();
   console.log('PASS CSRF browser: three open forms, fresh before first POST, failed refresh preserves drafts/files, one explicit retry, rejected POST not replayed, logout/session expiry, no token storage/URL/display leak, no polling');
  } finally {await browser.close();}

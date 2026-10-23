@@ -41,7 +41,7 @@ be resolved. Never expose credentials.
   in the same development/release cycle.
 - README prose and general user-facing repository documentation should prefer Traditional
   Chinese. Preserve exact UI labels, commands, identifiers, protocol/API names and quoted
-  external text. This documentation preference does not change the English Web UI contract.
+  external text. The Web UI is Traditional Chinese only (no English UI or language switch); keep new UI copy in Traditional Chinese.
 - During feature freeze and stable release audits, explicitly review README and current
   feature documents for stale version/status wording: development-only, main-only,
   unreleased, or descriptions of a previous Stable as the current baseline. Keep accurate

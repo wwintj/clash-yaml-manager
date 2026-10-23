@@ -160,10 +160,10 @@ class Notifications:
         chat = provider['chat_id']
         delivery = copy.deepcopy(data['delivery'])
         for key in ('last_attempt_at', 'last_success_at'):
-            delivery[key] = events.utc(delivery[key]) if delivery[key] is not None else 'Never'
+            delivery[key] = events.utc(delivery[key]) if delivery[key] is not None else '從未'
         return dict(enabled=provider['enabled'], configured=bool(provider['bot_token'] and chat),
             token_configured=bool(provider['bot_token']),
-            chat_masked=('••••' + chat[-4:] if chat and len(chat.lstrip('-')) > 4 else '••••' if chat else 'Not configured'),
+            chat_masked=('••••' + chat[-4:] if chat and len(chat.lstrip('-')) > 4 else '••••' if chat else '未設定'),
             events=copy.deepcopy(data['events']), delivery=delivery)
 
     def save(self, enabled, preferences, token='', chat=''):
@@ -209,7 +209,7 @@ class Notifications:
                 if not provider['bot_token'] or not provider['chat_id']:
                     return 'config'
                 if test:
-                    text = 'Clash YAML Manager test notification. Telegram delivery is working. UTC: ' + events.utc(self.clock())
+                    text = 'Clash YAML Manager 測試通知：Telegram 傳送正常。UTC：' + events.utc(self.clock())
                 else:
                     eligible = [event for event in batch if data['events'][event.kind]]
                     if not provider['enabled'] or not eligible:

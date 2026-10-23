@@ -14,7 +14,7 @@ const audit=[];
 async function navigate(page,action) {await Promise.all([page.waitForNavigation(),action()]);}
 async function check(page,name,width,height) {
   const data=await page.evaluate(()=>{
-    const header=document.querySelector('.app-header'), nav=header.querySelector('[aria-label="Main navigation"]');
+    const header=document.querySelector('.app-header'), nav=header.querySelector('[aria-label="主選單"]');
     const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
     const title=header.querySelector('h1'),actions=header.querySelector('.app-header-actions');
     const links=[...nav.querySelectorAll('a')].map(e=>{
@@ -51,19 +51,19 @@ async function check(page,name,width,height) {
   }
 }
 async function keyboard(page) {
-  const trigger=page.getByRole('button',{name:'Change Password',exact:true});
+  const trigger=page.getByRole('button',{name:'變更密碼',exact:true});
   await trigger.focus();
   assert(await trigger.evaluate(e=>parseFloat(getComputedStyle(e).outlineWidth)>=2));
   await Promise.all([page.evaluate(()=>new Promise(resolve=>document.getElementById('changePasswordModal').addEventListener('shown.bs.modal',()=>resolve(true),{once:true}))),trigger.press('Enter')]);
   const modal=page.locator('#changePasswordModal');assert(await modal.isVisible());
-  const current=modal.getByLabel('Current password',{exact:true}),next=modal.getByLabel('New password',{exact:true});
+  const current=modal.getByLabel('目前密碼',{exact:true}),next=modal.getByLabel('新密碼',{exact:true});
   await current.focus();await page.keyboard.press('Tab');assert(await next.evaluate(e=>document.activeElement===e));
   await page.keyboard.press('Shift+Tab');assert(await current.evaluate(e=>document.activeElement===e));
   // Required fields keep Enter from posting an empty password-change form.
   await current.press('Enter');assert(await modal.isVisible());
   await Promise.all([page.evaluate(()=>new Promise(resolve=>document.getElementById('changePasswordModal').addEventListener('hidden.bs.modal',()=>resolve(true),{once:true}))),page.keyboard.press('Escape')]);
   assert(await trigger.evaluate(e=>document.activeElement===e));
-  const targets=[page.getByRole('button',{name:'Logout',exact:true}),...['Generate YAML','Fixed Subscriptions','Settings'].map(name=>page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name,exact:true}))];
+  const targets=[page.getByRole('button',{name:'登出',exact:true}),...['產生 YAML','固定訂閱','設定'].map(name=>page.getByRole('navigation',{name:'主選單'}).getByRole('link',{name,exact:true}))];
   for(const target of targets) {
     await page.keyboard.press('Tab');assert(await target.evaluate(e=>document.activeElement===e));
     assert(await target.evaluate(e=>parseFloat(getComputedStyle(e).outlineWidth)>=2));
@@ -87,7 +87,7 @@ async function keyboard(page) {
       for(const [name,url] of routes) {
         const response=await page.goto(base+url);assert.equal(response.status(),200);
         await check(page,name,width,height);await keyboard(page);
-        const active=page.getByRole('navigation',{name:'Main navigation'}).locator(`a[href="${url}"]`);
+        const active=page.getByRole('navigation',{name:'主選單'}).locator(`a[href="${url}"]`);
         const before=await active.boundingBox();await active.evaluate(e=>e.removeAttribute('aria-current'));
         const after=await active.boundingBox();assert.deepEqual(after,before,'Active style must not change link geometry');
         await active.evaluate(e=>e.setAttribute('aria-current','page'));
@@ -109,11 +109,11 @@ async function keyboard(page) {
       const error=page.locator('.app-shell > .terminal-alert.error');
       assert.equal(await error.getAttribute('role'),'alert');
       assert(await error.isVisible());
-      assert((await error.innerText()).includes('Node Update Mode is invalid. Choose Replace or Merge.'));
+      assert((await error.innerText()).includes('節點更新模式無效，請選擇「取代」或「合併」。'));
       const post=page.waitForRequest(r=>new URL(r.url()).pathname==='/logout' && r.method()==='POST');
-      await navigate(page,()=>page.getByRole('button',{name:'Logout',exact:true}).click());
+      await navigate(page,()=>page.getByRole('button',{name:'登出',exact:true}).click());
       assert(new URLSearchParams((await post).postData()).get('csrf_token'),'Logout carries CSRF');
-      assert(await page.getByRole('button',{name:'Sign in',exact:true}).isVisible());
+      assert(await page.getByRole('button',{name:'登入',exact:true}).isVisible());
       assert.equal((await context.request.get(base+'/settings',{maxRedirects:0})).status(),302);
       assert.deepEqual(errors,[]);await context.close();
     }

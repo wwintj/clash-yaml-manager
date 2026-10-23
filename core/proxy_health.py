@@ -19,18 +19,18 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_PROBE = dict(url='https://www.gstatic.com/generate_204',expected_status=204,timeout_ms=8000)
 ERRORS = ('timeout','proxy_connect_failed','probe_status_mismatch','proxy_failed','unsupported_config')
 MESSAGES = {
-    'unavailable':'Proxy health state unavailable.',
-    'save':'Proxy health results could not be saved.',
-    'mode':'Enable Manual or Automatic full proxy validation before checking.',
-    'not_due':'Automatic proxy check is not due or the subscription is paused.',
-    'settings':'Select valid proxy probe settings.',
-    'target':'Probe target must be a public HTTPS URL without credentials, query or fragment.',
-    'limit':'Full proxy validation supports up to 256 nodes per run.',
-    'busy':'A proxy validation is already running. Please try again later.',
-    'engine':'Proxy probe engine could not complete this check.',
-    'compatible':'A compatible managed Mihomo v1.19.31 is required.',
-    'conflict':'Subscription changed while checking. Please retry.',
-    'health_conflict':'Proxy health settings or results changed while checking. Please retry.',
+    'unavailable':'代理健康狀態無法使用。',
+    'save':'無法儲存代理健康檢查結果。',
+    'mode':'請先將完整代理驗證設為手動或自動，再執行檢查。',
+    'not_due':'自動代理檢查尚未到期，或訂閱已暫停。',
+    'settings':'請選擇有效的代理探測設定。',
+    'target':'探測目標必須是公開的 HTTPS URL，且不可包含憑證、查詢參數或片段。',
+    'limit':'完整代理驗證每次最多支援 256 個節點。',
+    'busy':'已有代理驗證正在執行，請稍後再試。',
+    'engine':'代理探測引擎無法完成此次檢查。',
+    'compatible':'需要相容的受管 Mihomo v1.19.31。',
+    'conflict':'檢查期間訂閱已變更，請重試。',
+    'health_conflict':'檢查期間代理健康設定或結果已變更，請重試。',
 }
 
 

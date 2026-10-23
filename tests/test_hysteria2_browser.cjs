@@ -108,7 +108,7 @@ const source='proxies: [{name: old-a, type: ss, server: old.example, port: 443, 
    const fixedURL=await page.locator('.fixed-url').inputValue();
    assert((await(await context.request.get(fixedURL)).text()).includes('type: hysteria2'));
    await page.locator('#batch_nodes').fill('JP|Edited-HY2|'+alias);
-   await page.getByRole('button',{name:'Add Uploaded Source',exact:true}).click();
+   await page.getByRole('button',{name:'新增上傳來源',exact:true}).click();
    await page.locator('.source-name').fill('HY2 uploaded');
    await page.locator('.source-file').setInputFiles({name:'hy2.txt',mimeType:'text/plain',buffer:Buffer.from(hy2+'#Singapore-Remote')});
    await Promise.all([page.waitForNavigation(),page.locator('#generate-yaml').click()]);

@@ -22,5 +22,5 @@ def test_preview_dom_keeps_reading_order_and_button_semantics():
         assert region in source
     assert 'card.append(nameBox, countryBox, info, action)' in source
     assert "action.type = 'button'" in source
-    assert "search.setAttribute('aria-label','Search preview country')" in source
-    assert "select.setAttribute('aria-label','Preview country')" in source
+    assert "search.setAttribute('aria-label','搜尋預覽國家')" in source
+    assert "select.setAttribute('aria-label','預覽國家')" in source

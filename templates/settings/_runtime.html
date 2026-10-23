@@ -1,16 +1,16 @@
-<section id="runtime" class="terminal-panel settings-section" aria-label="Settings Runtime"><div class="panel-inner">
-  <h3 class="panel-title">Runtime / Deployment</h3>
+<section id="runtime" class="terminal-panel settings-section" aria-label="執行環境設定"><div class="panel-inner">
+  <h3 class="panel-title">執行環境／部署</h3>
   {% if runtime %}
   <dl class="settings-metadata">
-    {% for field, label in [('bind','Application bind'),('port','APP_PORT'),('download_mode','Download URL mode'),('download_base','DOWNLOAD_BASE_URL'),('download_scheme','Download URL scheme'),('https_download','Explicit HTTPS download URL'),('cookie_secure','Secure cookies'),('trust_proxy','Trusted proxy headers'),('upload_retention','Upload retention'),('output_retention','Output retention'),('cleanup_interval','Cleanup interval'),('backup_retention','Backup retention'),('session_lifetime','Session lifetime')] %}
+    {% for field, label in [('bind','應用程式綁定位址'),('port','APP_PORT'),('download_mode','下載 URL 模式'),('download_base','DOWNLOAD_BASE_URL'),('download_scheme','下載 URL 協定'),('https_download','明確指定的 HTTPS 下載 URL'),('cookie_secure','Secure Cookie'),('trust_proxy','信任代理標頭'),('upload_retention','上傳檔案保留期'),('output_retention','輸出檔案保留期'),('cleanup_interval','清理間隔'),('backup_retention','備份保留期'),('session_lifetime','登入工作階段有效期')] %}
     <dt>{{ label }}</dt><dd{% if field in ['bind','port','download_scheme','upload_retention','output_retention','cleanup_interval','backup_retention','session_lifetime'] %} class="mono"{% endif %} data-runtime="{{ field }}">{{ runtime[field] }}</dd>
     {% endfor %}
-    <dt>Managed HTTPS</dt><dd data-runtime="managed_https">{{ runtime.managed_https.status }}</dd>
-    {% if runtime.managed_https.domain %}<dt>Managed domain</dt><dd data-runtime="managed_domain">{{ runtime.managed_https.domain }}</dd>{% endif %}
+    <dt>受管 HTTPS</dt><dd data-runtime="managed_https">{{ runtime.managed_https.status | ui_label }}</dd>
+    {% if runtime.managed_https.domain %}<dt>受管網域</dt><dd data-runtime="managed_domain">{{ runtime.managed_https.domain }}</dd>{% endif %}
   </dl>
-  <p class="form-text">Metadata records configuration by httpsctl. It does not verify public DNS, certificates, Nginx or firewall status. Manual HTTPS deployments may use the runtime flags without managed metadata.</p>
-  <p class="form-text">Check through SSH: <code>sudo bash /opt/clash-yaml-manager/httpsctl.sh status</code>. See the HTTPS deployment guide for setup and recovery.</p>
-  {% else %}<p class="source-warning" role="status">Runtime status unavailable.</p>{% endif %}
-  <p class="form-text">Read-only effective process configuration. Change deployment configuration / .env and restart the service via SSH; these changes can affect proxy trust and sessions. This workspace does not write .env, installation metadata or deployment files.</p>
-  <p class="form-text">Download base URL is shown only as Configured / Not configured. Secrets, credentials, bearer tokens and raw environment contents are never displayed.</p>
+  <p class="form-text">中繼資料記錄的是 httpsctl 所做的設定，不會驗證公開 DNS、憑證、Nginx 或防火牆狀態。手動部署的 HTTPS 可以只使用執行參數，而沒有受管中繼資料。</p>
+  <p class="form-text">請透過 SSH 檢查：<code>sudo bash /opt/clash-yaml-manager/httpsctl.sh status</code>。設定與復原方式請參考 HTTPS 部署指南。</p>
+  {% else %}<p class="source-warning" role="status">執行環境狀態無法使用。</p>{% endif %}
+  <p class="form-text">此處唯讀顯示程序實際生效的設定。請透過 SSH 修改部署設定／.env 並重新啟動服務；這些變更可能影響代理信任與登入工作階段。此介面不會寫入 .env、安裝中繼資料或部署檔案。</p>
+  <p class="form-text">下載基礎 URL 只會顯示「已設定／未設定」；金鑰、憑證、Bearer Token 與原始環境變數內容一律不顯示。</p>
 </div></section>

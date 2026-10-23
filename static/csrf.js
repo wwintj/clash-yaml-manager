@@ -7,16 +7,16 @@
       headers: {'X-CSRF-Refresh': '1'}
     });
     if (response.status === 401) {
-      throw Error('Session expired; sign in again. Your form has not been submitted.');
+      throw Error('登入已逾時，請重新登入；表單尚未送出。');
     }
     if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
-      throw Error('Security token could not be refreshed. Reload or sign in again; your form has not been submitted.');
+      throw Error('無法更新安全權杖，請重新載入或重新登入；表單尚未送出。');
     }
     let result;
     try { result = await response.json(); }
-    catch (_) { throw Error('Security token could not be refreshed. Your form has not been submitted.'); }
+    catch (_) { throw Error('無法更新安全權杖；表單尚未送出。'); }
     if (!result || typeof result.csrf_token !== 'string' || !result.csrf_token || result.csrf_token.length > 4096) {
-      throw Error('Security token could not be refreshed. Your form has not been submitted.');
+      throw Error('無法更新安全權杖；表單尚未送出。');
     }
     form.querySelectorAll('input[name="csrf_token"]').forEach(input => { input.value = result.csrf_token; });
   }
@@ -48,7 +48,7 @@
       // Keep all inputs and files in this page. No navigation, retry or POST here.
       notice = document.createElement('p');
       notice.dataset.csrfFeedback = ''; notice.setAttribute('role', 'alert');
-      notice.textContent = 'Security token could not be refreshed. Reload or sign in again; your form has not been submitted.';
+      notice.textContent = '無法更新安全權杖，請重新載入或重新登入；表單尚未送出。';
       form.append(notice);
     } finally { pending.delete(form); }
   }, true);

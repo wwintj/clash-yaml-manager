@@ -44,14 +44,14 @@ def test_header_keeps_account_actions_and_integrated_active_navigation(logged_in
     assert response.status_code == 200
     header = HeaderMarkup(response.text)
     text = ' '.join(header.text)
-    for label in ('Clash YAML Manager', 'Change Password', 'Logout', 'Generate YAML',
-                  'Fixed Subscriptions', 'Settings'):
+    for label in ('Clash YAML Manager', '變更密碼', '登出', '產生 YAML',
+                  '固定訂閱', '設定'):
         assert label in text
     for removed in ('YAML NODE MANAGEMENT', 'Service', 'ONLINE', 'Mode', 'YAML',
                     'Parser', 'VMESS', 'Backend', 'FLASK'):
         assert removed not in header.text
     assert response.text.count('<h1 ') == 1
-    assert any(tag == 'nav' and attrs.get('aria-label') == 'Main navigation'
+    assert any(tag == 'nav' and attrs.get('aria-label') == '主選單'
                for tag, attrs in header.tags)
     links = [attrs for tag, attrs in header.tags if tag == 'a']
     assert [attrs['href'] for attrs in links] == ['/', '/fixed-subscriptions', '/settings']
@@ -84,7 +84,7 @@ def test_header_logout_form_token_reaches_existing_backend(logged_in):
                  if tag == 'input' and attrs.get('name') == 'csrf_token')
     response = logged_in.post('/logout', data={'csrf_token': token}, follow_redirects=True)
     assert response.status_code == 200 and response.history[0].status_code == 302
-    assert 'login-panel' in response.text and '>Sign in</button>' in response.text
+    assert 'login-panel' in response.text and '>登入</button>' in response.text
     with logged_in.session_transaction() as session:
         assert not session.get('logged_in')
 
@@ -98,7 +98,7 @@ def test_process_invalid_mode_keeps_generate_navigation_and_alert(logged_in):
     }, follow_redirects=False)
     assert response.status_code == 400
     assert not response.history and 'Location' not in response.headers
-    assert 'Node Update Mode is invalid. Choose Replace or Merge.' in response.text
+    assert '節點更新模式無效，請選擇「取代」或「合併」。' in response.text
     page = HeaderMarkup(response.text)
     assert [alert.get('role') for alert in page.alerts] == ['alert']
     links = [attrs for tag, attrs in page.tags if tag == 'a']
@@ -115,7 +115,7 @@ def test_login_page_has_no_authenticated_navigation(client):
     response = client.get('/')
     assert response.status_code == 200
     assert not HeaderMarkup(response.text).tags
-    assert 'aria-label="Main navigation"' not in response.text
+    assert 'aria-label="主選單"' not in response.text
     assert 'aria-current="page"' not in response.text
-    assert '<label for="password" class="form-label">Password</label>' in response.text
-    assert '>Sign in</button>' in response.text
+    assert '<label for="password" class="form-label">密碼</label>' in response.text
+    assert '>登入</button>' in response.text

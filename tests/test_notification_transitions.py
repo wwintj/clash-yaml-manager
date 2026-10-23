@@ -50,13 +50,13 @@ def test_source_cached_incident_repeat_recovery_and_batch(store,base,response,cl
             current = store.get(entry['id']); item = current['sources'][1]
             assert item['consecutive_failures'] > 0 and item['using_cache']
             assert store.snapshot(entry['id'])[1] == good[index]
-    assert deliveries[0].count('Source Refresh incident.') == 2
-    assert 'last-good cache may be in use' in deliveries[0]
+    assert deliveries[0].count('來源重新整理異常。') == 2
+    assert '可能正在使用上次成功的快取資料' in deliveries[0]
     response.pop('error')
     for _ in range(2):
         clock.now = max(store.get(entry['id'])['sources'][1]['next_refresh_at'] for entry in entries)
         assert auto_refresh.run_once(store,base,clock) == 0 and len(deliveries) == 2
-    assert deliveries[1].count('Source Refresh recovery.') == 2
+    assert deliveries[1].count('來源重新整理已恢復。') == 2
     for secret in (TOKEN,CHAT,entries[0]['token'],entries[0]['sources'][1]['url'],'11111111-1111-4111-8111-111111111111'):
         assert secret not in '\n'.join(deliveries) and secret not in caplog.text
 
@@ -97,7 +97,7 @@ def test_health_unhealthy_boundary_real_jobs_dedupe_no_node_data(store,base,obse
     run(1); assert len(deliveries) == 1
     failed.add(444); run(3); assert len(deliveries) == 1  # 1 -> 2
     failed.remove(443); run(1); assert len(deliveries) == 1  # 2 -> 1
-    failed.clear(); run(2); assert len(deliveries) == 2 and 'recovery.' in deliveries[-1]
+    failed.clear(); run(2); assert len(deliveries) == 2 and '已恢復。' in deliveries[-1]
     assert store.path.read_bytes() == before and store.snapshot(entry['id'])[1] == yaml_before
     for record in state(worker,entry['id'])['nodes']:
         assert record not in '\n'.join(deliveries)
@@ -116,13 +116,13 @@ def test_scheduler_job_incident_repeat_recovery_authoritative(store,base,observe
     for failures in (1,2):
         observers['now'] = state(worker,key)['next_check_at']; assert scan(store,observers) == 0
         assert state(worker,key)['scheduler_failures'] == failures and len(deliveries) == 1
-    assert 'Scheduler incident' in deliveries[0] and 'Result: error' in deliveries[0]
+    assert '排程異常' in deliveries[0] and '結果：錯誤' in deliveries[0]
     if kind == 'endpoint': worker.probe = original
     else: worker.runner = original
     for _ in range(2):
         observers['now'] = state(worker,key)['next_check_at']; assert scan(store,observers) == 0
         assert state(worker,key)['scheduler_failures'] == 0 and len(deliveries) == 2
-    assert 'Scheduler recovery' in deliveries[1] and 'PRIVATE' not in '\n'.join(deliveries)
+    assert '排程已恢復' in deliveries[1] and 'PRIVATE' not in '\n'.join(deliveries)
 
 
 def test_multiple_health_events_one_post_after_all_locks(store,base,observers,deliveries):
@@ -133,12 +133,12 @@ def test_multiple_health_events_one_post_after_all_locks(store,base,observers,de
     for _ in range(3): proxy.check(key)
     assert not deliveries  # Manual jobs do not alert.
     observers['engine']='NOT INSTALLED'; observers['now']=state(proxy,key)['next_check_at'];scan(store,observers)
-    assert len(deliveries) == 1 and 'Scheduler incident' in deliveries[0]
+    assert len(deliveries) == 1 and '排程異常' in deliveries[0]
     deliveries.clear(); observers['engine']='COMPATIBLE'; observers['proxy_result']='success'
     configure(endpoint,key)
     observers['now']=max(state(endpoint,key)['next_check_at'],state(proxy,key)['next_check_at']);scan(store,observers)
     assert len(deliveries) == 1
-    for phrase in ('Endpoint Health incident','Full Proxy Health recovery','Scheduler recovery'):
+    for phrase in ('端點健康異常','完整代理健康已恢復','排程已恢復'):
         assert phrase in deliveries[0]
 
 
@@ -201,7 +201,7 @@ def test_message_sanitization_aggregate_only_and_truncation():
     text=events.message(batch)
     for secret in secrets: assert secret not in text and secret not in repr(batch)
     text=events.message(batch*100)
-    assert len(text)<=3500 and 'additional events omitted' in text
+    assert len(text)<=3500 and '個事件未列出' in text
 
 
 @pytest.mark.parametrize('kind',events.CATEGORIES)

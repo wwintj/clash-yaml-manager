@@ -397,11 +397,11 @@ def test_web_schedule_history_and_auto_failure_public_200(web, logged_in, respon
     for _ in range(7): store.source_action(entry['id'],'refresh',web.DEFAULT_YAML_PATH,entry['sources'][1]['id'],clock=clock)
     page = logged_in.get(f'/fixed-subscriptions/{entry["id"]}/edit')
     assert page.data.split(b'<template')[0].count(b'class="source-refresh-interval ') == 1
-    assert page.data.count(b'\xc2\xb7 MANUAL \xc2\xb7 SUCCESS') == 5
-    assert b'Next Refresh:' in page.data and b'Consecutive Failures: 0' in page.data
+    assert page.data.count('· 手動 · 成功'.encode()) == 5
+    assert '下次重新整理：'.encode() in page.data and '連續失敗次數：0'.encode() in page.data
     clock.now += 3600; response['error'] = 'http_500'
     assert auto_refresh.run_once(store, web.DEFAULT_YAML_PATH, clock) == 0
     assert web.app.test_client().get(public).status_code == 200
     assert web.app.test_client().get('/healthz').status_code == 200
     page = logged_in.get(f'/fixed-subscriptions/{entry["id"]}/edit')
-    assert b'Cached' in page.data and b'AUTO' in page.data and b'Consecutive Failures: 1' in page.data
+    assert '使用快取'.encode() in page.data and '· 自動 ·'.encode() in page.data and '連續失敗次數：1'.encode() in page.data

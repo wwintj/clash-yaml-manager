@@ -10,8 +10,8 @@ const batch = [
   'vless://33333333-3333-4333-8333-333333333333@203.0.113.30:443?security=tls&type=tcp#Singapore-Test',
   'UNKNOWN|Mystery-Test|vless://44444444-4444-4444-8444-444444444444@192.0.2.40:443?security=tls&type=tcp'
 ].join('\n');
-const summary = '4 nodes detected · 3 ready · 1 warning · 0 errors';
-const warning = 'Country unknown. Choose a country or generate in the Other Nodes group.';
+const summary = '偵測到 4 個節點 · 就緒 3 · 警告 1 · 錯誤 0';
+const warning = '國家未知，請選擇國家，或歸入「其他節點」組產生。';
 const near = (a, b) => assert(Math.abs(a - b) <= 1, `${a} differs from ${b}`);
 
 async function geometry(page) {
@@ -132,7 +132,7 @@ async function test_preview_warning_does_not_collapse_columns(page, width) {
       await page.locator('.preview-action').last().focus();
       assert(await page.locator('.preview-action').last().evaluate(button => document.activeElement === button));
       await parse(() => page.locator('.preview-action').last().press('Enter'));
-      assert.equal(await page.locator('#parse-summary').textContent(), '4 nodes detected · 4 ready · 0 warning · 0 errors');
+      assert.equal(await page.locator('#parse-summary').textContent(), '偵測到 4 個節點 · 就緒 4 · 警告 0 · 錯誤 0');
       assert((await page.locator('.preview-name input').last().inputValue()).includes('Edited Mystery'));
       await page.locator('#add-node-row').click();
       assert.equal(await page.locator('#aux-node-rows .node-row').count(), 2);
@@ -142,7 +142,7 @@ async function test_preview_warning_does_not_collapse_columns(page, width) {
       await Promise.all([page.waitForNavigation(), page.locator('#generate-yaml').click()]);
       assert.equal(count('/process'), 1);
       assert.equal(await page.locator('#download-url').count(), 1);
-      assert.equal(await page.locator('#draft-status').textContent(), 'Draft restored');
+      assert.equal(await page.locator('#draft-status').textContent(), '草稿已還原');
       assert.equal(await page.locator('#batch_nodes').inputValue(), batch);
       await context.close();
       console.log(`PASS ${width}x${height}: warning column stability, wrapping, geometry, keyboard, overrides, generate and draft`);

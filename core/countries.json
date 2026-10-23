@@ -3,6 +3,7 @@
     "code": "AW",
     "english": "Aruba",
     "chinese": "阿鲁巴",
+    "traditional": "荷屬阿魯巴",
     "aliases": [
       "ABW"
     ]
@@ -11,6 +12,7 @@
     "code": "AF",
     "english": "Afghanistan",
     "chinese": "阿富汗",
+    "traditional": "阿富汗",
     "aliases": [
       "AFG"
     ]
@@ -19,6 +21,7 @@
     "code": "AO",
     "english": "Angola",
     "chinese": "安哥拉",
+    "traditional": "安哥拉",
     "aliases": [
       "AGO"
     ]
@@ -27,6 +30,7 @@
     "code": "AI",
     "english": "Anguilla",
     "chinese": "安圭拉",
+    "traditional": "安奎拉",
     "aliases": [
       "AIA"
     ]
@@ -35,6 +39,7 @@
     "code": "AX",
     "english": "Åland Islands",
     "chinese": "奥兰群岛",
+    "traditional": "奧蘭群島",
     "aliases": [
       "ALA"
     ]
@@ -43,6 +48,7 @@
     "code": "AL",
     "english": "Albania",
     "chinese": "阿尔巴尼亚",
+    "traditional": "阿爾巴尼亞",
     "aliases": [
       "ALB"
     ]
@@ -51,6 +57,7 @@
     "code": "AD",
     "english": "Andorra",
     "chinese": "安道尔",
+    "traditional": "安道爾",
     "aliases": [
       "AND"
     ]
@@ -59,6 +66,7 @@
     "code": "AE",
     "english": "United Arab Emirates",
     "chinese": "阿拉伯联合酋长国",
+    "traditional": "阿拉伯聯合大公國",
     "aliases": [
       "ARE"
     ]
@@ -67,6 +75,7 @@
     "code": "AR",
     "english": "Argentina",
     "chinese": "阿根廷",
+    "traditional": "阿根廷",
     "aliases": [
       "ARG"
     ]
@@ -75,6 +84,7 @@
     "code": "AM",
     "english": "Armenia",
     "chinese": "亚美尼亚",
+    "traditional": "亞美尼亞",
     "aliases": [
       "ARM"
     ]
@@ -83,6 +93,7 @@
     "code": "AS",
     "english": "American Samoa",
     "chinese": "美属萨摩亚",
+    "traditional": "美屬薩摩亞",
     "aliases": [
       "ASM"
     ]
@@ -91,6 +102,7 @@
     "code": "AQ",
     "english": "Antarctica",
     "chinese": "南极洲",
+    "traditional": "南極洲",
     "aliases": [
       "ATA"
     ]
@@ -99,6 +111,7 @@
     "code": "TF",
     "english": "French Southern Territories",
     "chinese": "法属南部领地",
+    "traditional": "法屬南部屬地",
     "aliases": [
       "ATF"
     ]
@@ -107,6 +120,7 @@
     "code": "AG",
     "english": "Antigua & Barbuda",
     "chinese": "安提瓜和巴布达",
+    "traditional": "安地卡及巴布達",
     "aliases": [
       "ATG"
     ]
@@ -115,6 +129,7 @@
     "code": "AU",
     "english": "Australia",
     "chinese": "澳大利亚",
+    "traditional": "澳洲",
     "aliases": [
       "AUS"
     ]
@@ -123,6 +138,7 @@
     "code": "AT",
     "english": "Austria",
     "chinese": "奥地利",
+    "traditional": "奧地利",
     "aliases": [
       "AUT"
     ]
@@ -131,6 +147,7 @@
     "code": "AZ",
     "english": "Azerbaijan",
     "chinese": "阿塞拜疆",
+    "traditional": "亞塞拜然",
     "aliases": [
       "AZE"
     ]
@@ -139,6 +156,7 @@
     "code": "BI",
     "english": "Burundi",
     "chinese": "布隆迪",
+    "traditional": "蒲隆地",
     "aliases": [
       "BDI"
     ]
@@ -147,6 +165,7 @@
     "code": "BE",
     "english": "Belgium",
     "chinese": "比利时",
+    "traditional": "比利時",
     "aliases": [
       "BEL"
     ]
@@ -155,6 +174,7 @@
     "code": "BJ",
     "english": "Benin",
     "chinese": "贝宁",
+    "traditional": "貝南",
     "aliases": [
       "BEN"
     ]
@@ -163,6 +183,7 @@
     "code": "BQ",
     "english": "Caribbean Netherlands",
     "chinese": "荷属加勒比区",
+    "traditional": "荷蘭加勒比區",
     "aliases": [
       "BES"
     ]
@@ -171,6 +192,7 @@
     "code": "BF",
     "english": "Burkina Faso",
     "chinese": "布基纳法索",
+    "traditional": "布吉納法索",
     "aliases": [
       "BFA"
     ]
@@ -179,6 +201,7 @@
     "code": "BD",
     "english": "Bangladesh",
     "chinese": "孟加拉国",
+    "traditional": "孟加拉",
     "aliases": [
       "BGD"
     ]
@@ -187,6 +210,7 @@
     "code": "BG",
     "english": "Bulgaria",
     "chinese": "保加利亚",
+    "traditional": "保加利亞",
     "aliases": [
       "BGR"
     ]
@@ -195,6 +219,7 @@
     "code": "BH",
     "english": "Bahrain",
     "chinese": "巴林",
+    "traditional": "巴林",
     "aliases": [
       "BHR"
     ]
@@ -203,6 +228,7 @@
     "code": "BS",
     "english": "Bahamas",
     "chinese": "巴哈马",
+    "traditional": "巴哈馬",
     "aliases": [
       "BHS"
     ]
@@ -211,6 +237,7 @@
     "code": "BA",
     "english": "Bosnia & Herzegovina",
     "chinese": "波斯尼亚和黑塞哥维那",
+    "traditional": "波士尼亞與赫塞哥維納",
     "aliases": [
       "BIH"
     ]
@@ -219,6 +246,7 @@
     "code": "BL",
     "english": "St. Barthélemy",
     "chinese": "圣巴泰勒米",
+    "traditional": "聖巴瑟米",
     "aliases": [
       "BLM"
     ]
@@ -227,6 +255,7 @@
     "code": "BY",
     "english": "Belarus",
     "chinese": "白俄罗斯",
+    "traditional": "白俄羅斯",
     "aliases": [
       "BLR"
     ]
@@ -235,6 +264,7 @@
     "code": "BZ",
     "english": "Belize",
     "chinese": "伯利兹",
+    "traditional": "貝里斯",
     "aliases": [
       "BLZ"
     ]
@@ -243,6 +273,7 @@
     "code": "BM",
     "english": "Bermuda",
     "chinese": "百慕大",
+    "traditional": "百慕達",
     "aliases": [
       "BMU"
     ]
@@ -251,6 +282,7 @@
     "code": "BO",
     "english": "Bolivia",
     "chinese": "玻利维亚",
+    "traditional": "玻利維亞",
     "aliases": [
       "BOL"
     ]
@@ -259,6 +291,7 @@
     "code": "BR",
     "english": "Brazil",
     "chinese": "巴西",
+    "traditional": "巴西",
     "aliases": [
       "BRA"
     ]
@@ -267,6 +300,7 @@
     "code": "BB",
     "english": "Barbados",
     "chinese": "巴巴多斯",
+    "traditional": "巴貝多",
     "aliases": [
       "BRB"
     ]
@@ -275,6 +309,7 @@
     "code": "BN",
     "english": "Brunei",
     "chinese": "文莱",
+    "traditional": "汶萊",
     "aliases": [
       "BRN"
     ]
@@ -283,6 +318,7 @@
     "code": "BT",
     "english": "Bhutan",
     "chinese": "不丹",
+    "traditional": "不丹",
     "aliases": [
       "BTN"
     ]
@@ -291,6 +327,7 @@
     "code": "BV",
     "english": "Bouvet Island",
     "chinese": "布韦岛",
+    "traditional": "布威島",
     "aliases": [
       "BVT"
     ]
@@ -299,6 +336,7 @@
     "code": "BW",
     "english": "Botswana",
     "chinese": "博茨瓦纳",
+    "traditional": "波札那",
     "aliases": [
       "BWA"
     ]
@@ -307,6 +345,7 @@
     "code": "CF",
     "english": "Central African Republic",
     "chinese": "中非共和国",
+    "traditional": "中非共和國",
     "aliases": [
       "CAF"
     ]
@@ -315,6 +354,7 @@
     "code": "CA",
     "english": "Canada",
     "chinese": "加拿大",
+    "traditional": "加拿大",
     "aliases": [
       "CAN"
     ]
@@ -323,6 +363,7 @@
     "code": "CC",
     "english": "Cocos (Keeling) Islands",
     "chinese": "科科斯（基林）群岛",
+    "traditional": "科克斯（基靈）群島",
     "aliases": [
       "CCK"
     ]
@@ -331,6 +372,7 @@
     "code": "CH",
     "english": "Switzerland",
     "chinese": "瑞士",
+    "traditional": "瑞士",
     "aliases": [
       "CHE"
     ]
@@ -339,6 +381,7 @@
     "code": "CL",
     "english": "Chile",
     "chinese": "智利",
+    "traditional": "智利",
     "aliases": [
       "CHL"
     ]
@@ -347,6 +390,7 @@
     "code": "CN",
     "english": "China",
     "chinese": "中国",
+    "traditional": "中國",
     "aliases": [
       "CHN"
     ]
@@ -355,6 +399,7 @@
     "code": "CI",
     "english": "Côte d’Ivoire",
     "chinese": "科特迪瓦",
+    "traditional": "象牙海岸",
     "aliases": [
       "CIV"
     ]
@@ -363,6 +408,7 @@
     "code": "CM",
     "english": "Cameroon",
     "chinese": "喀麦隆",
+    "traditional": "喀麥隆",
     "aliases": [
       "CMR"
     ]
@@ -371,6 +417,7 @@
     "code": "CD",
     "english": "Congo - Kinshasa",
     "chinese": "刚果（金）",
+    "traditional": "剛果（金夏沙）",
     "aliases": [
       "COD"
     ]
@@ -379,6 +426,7 @@
     "code": "CG",
     "english": "Congo - Brazzaville",
     "chinese": "刚果（布）",
+    "traditional": "剛果（布拉薩）",
     "aliases": [
       "COG"
     ]
@@ -387,6 +435,7 @@
     "code": "CK",
     "english": "Cook Islands",
     "chinese": "库克群岛",
+    "traditional": "庫克群島",
     "aliases": [
       "COK"
     ]
@@ -395,6 +444,7 @@
     "code": "CO",
     "english": "Colombia",
     "chinese": "哥伦比亚",
+    "traditional": "哥倫比亞",
     "aliases": [
       "COL"
     ]
@@ -403,6 +453,7 @@
     "code": "KM",
     "english": "Comoros",
     "chinese": "科摩罗",
+    "traditional": "葛摩",
     "aliases": [
       "COM"
     ]
@@ -411,6 +462,7 @@
     "code": "CV",
     "english": "Cape Verde",
     "chinese": "佛得角",
+    "traditional": "維德角",
     "aliases": [
       "CPV"
     ]
@@ -419,6 +471,7 @@
     "code": "CR",
     "english": "Costa Rica",
     "chinese": "哥斯达黎加",
+    "traditional": "哥斯大黎加",
     "aliases": [
       "CRI"
     ]
@@ -427,6 +480,7 @@
     "code": "CU",
     "english": "Cuba",
     "chinese": "古巴",
+    "traditional": "古巴",
     "aliases": [
       "CUB"
     ]
@@ -435,6 +489,7 @@
     "code": "CW",
     "english": "Curaçao",
     "chinese": "库拉索",
+    "traditional": "庫拉索",
     "aliases": [
       "CUW"
     ]
@@ -443,6 +498,7 @@
     "code": "CX",
     "english": "Christmas Island",
     "chinese": "圣诞岛",
+    "traditional": "聖誕島",
     "aliases": [
       "CXR"
     ]
@@ -451,6 +507,7 @@
     "code": "KY",
     "english": "Cayman Islands",
     "chinese": "开曼群岛",
+    "traditional": "開曼群島",
     "aliases": [
       "CYM"
     ]
@@ -459,6 +516,7 @@
     "code": "CY",
     "english": "Cyprus",
     "chinese": "塞浦路斯",
+    "traditional": "賽普勒斯",
     "aliases": [
       "CYP"
     ]
@@ -467,6 +525,7 @@
     "code": "CZ",
     "english": "Czechia",
     "chinese": "捷克",
+    "traditional": "捷克",
     "aliases": [
       "CZE"
     ]
@@ -475,6 +534,7 @@
     "code": "DE",
     "english": "Germany",
     "chinese": "德国",
+    "traditional": "德國",
     "aliases": [
       "DEU"
     ]
@@ -483,6 +543,7 @@
     "code": "DJ",
     "english": "Djibouti",
     "chinese": "吉布提",
+    "traditional": "吉布地",
     "aliases": [
       "DJI"
     ]
@@ -491,6 +552,7 @@
     "code": "DM",
     "english": "Dominica",
     "chinese": "多米尼克",
+    "traditional": "多米尼克",
     "aliases": [
       "DMA"
     ]
@@ -499,6 +561,7 @@
     "code": "DK",
     "english": "Denmark",
     "chinese": "丹麦",
+    "traditional": "丹麥",
     "aliases": [
       "DNK"
     ]
@@ -507,6 +570,7 @@
     "code": "DO",
     "english": "Dominican Republic",
     "chinese": "多米尼加共和国",
+    "traditional": "多明尼加共和國",
     "aliases": [
       "DOM"
     ]
@@ -515,6 +579,7 @@
     "code": "DZ",
     "english": "Algeria",
     "chinese": "阿尔及利亚",
+    "traditional": "阿爾及利亞",
     "aliases": [
       "DZA"
     ]
@@ -523,6 +588,7 @@
     "code": "EC",
     "english": "Ecuador",
     "chinese": "厄瓜多尔",
+    "traditional": "厄瓜多",
     "aliases": [
       "ECU"
     ]
@@ -531,6 +597,7 @@
     "code": "EG",
     "english": "Egypt",
     "chinese": "埃及",
+    "traditional": "埃及",
     "aliases": [
       "EGY"
     ]
@@ -539,6 +606,7 @@
     "code": "ER",
     "english": "Eritrea",
     "chinese": "厄立特里亚",
+    "traditional": "厄利垂亞",
     "aliases": [
       "ERI"
     ]
@@ -547,6 +615,7 @@
     "code": "EH",
     "english": "Western Sahara",
     "chinese": "西撒哈拉",
+    "traditional": "西撒哈拉",
     "aliases": [
       "ESH"
     ]
@@ -555,6 +624,7 @@
     "code": "ES",
     "english": "Spain",
     "chinese": "西班牙",
+    "traditional": "西班牙",
     "aliases": [
       "ESP"
     ]
@@ -563,6 +633,7 @@
     "code": "EE",
     "english": "Estonia",
     "chinese": "爱沙尼亚",
+    "traditional": "愛沙尼亞",
     "aliases": [
       "EST"
     ]
@@ -571,6 +642,7 @@
     "code": "ET",
     "english": "Ethiopia",
     "chinese": "埃塞俄比亚",
+    "traditional": "衣索比亞",
     "aliases": [
       "ETH"
     ]
@@ -579,6 +651,7 @@
     "code": "FI",
     "english": "Finland",
     "chinese": "芬兰",
+    "traditional": "芬蘭",
     "aliases": [
       "FIN"
     ]
@@ -587,6 +660,7 @@
     "code": "FJ",
     "english": "Fiji",
     "chinese": "斐济",
+    "traditional": "斐濟",
     "aliases": [
       "FJI"
     ]
@@ -595,6 +669,7 @@
     "code": "FK",
     "english": "Falkland Islands",
     "chinese": "福克兰群岛",
+    "traditional": "福克蘭群島",
     "aliases": [
       "FLK"
     ]
@@ -603,6 +678,7 @@
     "code": "FR",
     "english": "France",
     "chinese": "法国",
+    "traditional": "法國",
     "aliases": [
       "FRA"
     ]
@@ -611,6 +687,7 @@
     "code": "FO",
     "english": "Faroe Islands",
     "chinese": "法罗群岛",
+    "traditional": "法羅群島",
     "aliases": [
       "FRO"
     ]
@@ -619,6 +696,7 @@
     "code": "FM",
     "english": "Micronesia",
     "chinese": "密克罗尼西亚",
+    "traditional": "密克羅尼西亞",
     "aliases": [
       "FSM"
     ]
@@ -627,6 +705,7 @@
     "code": "GA",
     "english": "Gabon",
     "chinese": "加蓬",
+    "traditional": "加彭",
     "aliases": [
       "GAB"
     ]
@@ -635,6 +714,7 @@
     "code": "GB",
     "english": "United Kingdom",
     "chinese": "英国",
+    "traditional": "英國",
     "aliases": [
       "GBR"
     ]
@@ -643,6 +723,7 @@
     "code": "GE",
     "english": "Georgia",
     "chinese": "格鲁吉亚",
+    "traditional": "喬治亞",
     "aliases": [
       "GEO"
     ]
@@ -651,6 +732,7 @@
     "code": "GG",
     "english": "Guernsey",
     "chinese": "根西岛",
+    "traditional": "根息",
     "aliases": [
       "GGY"
     ]
@@ -659,6 +741,7 @@
     "code": "GH",
     "english": "Ghana",
     "chinese": "加纳",
+    "traditional": "迦納",
     "aliases": [
       "GHA"
     ]
@@ -667,6 +750,7 @@
     "code": "GI",
     "english": "Gibraltar",
     "chinese": "直布罗陀",
+    "traditional": "直布羅陀",
     "aliases": [
       "GIB"
     ]
@@ -675,6 +759,7 @@
     "code": "GN",
     "english": "Guinea",
     "chinese": "几内亚",
+    "traditional": "幾內亞",
     "aliases": [
       "GIN"
     ]
@@ -683,6 +768,7 @@
     "code": "GP",
     "english": "Guadeloupe",
     "chinese": "瓜德罗普",
+    "traditional": "瓜地洛普",
     "aliases": [
       "GLP"
     ]
@@ -691,6 +777,7 @@
     "code": "GM",
     "english": "Gambia",
     "chinese": "冈比亚",
+    "traditional": "甘比亞",
     "aliases": [
       "GMB"
     ]
@@ -699,6 +786,7 @@
     "code": "GW",
     "english": "Guinea-Bissau",
     "chinese": "几内亚比绍",
+    "traditional": "幾內亞比索",
     "aliases": [
       "GNB"
     ]
@@ -707,6 +795,7 @@
     "code": "GQ",
     "english": "Equatorial Guinea",
     "chinese": "赤道几内亚",
+    "traditional": "赤道幾內亞",
     "aliases": [
       "GNQ"
     ]
@@ -715,6 +804,7 @@
     "code": "GR",
     "english": "Greece",
     "chinese": "希腊",
+    "traditional": "希臘",
     "aliases": [
       "GRC"
     ]
@@ -723,6 +813,7 @@
     "code": "GD",
     "english": "Grenada",
     "chinese": "格林纳达",
+    "traditional": "格瑞那達",
     "aliases": [
       "GRD"
     ]
@@ -731,6 +822,7 @@
     "code": "GL",
     "english": "Greenland",
     "chinese": "格陵兰",
+    "traditional": "格陵蘭",
     "aliases": [
       "GRL"
     ]
@@ -739,6 +831,7 @@
     "code": "GT",
     "english": "Guatemala",
     "chinese": "危地马拉",
+    "traditional": "瓜地馬拉",
     "aliases": [
       "GTM"
     ]
@@ -747,6 +840,7 @@
     "code": "GF",
     "english": "French Guiana",
     "chinese": "法属圭亚那",
+    "traditional": "法屬圭亞那",
     "aliases": [
       "GUF"
     ]
@@ -755,6 +849,7 @@
     "code": "GU",
     "english": "Guam",
     "chinese": "关岛",
+    "traditional": "關島",
     "aliases": [
       "GUM"
     ]
@@ -763,6 +858,7 @@
     "code": "GY",
     "english": "Guyana",
     "chinese": "圭亚那",
+    "traditional": "蓋亞那",
     "aliases": [
       "GUY"
     ]
@@ -771,6 +867,7 @@
     "code": "HK",
     "english": "Hong Kong SAR China",
     "chinese": "中国香港特别行政区",
+    "traditional": "香港",
     "aliases": [
       "HKG"
     ]
@@ -779,6 +876,7 @@
     "code": "HM",
     "english": "Heard & McDonald Islands",
     "chinese": "赫德岛和麦克唐纳群岛",
+    "traditional": "赫德島及麥唐納群島",
     "aliases": [
       "HMD"
     ]
@@ -787,6 +885,7 @@
     "code": "HN",
     "english": "Honduras",
     "chinese": "洪都拉斯",
+    "traditional": "宏都拉斯",
     "aliases": [
       "HND"
     ]
@@ -795,6 +894,7 @@
     "code": "HR",
     "english": "Croatia",
     "chinese": "克罗地亚",
+    "traditional": "克羅埃西亞",
     "aliases": [
       "HRV"
     ]
@@ -803,6 +903,7 @@
     "code": "HT",
     "english": "Haiti",
     "chinese": "海地",
+    "traditional": "海地",
     "aliases": [
       "HTI"
     ]
@@ -811,6 +912,7 @@
     "code": "HU",
     "english": "Hungary",
     "chinese": "匈牙利",
+    "traditional": "匈牙利",
     "aliases": [
       "HUN"
     ]
@@ -819,6 +921,7 @@
     "code": "ID",
     "english": "Indonesia",
     "chinese": "印度尼西亚",
+    "traditional": "印尼",
     "aliases": [
       "IDN"
     ]
@@ -827,6 +930,7 @@
     "code": "IM",
     "english": "Isle of Man",
     "chinese": "马恩岛",
+    "traditional": "曼島",
     "aliases": [
       "IMN"
     ]
@@ -835,6 +939,7 @@
     "code": "IN",
     "english": "India",
     "chinese": "印度",
+    "traditional": "印度",
     "aliases": [
       "IND"
     ]
@@ -843,6 +948,7 @@
     "code": "IO",
     "english": "British Indian Ocean Territory",
     "chinese": "英属印度洋领地",
+    "traditional": "英屬印度洋領地",
     "aliases": [
       "IOT"
     ]
@@ -851,6 +957,7 @@
     "code": "IE",
     "english": "Ireland",
     "chinese": "爱尔兰",
+    "traditional": "愛爾蘭",
     "aliases": [
       "IRL"
     ]
@@ -859,6 +966,7 @@
     "code": "IR",
     "english": "Iran",
     "chinese": "伊朗",
+    "traditional": "伊朗",
     "aliases": [
       "IRN"
     ]
@@ -867,6 +975,7 @@
     "code": "IQ",
     "english": "Iraq",
     "chinese": "伊拉克",
+    "traditional": "伊拉克",
     "aliases": [
       "IRQ"
     ]
@@ -875,6 +984,7 @@
     "code": "IS",
     "english": "Iceland",
     "chinese": "冰岛",
+    "traditional": "冰島",
     "aliases": [
       "ISL"
     ]
@@ -883,6 +993,7 @@
     "code": "IL",
     "english": "Israel",
     "chinese": "以色列",
+    "traditional": "以色列",
     "aliases": [
       "ISR"
     ]
@@ -891,6 +1002,7 @@
     "code": "IT",
     "english": "Italy",
     "chinese": "意大利",
+    "traditional": "義大利",
     "aliases": [
       "ITA"
     ]
@@ -899,6 +1011,7 @@
     "code": "JM",
     "english": "Jamaica",
     "chinese": "牙买加",
+    "traditional": "牙買加",
     "aliases": [
       "JAM"
     ]
@@ -907,6 +1020,7 @@
     "code": "JE",
     "english": "Jersey",
     "chinese": "泽西岛",
+    "traditional": "澤西島",
     "aliases": [
       "JEY"
     ]
@@ -915,6 +1029,7 @@
     "code": "JO",
     "english": "Jordan",
     "chinese": "约旦",
+    "traditional": "約旦",
     "aliases": [
       "JOR"
     ]
@@ -923,6 +1038,7 @@
     "code": "JP",
     "english": "Japan",
     "chinese": "日本",
+    "traditional": "日本",
     "aliases": [
       "JPN"
     ]
@@ -931,6 +1047,7 @@
     "code": "KZ",
     "english": "Kazakhstan",
     "chinese": "哈萨克斯坦",
+    "traditional": "哈薩克",
     "aliases": [
       "KAZ"
     ]
@@ -939,6 +1056,7 @@
     "code": "KE",
     "english": "Kenya",
     "chinese": "肯尼亚",
+    "traditional": "肯亞",
     "aliases": [
       "KEN"
     ]
@@ -947,6 +1065,7 @@
     "code": "KG",
     "english": "Kyrgyzstan",
     "chinese": "吉尔吉斯斯坦",
+    "traditional": "吉爾吉斯",
     "aliases": [
       "KGZ"
     ]
@@ -955,6 +1074,7 @@
     "code": "KH",
     "english": "Cambodia",
     "chinese": "柬埔寨",
+    "traditional": "柬埔寨",
     "aliases": [
       "KHM"
     ]
@@ -963,6 +1083,7 @@
     "code": "KI",
     "english": "Kiribati",
     "chinese": "基里巴斯",
+    "traditional": "吉里巴斯",
     "aliases": [
       "KIR"
     ]
@@ -971,6 +1092,7 @@
     "code": "KN",
     "english": "St. Kitts & Nevis",
     "chinese": "圣基茨和尼维斯",
+    "traditional": "聖克里斯多福及尼維斯",
     "aliases": [
       "KNA"
     ]
@@ -979,6 +1101,7 @@
     "code": "KR",
     "english": "South Korea",
     "chinese": "韩国",
+    "traditional": "南韓",
     "aliases": [
       "KOR"
     ]
@@ -987,6 +1110,7 @@
     "code": "KW",
     "english": "Kuwait",
     "chinese": "科威特",
+    "traditional": "科威特",
     "aliases": [
       "KWT"
     ]
@@ -995,6 +1119,7 @@
     "code": "LA",
     "english": "Laos",
     "chinese": "老挝",
+    "traditional": "寮國",
     "aliases": [
       "LAO"
     ]
@@ -1003,6 +1128,7 @@
     "code": "LB",
     "english": "Lebanon",
     "chinese": "黎巴嫩",
+    "traditional": "黎巴嫩",
     "aliases": [
       "LBN"
     ]
@@ -1011,6 +1137,7 @@
     "code": "LR",
     "english": "Liberia",
     "chinese": "利比里亚",
+    "traditional": "賴比瑞亞",
     "aliases": [
       "LBR"
     ]
@@ -1019,6 +1146,7 @@
     "code": "LY",
     "english": "Libya",
     "chinese": "利比亚",
+    "traditional": "利比亞",
     "aliases": [
       "LBY"
     ]
@@ -1027,6 +1155,7 @@
     "code": "LC",
     "english": "St. Lucia",
     "chinese": "圣卢西亚",
+    "traditional": "聖露西亞",
     "aliases": [
       "LCA"
     ]
@@ -1035,6 +1164,7 @@
     "code": "LI",
     "english": "Liechtenstein",
     "chinese": "列支敦士登",
+    "traditional": "列支敦斯登",
     "aliases": [
       "LIE"
     ]
@@ -1043,6 +1173,7 @@
     "code": "LK",
     "english": "Sri Lanka",
     "chinese": "斯里兰卡",
+    "traditional": "斯里蘭卡",
     "aliases": [
       "LKA"
     ]
@@ -1051,6 +1182,7 @@
     "code": "LS",
     "english": "Lesotho",
     "chinese": "莱索托",
+    "traditional": "賴索托",
     "aliases": [
       "LSO"
     ]
@@ -1059,6 +1191,7 @@
     "code": "LT",
     "english": "Lithuania",
     "chinese": "立陶宛",
+    "traditional": "立陶宛",
     "aliases": [
       "LTU"
     ]
@@ -1067,6 +1200,7 @@
     "code": "LU",
     "english": "Luxembourg",
     "chinese": "卢森堡",
+    "traditional": "盧森堡",
     "aliases": [
       "LUX"
     ]
@@ -1075,6 +1209,7 @@
     "code": "LV",
     "english": "Latvia",
     "chinese": "拉脱维亚",
+    "traditional": "拉脫維亞",
     "aliases": [
       "LVA"
     ]
@@ -1083,6 +1218,7 @@
     "code": "MO",
     "english": "Macao SAR China",
     "chinese": "中国澳门特别行政区",
+    "traditional": "澳門",
     "aliases": [
       "MAC"
     ]
@@ -1091,6 +1227,7 @@
     "code": "MF",
     "english": "St. Martin",
     "chinese": "法属圣马丁",
+    "traditional": "法屬聖馬丁",
     "aliases": [
       "MAF"
     ]
@@ -1099,6 +1236,7 @@
     "code": "MA",
     "english": "Morocco",
     "chinese": "摩洛哥",
+    "traditional": "摩洛哥",
     "aliases": [
       "MAR"
     ]
@@ -1107,6 +1245,7 @@
     "code": "MC",
     "english": "Monaco",
     "chinese": "摩纳哥",
+    "traditional": "摩納哥",
     "aliases": [
       "MCO"
     ]
@@ -1115,6 +1254,7 @@
     "code": "MD",
     "english": "Moldova",
     "chinese": "摩尔多瓦",
+    "traditional": "摩爾多瓦",
     "aliases": [
       "MDA"
     ]
@@ -1123,6 +1263,7 @@
     "code": "MG",
     "english": "Madagascar",
     "chinese": "马达加斯加",
+    "traditional": "馬達加斯加",
     "aliases": [
       "MDG"
     ]
@@ -1131,6 +1272,7 @@
     "code": "MV",
     "english": "Maldives",
     "chinese": "马尔代夫",
+    "traditional": "馬爾地夫",
     "aliases": [
       "MDV"
     ]
@@ -1139,6 +1281,7 @@
     "code": "MX",
     "english": "Mexico",
     "chinese": "墨西哥",
+    "traditional": "墨西哥",
     "aliases": [
       "MEX"
     ]
@@ -1147,6 +1290,7 @@
     "code": "MH",
     "english": "Marshall Islands",
     "chinese": "马绍尔群岛",
+    "traditional": "馬紹爾群島",
     "aliases": [
       "MHL"
     ]
@@ -1155,6 +1299,7 @@
     "code": "MK",
     "english": "North Macedonia",
     "chinese": "北马其顿",
+    "traditional": "北馬其頓",
     "aliases": [
       "MKD"
     ]
@@ -1163,6 +1308,7 @@
     "code": "ML",
     "english": "Mali",
     "chinese": "马里",
+    "traditional": "馬利",
     "aliases": [
       "MLI"
     ]
@@ -1171,6 +1317,7 @@
     "code": "MT",
     "english": "Malta",
     "chinese": "马耳他",
+    "traditional": "馬爾他",
     "aliases": [
       "MLT"
     ]
@@ -1179,6 +1326,7 @@
     "code": "MM",
     "english": "Myanmar (Burma)",
     "chinese": "缅甸",
+    "traditional": "緬甸",
     "aliases": [
       "MMR"
     ]
@@ -1187,6 +1335,7 @@
     "code": "ME",
     "english": "Montenegro",
     "chinese": "黑山",
+    "traditional": "蒙特內哥羅",
     "aliases": [
       "MNE"
     ]
@@ -1195,6 +1344,7 @@
     "code": "MN",
     "english": "Mongolia",
     "chinese": "蒙古",
+    "traditional": "蒙古",
     "aliases": [
       "MNG"
     ]
@@ -1203,6 +1353,7 @@
     "code": "MP",
     "english": "Northern Mariana Islands",
     "chinese": "北马里亚纳群岛",
+    "traditional": "北馬利安納群島",
     "aliases": [
       "MNP"
     ]
@@ -1211,6 +1362,7 @@
     "code": "MZ",
     "english": "Mozambique",
     "chinese": "莫桑比克",
+    "traditional": "莫三比克",
     "aliases": [
       "MOZ"
     ]
@@ -1219,6 +1371,7 @@
     "code": "MR",
     "english": "Mauritania",
     "chinese": "毛里塔尼亚",
+    "traditional": "茅利塔尼亞",
     "aliases": [
       "MRT"
     ]
@@ -1227,6 +1380,7 @@
     "code": "MS",
     "english": "Montserrat",
     "chinese": "蒙特塞拉特",
+    "traditional": "蒙哲臘",
     "aliases": [
       "MSR"
     ]
@@ -1235,6 +1389,7 @@
     "code": "MQ",
     "english": "Martinique",
     "chinese": "马提尼克",
+    "traditional": "馬丁尼克",
     "aliases": [
       "MTQ"
     ]
@@ -1243,6 +1398,7 @@
     "code": "MU",
     "english": "Mauritius",
     "chinese": "毛里求斯",
+    "traditional": "模里西斯",
     "aliases": [
       "MUS"
     ]
@@ -1251,6 +1407,7 @@
     "code": "MW",
     "english": "Malawi",
     "chinese": "马拉维",
+    "traditional": "馬拉威",
     "aliases": [
       "MWI"
     ]
@@ -1259,6 +1416,7 @@
     "code": "MY",
     "english": "Malaysia",
     "chinese": "马来西亚",
+    "traditional": "馬來西亞",
     "aliases": [
       "MYS"
     ]
@@ -1267,6 +1425,7 @@
     "code": "YT",
     "english": "Mayotte",
     "chinese": "马约特",
+    "traditional": "馬約特島",
     "aliases": [
       "MYT"
     ]
@@ -1275,6 +1434,7 @@
     "code": "NA",
     "english": "Namibia",
     "chinese": "纳米比亚",
+    "traditional": "納米比亞",
     "aliases": [
       "NAM"
     ]
@@ -1283,6 +1443,7 @@
     "code": "NC",
     "english": "New Caledonia",
     "chinese": "新喀里多尼亚",
+    "traditional": "新喀里多尼亞",
     "aliases": [
       "NCL"
     ]
@@ -1291,6 +1452,7 @@
     "code": "NE",
     "english": "Niger",
     "chinese": "尼日尔",
+    "traditional": "尼日",
     "aliases": [
       "NER"
     ]
@@ -1299,6 +1461,7 @@
     "code": "NF",
     "english": "Norfolk Island",
     "chinese": "诺福克岛",
+    "traditional": "諾福克島",
     "aliases": [
       "NFK"
     ]
@@ -1307,6 +1470,7 @@
     "code": "NG",
     "english": "Nigeria",
     "chinese": "尼日利亚",
+    "traditional": "奈及利亞",
     "aliases": [
       "NGA"
     ]
@@ -1315,6 +1479,7 @@
     "code": "NI",
     "english": "Nicaragua",
     "chinese": "尼加拉瓜",
+    "traditional": "尼加拉瓜",
     "aliases": [
       "NIC"
     ]
@@ -1323,6 +1488,7 @@
     "code": "NU",
     "english": "Niue",
     "chinese": "纽埃",
+    "traditional": "紐埃島",
     "aliases": [
       "NIU"
     ]
@@ -1331,6 +1497,7 @@
     "code": "NL",
     "english": "Netherlands",
     "chinese": "荷兰",
+    "traditional": "荷蘭",
     "aliases": [
       "NLD"
     ]
@@ -1339,6 +1506,7 @@
     "code": "NO",
     "english": "Norway",
     "chinese": "挪威",
+    "traditional": "挪威",
     "aliases": [
       "NOR"
     ]
@@ -1347,6 +1515,7 @@
     "code": "NP",
     "english": "Nepal",
     "chinese": "尼泊尔",
+    "traditional": "尼泊爾",
     "aliases": [
       "NPL"
     ]
@@ -1355,6 +1524,7 @@
     "code": "NR",
     "english": "Nauru",
     "chinese": "瑙鲁",
+    "traditional": "諾魯",
     "aliases": [
       "NRU"
     ]
@@ -1363,6 +1533,7 @@
     "code": "NZ",
     "english": "New Zealand",
     "chinese": "新西兰",
+    "traditional": "紐西蘭",
     "aliases": [
       "NZL"
     ]
@@ -1371,6 +1542,7 @@
     "code": "OM",
     "english": "Oman",
     "chinese": "阿曼",
+    "traditional": "阿曼",
     "aliases": [
       "OMN"
     ]
@@ -1379,6 +1551,7 @@
     "code": "PK",
     "english": "Pakistan",
     "chinese": "巴基斯坦",
+    "traditional": "巴基斯坦",
     "aliases": [
       "PAK"
     ]
@@ -1387,6 +1560,7 @@
     "code": "PA",
     "english": "Panama",
     "chinese": "巴拿马",
+    "traditional": "巴拿馬",
     "aliases": [
       "PAN"
     ]
@@ -1395,6 +1569,7 @@
     "code": "PN",
     "english": "Pitcairn Islands",
     "chinese": "皮特凯恩群岛",
+    "traditional": "皮特肯群島",
     "aliases": [
       "PCN"
     ]
@@ -1403,6 +1578,7 @@
     "code": "PE",
     "english": "Peru",
     "chinese": "秘鲁",
+    "traditional": "秘魯",
     "aliases": [
       "PER"
     ]
@@ -1411,6 +1587,7 @@
     "code": "PH",
     "english": "Philippines",
     "chinese": "菲律宾",
+    "traditional": "菲律賓",
     "aliases": [
       "PHL"
     ]
@@ -1419,6 +1596,7 @@
     "code": "PW",
     "english": "Palau",
     "chinese": "帕劳",
+    "traditional": "帛琉",
     "aliases": [
       "PLW"
     ]
@@ -1427,6 +1605,7 @@
     "code": "PG",
     "english": "Papua New Guinea",
     "chinese": "巴布亚新几内亚",
+    "traditional": "巴布亞紐幾內亞",
     "aliases": [
       "PNG"
     ]
@@ -1435,6 +1614,7 @@
     "code": "PL",
     "english": "Poland",
     "chinese": "波兰",
+    "traditional": "波蘭",
     "aliases": [
       "POL"
     ]
@@ -1443,6 +1623,7 @@
     "code": "PR",
     "english": "Puerto Rico",
     "chinese": "波多黎各",
+    "traditional": "波多黎各",
     "aliases": [
       "PRI"
     ]
@@ -1451,6 +1632,7 @@
     "code": "KP",
     "english": "North Korea",
     "chinese": "朝鲜",
+    "traditional": "北韓",
     "aliases": [
       "PRK"
     ]
@@ -1459,6 +1641,7 @@
     "code": "PT",
     "english": "Portugal",
     "chinese": "葡萄牙",
+    "traditional": "葡萄牙",
     "aliases": [
       "PRT"
     ]
@@ -1467,6 +1650,7 @@
     "code": "PY",
     "english": "Paraguay",
     "chinese": "巴拉圭",
+    "traditional": "巴拉圭",
     "aliases": [
       "PRY"
     ]
@@ -1475,6 +1659,7 @@
     "code": "PS",
     "english": "Palestinian Territories",
     "chinese": "巴勒斯坦领土",
+    "traditional": "巴勒斯坦",
     "aliases": [
       "PSE"
     ]
@@ -1483,6 +1668,7 @@
     "code": "PF",
     "english": "French Polynesia",
     "chinese": "法属波利尼西亚",
+    "traditional": "法屬玻里尼西亞",
     "aliases": [
       "PYF"
     ]
@@ -1491,6 +1677,7 @@
     "code": "QA",
     "english": "Qatar",
     "chinese": "卡塔尔",
+    "traditional": "卡達",
     "aliases": [
       "QAT"
     ]
@@ -1499,6 +1686,7 @@
     "code": "RE",
     "english": "Réunion",
     "chinese": "留尼汪",
+    "traditional": "留尼旺",
     "aliases": [
       "REU"
     ]
@@ -1507,6 +1695,7 @@
     "code": "RO",
     "english": "Romania",
     "chinese": "罗马尼亚",
+    "traditional": "羅馬尼亞",
     "aliases": [
       "ROU"
     ]
@@ -1515,6 +1704,7 @@
     "code": "RU",
     "english": "Russia",
     "chinese": "俄罗斯",
+    "traditional": "俄羅斯",
     "aliases": [
       "RUS"
     ]
@@ -1523,6 +1713,7 @@
     "code": "RW",
     "english": "Rwanda",
     "chinese": "卢旺达",
+    "traditional": "盧安達",
     "aliases": [
       "RWA"
     ]
@@ -1531,6 +1722,7 @@
     "code": "SA",
     "english": "Saudi Arabia",
     "chinese": "沙特阿拉伯",
+    "traditional": "沙烏地阿拉伯",
     "aliases": [
       "SAU"
     ]
@@ -1539,6 +1731,7 @@
     "code": "SD",
     "english": "Sudan",
     "chinese": "苏丹",
+    "traditional": "蘇丹",
     "aliases": [
       "SDN"
     ]
@@ -1547,6 +1740,7 @@
     "code": "SN",
     "english": "Senegal",
     "chinese": "塞内加尔",
+    "traditional": "塞內加爾",
     "aliases": [
       "SEN"
     ]
@@ -1555,6 +1749,7 @@
     "code": "SG",
     "english": "Singapore",
     "chinese": "新加坡",
+    "traditional": "新加坡",
     "aliases": [
       "SGP"
     ]
@@ -1563,6 +1758,7 @@
     "code": "GS",
     "english": "South Georgia & South Sandwich Islands",
     "chinese": "南乔治亚和南桑威奇群岛",
+    "traditional": "南喬治亞與南三明治群島",
     "aliases": [
       "SGS"
     ]
@@ -1571,6 +1767,7 @@
     "code": "SH",
     "english": "St. Helena",
     "chinese": "圣赫勒拿",
+    "traditional": "聖赫勒拿島",
     "aliases": [
       "SHN"
     ]
@@ -1579,6 +1776,7 @@
     "code": "SJ",
     "english": "Svalbard & Jan Mayen",
     "chinese": "斯瓦尔巴和扬马延",
+    "traditional": "挪威屬斯瓦巴及尖棉",
     "aliases": [
       "SJM"
     ]
@@ -1587,6 +1785,7 @@
     "code": "SB",
     "english": "Solomon Islands",
     "chinese": "所罗门群岛",
+    "traditional": "索羅門群島",
     "aliases": [
       "SLB"
     ]
@@ -1595,6 +1794,7 @@
     "code": "SL",
     "english": "Sierra Leone",
     "chinese": "塞拉利昂",
+    "traditional": "獅子山",
     "aliases": [
       "SLE"
     ]
@@ -1603,6 +1803,7 @@
     "code": "SV",
     "english": "El Salvador",
     "chinese": "萨尔瓦多",
+    "traditional": "薩爾瓦多",
     "aliases": [
       "SLV"
     ]
@@ -1611,6 +1812,7 @@
     "code": "SM",
     "english": "San Marino",
     "chinese": "圣马力诺",
+    "traditional": "聖馬利諾",
     "aliases": [
       "SMR"
     ]
@@ -1619,6 +1821,7 @@
     "code": "SO",
     "english": "Somalia",
     "chinese": "索马里",
+    "traditional": "索馬利亞",
     "aliases": [
       "SOM"
     ]
@@ -1627,6 +1830,7 @@
     "code": "PM",
     "english": "St. Pierre & Miquelon",
     "chinese": "圣皮埃尔和密克隆群岛",
+    "traditional": "聖皮埃與密克隆群島",
     "aliases": [
       "SPM"
     ]
@@ -1635,6 +1839,7 @@
     "code": "RS",
     "english": "Serbia",
     "chinese": "塞尔维亚",
+    "traditional": "塞爾維亞",
     "aliases": [
       "SRB"
     ]
@@ -1643,6 +1848,7 @@
     "code": "SS",
     "english": "South Sudan",
     "chinese": "南苏丹",
+    "traditional": "南蘇丹",
     "aliases": [
       "SSD"
     ]
@@ -1651,6 +1857,7 @@
     "code": "ST",
     "english": "São Tomé & Príncipe",
     "chinese": "圣多美和普林西比",
+    "traditional": "聖多美普林西比",
     "aliases": [
       "STP"
     ]
@@ -1659,6 +1866,7 @@
     "code": "SR",
     "english": "Suriname",
     "chinese": "苏里南",
+    "traditional": "蘇利南",
     "aliases": [
       "SUR"
     ]
@@ -1667,6 +1875,7 @@
     "code": "SK",
     "english": "Slovakia",
     "chinese": "斯洛伐克",
+    "traditional": "斯洛伐克",
     "aliases": [
       "SVK"
     ]
@@ -1675,6 +1884,7 @@
     "code": "SI",
     "english": "Slovenia",
     "chinese": "斯洛文尼亚",
+    "traditional": "斯洛維尼亞",
     "aliases": [
       "SVN"
     ]
@@ -1683,6 +1893,7 @@
     "code": "SE",
     "english": "Sweden",
     "chinese": "瑞典",
+    "traditional": "瑞典",
     "aliases": [
       "SWE"
     ]
@@ -1691,6 +1902,7 @@
     "code": "SZ",
     "english": "Eswatini",
     "chinese": "斯威士兰",
+    "traditional": "史瓦帝尼",
     "aliases": [
       "SWZ"
     ]
@@ -1699,6 +1911,7 @@
     "code": "SX",
     "english": "Sint Maarten",
     "chinese": "荷属圣马丁",
+    "traditional": "荷屬聖馬丁",
     "aliases": [
       "SXM"
     ]
@@ -1707,6 +1920,7 @@
     "code": "SC",
     "english": "Seychelles",
     "chinese": "塞舌尔",
+    "traditional": "塞席爾",
     "aliases": [
       "SYC"
     ]
@@ -1715,6 +1929,7 @@
     "code": "SY",
     "english": "Syria",
     "chinese": "叙利亚",
+    "traditional": "敘利亞",
     "aliases": [
       "SYR"
     ]
@@ -1723,6 +1938,7 @@
     "code": "TC",
     "english": "Turks & Caicos Islands",
     "chinese": "特克斯和凯科斯群岛",
+    "traditional": "土克斯及開科斯群島",
     "aliases": [
       "TCA"
     ]
@@ -1731,6 +1947,7 @@
     "code": "TD",
     "english": "Chad",
     "chinese": "乍得",
+    "traditional": "查德",
     "aliases": [
       "TCD"
     ]
@@ -1739,6 +1956,7 @@
     "code": "TG",
     "english": "Togo",
     "chinese": "多哥",
+    "traditional": "多哥",
     "aliases": [
       "TGO"
     ]
@@ -1747,6 +1965,7 @@
     "code": "TH",
     "english": "Thailand",
     "chinese": "泰国",
+    "traditional": "泰國",
     "aliases": [
       "THA"
     ]
@@ -1755,6 +1974,7 @@
     "code": "TJ",
     "english": "Tajikistan",
     "chinese": "塔吉克斯坦",
+    "traditional": "塔吉克",
     "aliases": [
       "TJK"
     ]
@@ -1763,6 +1983,7 @@
     "code": "TK",
     "english": "Tokelau",
     "chinese": "托克劳",
+    "traditional": "托克勞群島",
     "aliases": [
       "TKL"
     ]
@@ -1771,6 +1992,7 @@
     "code": "TM",
     "english": "Turkmenistan",
     "chinese": "土库曼斯坦",
+    "traditional": "土庫曼",
     "aliases": [
       "TKM"
     ]
@@ -1779,6 +2001,7 @@
     "code": "TL",
     "english": "Timor-Leste",
     "chinese": "东帝汶",
+    "traditional": "東帝汶",
     "aliases": [
       "TLS"
     ]
@@ -1787,6 +2010,7 @@
     "code": "TO",
     "english": "Tonga",
     "chinese": "汤加",
+    "traditional": "東加",
     "aliases": [
       "TON"
     ]
@@ -1795,6 +2019,7 @@
     "code": "TT",
     "english": "Trinidad & Tobago",
     "chinese": "特立尼达和多巴哥",
+    "traditional": "千里達及托巴哥",
     "aliases": [
       "TTO"
     ]
@@ -1803,6 +2028,7 @@
     "code": "TN",
     "english": "Tunisia",
     "chinese": "突尼斯",
+    "traditional": "突尼西亞",
     "aliases": [
       "TUN"
     ]
@@ -1811,6 +2037,7 @@
     "code": "TR",
     "english": "Türkiye",
     "chinese": "土耳其",
+    "traditional": "土耳其",
     "aliases": [
       "TUR"
     ]
@@ -1819,6 +2046,7 @@
     "code": "TV",
     "english": "Tuvalu",
     "chinese": "图瓦卢",
+    "traditional": "吐瓦魯",
     "aliases": [
       "TUV"
     ]
@@ -1827,6 +2055,7 @@
     "code": "TW",
     "english": "Taiwan",
     "chinese": "台湾",
+    "traditional": "台灣",
     "aliases": [
       "TWN"
     ]
@@ -1835,6 +2064,7 @@
     "code": "TZ",
     "english": "Tanzania",
     "chinese": "坦桑尼亚",
+    "traditional": "坦尚尼亞",
     "aliases": [
       "TZA"
     ]
@@ -1843,6 +2073,7 @@
     "code": "UG",
     "english": "Uganda",
     "chinese": "乌干达",
+    "traditional": "烏干達",
     "aliases": [
       "UGA"
     ]
@@ -1851,6 +2082,7 @@
     "code": "UA",
     "english": "Ukraine",
     "chinese": "乌克兰",
+    "traditional": "烏克蘭",
     "aliases": [
       "UKR"
     ]
@@ -1859,6 +2091,7 @@
     "code": "UM",
     "english": "U.S. Outlying Islands",
     "chinese": "美国本土外小岛屿",
+    "traditional": "美國本土外小島嶼",
     "aliases": [
       "UMI"
     ]
@@ -1867,6 +2100,7 @@
     "code": "UY",
     "english": "Uruguay",
     "chinese": "乌拉圭",
+    "traditional": "烏拉圭",
     "aliases": [
       "URY"
     ]
@@ -1875,6 +2109,7 @@
     "code": "US",
     "english": "United States",
     "chinese": "美国",
+    "traditional": "美國",
     "aliases": [
       "USA"
     ]
@@ -1883,6 +2118,7 @@
     "code": "UZ",
     "english": "Uzbekistan",
     "chinese": "乌兹别克斯坦",
+    "traditional": "烏茲別克",
     "aliases": [
       "UZB"
     ]
@@ -1891,6 +2127,7 @@
     "code": "VA",
     "english": "Vatican City",
     "chinese": "梵蒂冈",
+    "traditional": "梵蒂岡",
     "aliases": [
       "VAT"
     ]
@@ -1899,6 +2136,7 @@
     "code": "VC",
     "english": "St. Vincent & Grenadines",
     "chinese": "圣文森特和格林纳丁斯",
+    "traditional": "聖文森及格瑞那丁",
     "aliases": [
       "VCT"
     ]
@@ -1907,6 +2145,7 @@
     "code": "VE",
     "english": "Venezuela",
     "chinese": "委内瑞拉",
+    "traditional": "委內瑞拉",
     "aliases": [
       "VEN"
     ]
@@ -1915,6 +2154,7 @@
     "code": "VG",
     "english": "British Virgin Islands",
     "chinese": "英属维尔京群岛",
+    "traditional": "英屬維京群島",
     "aliases": [
       "VGB"
     ]
@@ -1923,6 +2163,7 @@
     "code": "VI",
     "english": "U.S. Virgin Islands",
     "chinese": "美属维尔京群岛",
+    "traditional": "美屬維京群島",
     "aliases": [
       "VIR"
     ]
@@ -1931,6 +2172,7 @@
     "code": "VN",
     "english": "Vietnam",
     "chinese": "越南",
+    "traditional": "越南",
     "aliases": [
       "VNM"
     ]
@@ -1939,6 +2181,7 @@
     "code": "VU",
     "english": "Vanuatu",
     "chinese": "瓦努阿图",
+    "traditional": "萬那杜",
     "aliases": [
       "VUT"
     ]
@@ -1947,6 +2190,7 @@
     "code": "WF",
     "english": "Wallis & Futuna",
     "chinese": "瓦利斯和富图纳",
+    "traditional": "瓦利斯群島和富圖那群島",
     "aliases": [
       "WLF"
     ]
@@ -1955,6 +2199,7 @@
     "code": "WS",
     "english": "Samoa",
     "chinese": "萨摩亚",
+    "traditional": "薩摩亞",
     "aliases": [
       "WSM"
     ]
@@ -1963,6 +2208,7 @@
     "code": "YE",
     "english": "Yemen",
     "chinese": "也门",
+    "traditional": "葉門",
     "aliases": [
       "YEM"
     ]
@@ -1971,6 +2217,7 @@
     "code": "ZA",
     "english": "South Africa",
     "chinese": "南非",
+    "traditional": "南非",
     "aliases": [
       "ZAF"
     ]
@@ -1979,6 +2226,7 @@
     "code": "ZM",
     "english": "Zambia",
     "chinese": "赞比亚",
+    "traditional": "尚比亞",
     "aliases": [
       "ZMB"
     ]
@@ -1987,6 +2235,7 @@
     "code": "ZW",
     "english": "Zimbabwe",
     "chinese": "津巴布韦",
+    "traditional": "辛巴威",
     "aliases": [
       "ZWE"
     ]

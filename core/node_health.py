@@ -24,19 +24,19 @@ ID = re.compile(r'[0-9a-f]{32}\Z')
 FINGERPRINT = re.compile(r'[0-9a-f]{64}\Z')
 LOGGER = logging.getLogger(__name__)
 MESSAGES = {
-    'unavailable':'Health state unavailable.',
-    'save':'Health results could not be saved.',
-    'mode':'Enable Manual or Automatic health checks before checking.',
-    'not_due':'Automatic endpoint check is not due or the subscription is paused.',
-    'config':'Select Off, Manual or Automatic with a valid health interval.',
-    'limit':'Health check currently supports up to 256 nodes per run.',
-    'conflict':'Subscription changed while checking. Please retry.',
-    'health_conflict':'Health settings or results changed while checking. Please retry.',
-    'check':'Health check could not be completed.',
+    'unavailable':'健康狀態無法使用。',
+    'save':'無法儲存健康檢查結果。',
+    'mode':'請先將健康檢查設為手動或自動，再執行檢查。',
+    'not_due':'自動端點檢查尚未到期，或訂閱已暫停。',
+    'config':'請選擇關閉、手動或自動，並設定有效的檢查間隔。',
+    'limit':'健康檢查每次最多支援 256 個節點。',
+    'conflict':'檢查期間訂閱已變更，請重試。',
+    'health_conflict':'檢查期間健康設定或結果已變更，請重試。',
+    'check':'無法完成健康檢查。',
 }
-PROBE_MESSAGES = dict(dns_failed='DNS resolution failed',blocked_address='Address blocked',
-    timeout='Connection timed out',connection_refused='Connection refused',
-    network_unreachable='Network unreachable',connect_failed='Connection failed')
+PROBE_MESSAGES = dict(dns_failed='DNS 解析失敗',blocked_address='位址已封鎖',
+    timeout='連線逾時',connection_refused='連線被拒',
+    network_unreachable='網路無法連線',connect_failed='連線失敗')
 
 
 class HealthError(RuntimeError):

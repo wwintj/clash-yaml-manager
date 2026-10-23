@@ -168,7 +168,7 @@ def test_delivery_safe_bookkeeping_and_failure_retains_config(authority, result)
     assert data['delivery']['last_error'] == (None if expected == 'success' else expected)
     assert data['delivery']['last_success_at'] == (1_800_000_000 if expected == 'success' else None)
     assert 'PRIVATE' not in repr(data['delivery'])
-    assert calls[0][2].startswith('Clash YAML Manager test notification.')
+    assert calls[0][2].startswith('Clash YAML Manager 測試通知')
 
 
 @pytest.mark.parametrize('mutation', ['remove', 'save'])
@@ -308,7 +308,7 @@ def test_settings_default_get_zero_network_no_state(web, logged_in, monkeypatch)
         monkeypatch.setattr(obj,attr,forbidden)
     response = logged_in.get('/settings'); html = response.get_data(as_text=True)
     assert response.status_code == 200 and 'id="notifications"' in html and 'href="#notifications"' in html
-    assert 'Disabled' in html and 'Not configured' in html
+    assert '已停用' in html and '未設定' in html
     assert response.headers['Cache-Control'] == 'no-store' and response.headers['Referrer-Policy'] == 'no-referrer'
     assert not list(Path(web.DIR_STATE).glob('notifications.*'))
 
@@ -345,7 +345,7 @@ def test_settings_save_test_remove_secret_absence_and_unrelated_stability(web, l
     monkeypatch.setattr(telegram.Telegram,'send',lambda *args: (_ for _ in ()).throw(RuntimeError(TOKEN+CHAT+'PRIVATE_BODY')))
     assert post(logged_in,'/settings/notifications/test').status_code == 303
     html = logged_in.get('/settings').get_data(as_text=True)
-    assert 'Telegram test failed.' in html and 'network' in html and 'Enabled' in html
+    assert 'Telegram 測試失敗' in html and '網路錯誤' in html and '已啟用' in html
     assert post(logged_in,'/settings/notifications/remove').status_code == 303
     data = Notifications(state)._read()[0]
     assert data['telegram'] == defaults()['telegram'] and data['events'] == PREFS
@@ -357,7 +357,7 @@ def test_settings_save_test_remove_secret_absence_and_unrelated_stability(web, l
 def test_corrupt_settings_isolated_no_echo_no_repair(web, logged_in):
     path = Path(web.DIR_STATE)/'notifications.json'; path.write_bytes(b'PRIVATE corrupt token'); path.chmod(0o600)
     html = logged_in.get('/settings').get_data(as_text=True)
-    assert 'Configuration unavailable' in html and 'PRIVATE corrupt token' not in html
+    assert '通知設定無法使用' in html and 'PRIVATE corrupt token' not in html
     for section in ('overview','geoip','health','runtime'): assert 'id="'+section+'"' in html
     assert 'id="notification-settings"' not in html and path.read_bytes() == b'PRIVATE corrupt token'
 

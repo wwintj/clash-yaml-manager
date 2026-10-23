@@ -33,29 +33,29 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   const proxy=page.locator('#proxy-health');assert.equal(await proxy.locator('#proxy-defaults').count(),0);
   assert(await proxy.locator('#proxy-settings').isVisible());
   await proxy.locator('#proxy-scope').selectOption('custom');assert(await proxy.locator('#proxy-custom-fields').isVisible());
-  assert.equal(await proxy.getByRole('link',{name:'Global Defaults in Settings'}).getAttribute('href'),'/settings#health');
-  await proxy.getByRole('link',{name:'Global Defaults in Settings'}).click();
+  assert.equal(await proxy.getByRole('link',{name:'前往設定中的全域預設值'}).getAttribute('href'),'/settings#health');
+  await proxy.getByRole('link',{name:'前往設定中的全域預設值'}).click();
   assert(page.url().endsWith('/settings#health'));assert(await page.locator('#health').isVisible());
   const oldUrl=await page.locator('#global-probe-url').inputValue();
   await page.locator('#global-probe-url').fill('https://user:REJECTED_CREDENTIAL@8.8.8.8/');
-  await nav(page.getByRole('button',{name:'Save Global Defaults'}));
-  assert(await page.getByText(/Unable to save global proxy defaults/).isVisible());
+  await nav(page.getByRole('button',{name:'儲存全域預設值'}));
+  assert(await page.getByText(/無法儲存全域代理預設值/).isVisible());
   assert.equal(await page.locator('#global-probe-url').inputValue(),oldUrl);
   assert(!(await page.content()).includes('REJECTED_CREDENTIAL'));
   await page.locator('#global-probe-url').fill('https://probe.example/framework_status');
   await page.locator('#global-probe-status').fill('206');await page.locator('#global-probe-timeout').selectOption('3000');
-  await nav(page.getByRole('button',{name:'Save Global Defaults'}));assert(page.url().endsWith('/settings#health'));
-  assert(await page.getByText(/Global proxy defaults saved/).isVisible());
+  await nav(page.getByRole('button',{name:'儲存全域預設值'}));assert(page.url().endsWith('/settings#health'));
+  assert(await page.getByText(/全域代理預設值已儲存/).isVisible());
   const upload=async bytes=>{
    await page.locator('#geoip-file').setInputFiles({name:'country.mmdb',mimeType:'application/octet-stream',buffer:Buffer.from(bytes)});
-   await nav(page.getByRole('button',{name:'Upload / Replace'}));
+   await nav(page.getByRole('button',{name:'上傳／取代'}));
   };
   await upload('SYNTHETIC:SG');assert(page.url().endsWith('/settings#geoip'));
-  assert.equal(await page.locator('[data-geoip-status]').textContent(),'Ready');assert.equal(await read(),old);
+  assert.equal(await page.locator('[data-geoip-status]').textContent(),'就緒');assert.equal(await read(),old);
   for(const width of [1440,390]){
    await page.setViewportSize({width,height:900});
-   for(const [section,label] of [['overview','Overview'],['geoip','GeoIP'],['health','Health'],['runtime','Runtime']]){
-    await page.getByRole('navigation',{name:'Settings sections'}).getByRole('link',{name:label,exact:true}).click();
+   for(const [section,label] of [['overview','總覽'],['geoip','GeoIP'],['health','健康檢查'],['runtime','執行環境']]){
+    await page.getByRole('navigation',{name:'設定分區'}).getByRole('link',{name:label,exact:true}).click();
     assert(page.url().endsWith('#'+section));assert(await page.locator('#'+section).isVisible());
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     if(process.env.SETTINGS_SCREENSHOT_DIR){
@@ -69,9 +69,9 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   const settingsHtml=await page.content();
   for(const secret of [uuid,'vless://','8.8.8.8',new URL(fixed).pathname.split('-fs_')[1],process.env.PREVIEW_TEST_PASSWORD,'REJECTED_CREDENTIAL'])
    assert(!settingsHtml.includes(secret));
-  assert.equal(await page.locator('[data-runtime=session_lifetime]').textContent(),'30 days');
-  await nav(page.getByRole('button',{name:'Remove Database'}));assert.equal(await read(),old);
-  assert.equal(await page.locator('[data-geoip-status]').textContent(),'Not installed');
+  assert.equal(await page.locator('[data-runtime=session_lifetime]').textContent(),'30 天');
+  await nav(page.getByRole('button',{name:'移除資料庫'}));assert.equal(await read(),old);
+  assert.equal(await page.locator('[data-geoip-status]').textContent(),'未安裝');
   await page.goto(edit);assert.equal(await page.locator('.fixed-url').inputValue(),fixed);
   assert((await page.locator('#global-proxy-summary').textContent()).includes('https://probe.example/framework_status'));
   assert.equal(await read(),old);assert(await page.locator('#proxy-settings').isVisible());

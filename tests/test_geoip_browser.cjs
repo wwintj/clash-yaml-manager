@@ -17,14 +17,14 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   const nav=button=>Promise.all([page.waitForNavigation(),button.click()]);
   const upload=async data=>{
    await page.locator('#geoip-file').setInputFiles({name:'admin.mmdb',mimeType:'application/octet-stream',buffer:Buffer.from(data)});
-   await nav(page.getByRole('button',{name:'Upload / Replace'}));
+   await nav(page.getByRole('button',{name:'上傳／取代'}));
   };
   const widths=async label=>{
    for(const width of [1440,390]){
     await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     if(process.env.GEOIP_SCREENSHOT_DIR){
      fs.mkdirSync(process.env.GEOIP_SCREENSHOT_DIR,{recursive:true});
-     const section=page.locator(label==='settings'?'section[aria-label="GeoIP Database"]':'section[aria-label="Country Detection"]');
+     const section=page.locator(label==='settings'?'section[aria-label="GeoIP 資料庫"]':'section[aria-label="國家偵測"]');
      await section.screenshot({path:path.join(process.env.GEOIP_SCREENSHOT_DIR,`${label}-${width}.png`)});
     }
    }
@@ -32,14 +32,14 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   await page.goto(base);await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
   await Promise.all([page.waitForNavigation(),page.locator('#password').press('Enter')]);
   assert.equal(await page.locator('#country-geoip').inputValue(),'off');
-  assert(await page.getByText(/No GeoIP database is installed/).isVisible());
-  await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Settings',exact:true}).click();
-  assert.equal(await page.locator('[data-geoip-status]').textContent(),'Not installed');
+  assert(await page.getByText(/尚未安裝 GeoIP 資料庫/).isVisible());
+  await page.getByRole('navigation',{name:'主選單'}).getByRole('link',{name:'設定',exact:true}).click();
+  assert.equal(await page.locator('[data-geoip-status]').textContent(),'未安裝');
   await upload('PRIVATE invalid');
-  assert(await page.getByText(/Unable to upload GeoIP database/).isVisible());
-  assert.equal(await page.locator('[data-geoip-status]').textContent(),'Not installed');
+  assert(await page.getByText(/無法上傳 GeoIP 資料庫/).isVisible());
+  assert.equal(await page.locator('[data-geoip-status]').textContent(),'未安裝');
   await upload('SYNTHETIC:SG');
-  assert.equal(await page.locator('[data-geoip-status]').textContent(),'Ready');
+  assert.equal(await page.locator('[data-geoip-status]').textContent(),'就緒');
   assert.equal(await page.locator('[data-geoip-type]').textContent(),'Synthetic-Country');
   assert.match(await page.locator('[data-geoip-checksum]').textContent(),/^[a-f0-9]{12}$/);
   const checksum=await page.locator('[data-geoip-checksum]').textContent();
@@ -49,10 +49,10 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   const uuid='11111111-1111-4111-8111-111111111111';const link=`vless://${uuid}@8.8.8.8:443?type=tcp`;
   const input=`Opaque|${link}\nTaiwan-01|${link.replace('8.8.8.8','1.1.1.1')}\nOpaque-domain|${link.replace('8.8.8.8','node.example.com')}`;
   await page.locator('#batch_nodes').fill(input);await page.locator('#parse-nodes').click();
-  await page.waitForFunction(()=>document.querySelector('#parse-preview').textContent.includes('Source: GeoIP'));
-  assert(await page.locator('#parse-preview').getByText('Source: GeoIP',{exact:true}).isVisible());
-  assert(await page.locator('#parse-preview').getByText('Source: Name Detection',{exact:true}).isVisible());
-  assert(await page.locator('#parse-preview').getByText('Source: Unknown',{exact:true}).isVisible());
+  await page.waitForFunction(()=>document.querySelector('#parse-preview').textContent.includes('來源：GeoIP'));
+  assert(await page.locator('#parse-preview').getByText('來源：GeoIP',{exact:true}).isVisible());
+  assert(await page.locator('#parse-preview').getByText('來源：名稱偵測',{exact:true}).isVisible());
+  assert(await page.locator('#parse-preview').getByText('來源：未知',{exact:true}).isVisible());
   const preview=await page.locator('#parse-preview').textContent();assert(!preview.includes('8.8.8.8')&&!preview.includes(uuid));
   await nav(page.locator('#generate-yaml'));
   const temporary=await page.locator('#download-url').inputValue();assert(temporary.includes('/t/'));
@@ -73,12 +73,12 @@ const base=process.env.PREVIEW_TEST_URL;assert(base && new URL(base).hostname===
   await page.goto(base+'/settings');await upload('SYNTHETIC:TW');assert.equal(await read(),old);
   await page.goto(edit);assert.equal(await page.locator('#country-geoip').inputValue(),'literal-ip');await nav(page.locator('#generate-yaml'));
   assert((await read()).includes('🇹🇼 Opaque'));assert.equal(await page.locator('.fixed-url').inputValue(),fixed);
-  await page.goto(base+'/settings');await nav(page.getByRole('button',{name:'Remove Database'}));
-  assert.equal(await page.locator('[data-geoip-status]').textContent(),'Not installed');
+  await page.goto(base+'/settings');await nav(page.getByRole('button',{name:'移除資料庫'}));
+  assert.equal(await page.locator('[data-geoip-status]').textContent(),'未安裝');
   await page.goto(edit);assert.equal(await page.locator('#country-geoip').inputValue(),'literal-ip');
-  assert(await page.getByText(/No GeoIP database is installed/).isVisible());
+  assert(await page.getByText(/尚未安裝 GeoIP 資料庫/).isVisible());
   await page.locator('#batch_nodes').fill('invalid');await nav(page.locator('#generate-yaml'));
-  assert(await page.getByText(/Unable to save/).isVisible());assert.equal(await page.locator('#country-geoip').inputValue(),'literal-ip');
+  assert(await page.getByText(/無法儲存/).isVisible());assert.equal(await page.locator('#country-geoip').inputValue(),'literal-ip');
   await page.locator('#batch_nodes').fill('Opaque|'+link);await nav(page.locator('#generate-yaml'));
   assert((await read()).includes('🌐 Opaque'));assert.equal(await page.locator('.fixed-url').inputValue(),fixed);
   const anonymous=await browser.newContext();const response=await anonymous.request.get(base+'/settings',{maxRedirects:0});assert.equal(response.status(),302);await anonymous.close();

@@ -13,13 +13,13 @@ const base=process.env.PREVIEW_TEST_URL;
  await Promise.all([page.waitForNavigation(),page.locator('#password').press('Enter')]);
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:900});
-  for(const [mode,status] of [['absent','Not configured'],['configured','Configured'],['invalid','Metadata unavailable'],['manual','Not configured']]){
+  for(const [mode,status] of [['absent','未設定'],['configured','已設定'],['invalid','中繼資料無法使用'],['manual','未設定']]){
    assert.equal((await context.request.post(process.env.EXTERNAL_TEST_CONTROL,{data:'https-'+mode})).status(),204);
    await page.goto(base+'/settings?fixture='+mode+'&width='+width+'#runtime');
    assert.equal(await page.locator('[data-runtime=managed_https]').textContent(),status);
    assert.equal(await page.locator('[data-runtime=managed_domain]').count(),mode==='configured'?1:0);
    if(mode==='configured')assert.equal(await page.locator('[data-runtime=managed_domain]').textContent(),'example.com');
-   assert.equal(await page.locator('[data-runtime=bind]').textContent(),['configured','manual'].includes(mode)?'Loopback only':'All interfaces');
+   assert.equal(await page.locator('[data-runtime=bind]').textContent(),['configured','manual'].includes(mode)?'僅限本機迴路':'所有網路介面');
    assert.equal(await page.locator('#runtime input, #runtime button, #runtime form').count(),0);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    const html=await page.content();for(const secret of ['PRIVATE_METADATA_SECRET','PRIVATE_EMAIL@example.com',process.env.PREVIEW_TEST_PASSWORD])assert(!html.includes(secret));

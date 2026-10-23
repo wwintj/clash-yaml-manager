@@ -56,12 +56,12 @@ def test_logged_in_csrf_failure_redirects_without_execution(web, logged_in, monk
     page = logged_in.get('/')
     html = page.get_data(as_text=True)
     assert page.status_code == 200 and 'id="process-form"' in html
-    assert 'Security token refreshed' in html and 'any saved draft' in html
+    assert '安全權杖已更新' in html and '已儲存的草稿' in html
     assert 'ERROR LOG' not in html and '表单已过期或安全令牌无效' not in html
     assert 'draft.js' in html
     current = re.search(r'name="csrf_token" value="([^"]+)"', html)[1]
     assert current != previous
-    assert 'Security token refreshed' not in logged_in.get('/').get_data(as_text=True)
+    assert '安全權杖已更新' not in logged_in.get('/').get_data(as_text=True)
     after = {p: p.read_bytes() for directory in (web.DIR_OUTPUTS, web.DIR_UPLOADS, web.DIR_BACKUPS, web.DIR_STATE)
              for p in Path(directory).rglob('*') if p.is_file()}
     assert after == before
@@ -81,14 +81,14 @@ def test_logged_out_and_login_csrf_recover_without_loop(web, client, monkeypatch
     assert len(response.history) == 1 and response.history[0].status_code == 303
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert 'id="password"' in html and 'Log in again' in html
-    assert 'any saved draft will be restored after login' in html and 'ERROR LOG' not in html
+    assert 'id="password"' in html and '請重新登入' in html
+    assert '已儲存的草稿會在登入後自動還原' in html and 'ERROR LOG' not in html
     with client.session_transaction() as session:
         assert not session.get('logged_in')
         assert 'test 密码' not in json.dumps(dict(session), ensure_ascii=False)
     login = post(client, '/login', {'password': 'test 密码'}, follow_redirects=True)
     assert login.status_code == 200 and 'draft-status' in login.get_data(as_text=True)
-    assert 'Log in again' not in login.get_data(as_text=True)
+    assert '請重新登入' not in login.get_data(as_text=True)
 
 
 def test_invalidated_auth_session_and_csrf_recover_to_login(web, logged_in):

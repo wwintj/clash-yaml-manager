@@ -213,10 +213,10 @@ def test_invalid_runtime_policy_checks_all_before_deletion(web,monkeypatch):
 def test_runtime_capacity_warning_safe_effective_values(web,logged_in):
     data=web.settings_runtime()
     for field in ('upload_retention','output_retention','backup_retention'):
-        assert 'Keep' in data[field] and 'no age-based deletion' in data[field] and 'manage disk capacity' in data[field]
-    assert '86400 seconds' in data['output_retention']
+        assert '永久保留' in data[field] and '不依時間刪除' in data[field] and '自行管理磁碟空間' in data[field]
+    assert '86400 秒' in data['output_retention']
     html=logged_in.get('/settings').get_data(as_text=True)
-    assert html.count('no age-based deletion')==3 and 'Temporary link lifetime: 86400 seconds' in html
+    assert html.count('不依時間刪除')==3 and '臨時連結有效期：86400 秒' in html
 
 
 @pytest.mark.parametrize('web',[{key:'keep' for key in retention.POLICY_KEYS}],indirect=True)
@@ -290,5 +290,5 @@ def test_link_invalid_clock_cannot_publish(tmp_path,value):
 def test_runtime_invalid_policy_never_echoes_private_value(web,monkeypatch):
     monkeypatch.setattr(web,'UPLOAD_RETENTION_POLICY','PRIVATE_POLICY_SECRET')
     projected=web.settings_runtime()
-    assert projected['upload_retention']=='Unavailable'
+    assert projected['upload_retention']=='無法使用'
     assert 'PRIVATE_POLICY_SECRET' not in str(projected)

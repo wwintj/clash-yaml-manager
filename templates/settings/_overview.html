@@ -1,13 +1,13 @@
-<section id="overview" class="terminal-panel settings-section" aria-label="Settings Overview"><div class="panel-inner">
-  <h3 class="panel-title">Overview</h3>
+<section id="overview" class="terminal-panel settings-section" aria-label="設定總覽"><div class="panel-inner">
+  <h3 class="panel-title">總覽</h3>
   <dl class="settings-metadata">
-    <dt>Application Version / Base VERSION</dt><dd>{{ base_version }}</dd>
-    <dt>Installed Build</dt><dd>{{ app_version }}</dd>
-    <dt>Channel</dt><dd>{{ build_channel }}</dd>
-    <dt>GeoIP status</dt><dd>{{ database.status }}</dd>
-    <dt>Mihomo status (local files)</dt><dd>{{ engine.status }}</dd>
-    <dt>Fixed subscriptions</dt><dd data-fixed-count>{{ fixed_counts.total if fixed_counts else 'Unavailable' }}</dd>
-    <dt>Active / Disabled Fixed</dt><dd>{{ fixed_counts.active if fixed_counts else 'Unavailable' }} / {{ fixed_counts.disabled if fixed_counts else 'Unavailable' }}</dd>
+    <dt>應用程式版本／基礎 VERSION</dt><dd>{{ base_version }}</dd>
+    <dt>已安裝建置</dt><dd>{{ app_version }}</dd>
+    <dt>通道</dt><dd>{{ build_channel }}</dd>
+    <dt>GeoIP 狀態</dt><dd>{{ database.status | ui_label }}</dd>
+    <dt>Mihomo 狀態（本機檔案）</dt><dd>{{ engine.status | ui_label }}</dd>
+    <dt>固定訂閱</dt><dd data-fixed-count>{{ fixed_counts.total if fixed_counts else '無法使用' }}</dd>
+    <dt>啟用中／已停用</dt><dd>{{ fixed_counts.active if fixed_counts else '無法使用' }} / {{ fixed_counts.disabled if fixed_counts else '無法使用' }}</dd>
   </dl>
-  <p class="form-text">Local application state only. This page does not check for releases, probe nodes or inspect real systemd unit status.</p>
+  <p class="form-text">僅顯示本機應用程式狀態。此頁面不會檢查新版本、探測節點，也不會檢查實際的 systemd 單元狀態。</p>
 </div></section>

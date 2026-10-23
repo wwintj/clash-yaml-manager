@@ -1,13 +1,13 @@
-<section class="terminal-panel mb-4" aria-label="Country Detection"><div class="panel-inner">
-  <h2 class="panel-title">Country Detection</h2>
-  <label class="form-label" for="country-geoip">GeoIP fallback</label>
+<section class="terminal-panel mb-4" aria-label="國家偵測"><div class="panel-inner">
+  <h2 class="panel-title">國家偵測</h2>
+  <label class="form-label" for="country-geoip">GeoIP 備援</label>
   <select class="form-select terminal-select" id="country-geoip" name="country_geoip">
-    {% if country_geoip not in ['off','literal-ip'] %}<option value="{{ country_geoip }}" selected>Invalid mode</option>{% endif %}
-    <option value="off" {% if country_geoip == 'off' %}selected{% endif %}>Off</option>
-    <option value="literal-ip" {% if country_geoip == 'literal-ip' %}selected{% endif %}>Literal public IP only</option>
+    {% if country_geoip not in ['off','literal-ip'] %}<option value="{{ country_geoip }}" selected>無效模式</option>{% endif %}
+    <option value="off" {% if country_geoip == 'off' %}selected{% endif %}>關閉</option>
+    <option value="literal-ip" {% if country_geoip == 'literal-ip' %}selected{% endif %}>僅限公開 IP 位址</option>
   </select>
-  <p class="form-text">Manual country → Name Detection → GeoIP → Unknown. Offline only; hostnames are never resolved. Known countries and manual overrides always win.</p>
-  {% if geoip_status.status == 'Not installed' %}<p class="form-text" data-geoip-warning>No GeoIP database is installed; unknown nodes will remain Unknown. Generation remains available.</p>
-  {% elif geoip_status.status != 'Ready' %}<p class="form-text" data-geoip-warning>GeoIP database unavailable or invalid; unknown nodes will remain Unknown. Generation remains available.</p>{% endif %}
-  <p class="form-text">Manage your own compatible .mmdb in <a href="{{ url_for('settings.index') }}">Settings</a>. Database changes affect the next regeneration, not existing Fixed YAML.</p>
+  <p class="form-text">偵測順序：手動指定 → 名稱偵測 → GeoIP → 未知。僅離線查詢，不會解析主機名稱；已知國家與手動指定一律優先。</p>
+  {% if geoip_status.status == 'Not installed' %}<p class="form-text" data-geoip-warning>尚未安裝 GeoIP 資料庫，未知節點將維持「未知」，仍可正常產生。</p>
+  {% elif geoip_status.status != 'Ready' %}<p class="form-text" data-geoip-warning>GeoIP 資料庫無法使用或無效，未知節點將維持「未知」，仍可正常產生。</p>{% endif %}
+  <p class="form-text">請在<a href="{{ url_for('settings.index') }}">設定</a>中管理自備的相容 .mmdb。資料庫變更只影響下一次重新產生，不會改動既有的固定訂閱 YAML。</p>
 </div></section>

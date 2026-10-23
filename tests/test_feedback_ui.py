@@ -37,12 +37,12 @@ class GlobalFeedback(HTMLParser):
 
 
 @pytest.mark.parametrize('messages,expected', [
-    (['没有提供任何有效的新节点信息。'], ['No valid new nodes provided.']),
+    (['没有提供任何有效的新节点信息。'], ['沒有提供任何有效的新節點。']),
     (['<img src=x onerror=alert(1)>'], ['<img src=x onerror=alert(1)>']),
     (['第 1 行错误：协议不支持，仅接受 vmess:// 或 vless://。',
       '第 2 行错误：协议不支持，仅接受 vmess:// 或 vless://。'],
-     ['Line 1: Unsupported protocol. Use VMess, VLESS, Trojan, Shadowsocks or Hysteria2.',
-      'Line 2: Unsupported protocol. Use VMess, VLESS, Trojan, Shadowsocks or Hysteria2.']),
+     ['第 1 行錯誤：不支援的協定，請使用 VMess、VLESS、Trojan、Shadowsocks 或 Hysteria2。',
+      '第 2 行錯誤：不支援的協定，請使用 VMess、VLESS、Trojan、Shadowsocks 或 Hysteria2。']),
     (['<script>alert(1)</script>', 'Long message ' + 'x' * 900],
      ['<script>alert(1)</script>', 'Long message ' + 'x' * 900]),
 ])
@@ -65,7 +65,7 @@ def test_global_errors_preserve_every_message_role_and_escaping(logged_in, messa
 
 
 @pytest.mark.parametrize('message,expected', [
-    ('已成功删除 2 个服务器临时文件。', 'Deleted 2 temporary server files.'),
+    ('已成功删除 2 个服务器临时文件。', '已刪除 2 個伺服器暫存檔案。'),
     ('<img src=x onerror=alert(1)>', '<img src=x onerror=alert(1)>'),
 ])
 def test_global_success_keeps_status_and_escaped_content_without_heading(logged_in, message, expected):
@@ -89,6 +89,6 @@ def test_generated_result_retains_its_contextual_success_and_headings(logged_in)
     assert response.status_code == 200
     assert GlobalFeedback(response.text).alerts == []
     result = response.text.split('id="generate-result"', 1)[1].split('</section>', 1)[0]
-    assert 'Generation Complete' in result and 'Generate Result' in result and 'Temporary Link' in result
-    assert 'role="status"' in result and 'YAML generated. Download it or remove the temporary files.' in result
-    assert 'YAML Changes' in response.text
+    assert '產生完成' in result and '產生結果' in result and '臨時連結' in result
+    assert 'role="status"' in result and 'YAML 已產生，可以下載或刪除暫存檔案。' in result
+    assert 'YAML 變更' in response.text

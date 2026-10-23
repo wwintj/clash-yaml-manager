@@ -120,7 +120,7 @@ def test_invalid_target_atomic_no_echo_log_or_other_mutation(web, logged_in, mon
     seed_proxy(web, logged_in, monkeypatch)
     before = fixed_bytes(web); proxy = web.proxy_health.path.read_bytes()
     response = post(logged_in, ROUTE, fields(dict(NEW,url=target)))
-    assert response.status_code == 400 and b'Previous defaults are unchanged' in response.data
+    assert response.status_code == 400 and '原預設值保持不變'.encode() in response.data
     assert web.proxy_health.path.read_bytes() == proxy and fixed_bytes(web) == before
     assert target not in response.get_data(as_text=True) and target not in caplog.text
     assert 'REJECTED_' not in response.get_data(as_text=True) and 'REJECTED_' not in caplog.text
@@ -173,7 +173,7 @@ def test_auxiliary_failures_are_isolated_and_secret_errors_hidden(web, logged_in
     if section == 'install': monkeypatch.setattr(web,'read_install_info',broken)
     response = logged_in.get('/settings')
     assert response.status_code == 200 and b'PRIVATE_EXCEPTION' not in response.data
-    assert (b'Unavailable' in response.data or b'unavailable' in response.data or b'unknown' in response.data)
+    assert ('無法使用'.encode() in response.data or b'unknown' in response.data)
     assert b'id="geoip-file"' in response.data
     assert b'id="runtime"' in response.data and b'id="health"' in response.data
 
@@ -183,7 +183,7 @@ def test_busy_reads_do_not_block_other_sections(web, logged_in):
         with file_lock(lock, strict=True):
             response = logged_in.get('/settings')
         assert response.status_code == 200 and b'id="geoip-file"' in response.data
-        assert b'navailable' in response.data
+        assert '無法使用'.encode() in response.data
 
 
 def test_runtime_values_build_identity_and_secret_absence(web, logged_in, monkeypatch):
@@ -200,8 +200,8 @@ def test_runtime_values_build_identity_and_secret_absence(web, logged_in, monkey
         CLEANUP_INTERVAL_SECONDS=3600,BACKUP_RETENTION_SECONDS=604800)
     for name,value in values.items():monkeypatch.setattr(web,name,value)
     before = fixed_bytes(web); response = logged_in.get('/settings'); html = response.get_data(as_text=True)
-    for value in ('9012','Enabled','Explicit base URL','Configured','7200 seconds','10800 seconds',
-                  '3600 seconds','604800 seconds','30 days',f'{web.APP_VERSION}-dev+aaaaaaa','main'):
+    for value in ('9012','已啟用','明確指定基礎 URL','已設定','7200 秒','10800 秒',
+                  '3600 秒','604800 秒','30 天',f'{web.APP_VERSION}-dev+aaaaaaa','main'):
         assert value in html
     for value in (env_sentinel,auth_hash,entry['token'],web.SECRET_KEY,web.auth_store.path.read_text(),
                   'DOWNLOAD_CREDENTIAL_SENTINEL','private.example','PRIVATE_BASE_PATH'):
@@ -210,13 +210,13 @@ def test_runtime_values_build_identity_and_secret_absence(web, logged_in, monkey
 
 
 @pytest.mark.parametrize('base,scheme,mode,https', [
-    ('','','Automatic','Not configured'),('','https','Explicit scheme','Configured'),
-    ('','http','Explicit scheme','Not configured'),('https://example.com/path','','Explicit base URL','Configured'),
-    ('http://example.com','','Explicit base URL','Not configured'),
-    ('https://user:SECRET@example.com','','Explicit base URL','Not configured'),
-    ('https://example.com/?SECRET','','Explicit base URL','Not configured'),
-    ('https://example.com:bad','','Explicit base URL','Not configured'),
-    ('https://example.com\\SECRET','','Explicit base URL','Not configured'),
+    ('','','自動','未設定'),('','https','明確指定協定','已設定'),
+    ('','http','明確指定協定','未設定'),('https://example.com/path','','明確指定基礎 URL','已設定'),
+    ('http://example.com','','明確指定基礎 URL','未設定'),
+    ('https://user:SECRET@example.com','','明確指定基礎 URL','未設定'),
+    ('https://example.com/?SECRET','','明確指定基礎 URL','未設定'),
+    ('https://example.com:bad','','明確指定基礎 URL','未設定'),
+    ('https://example.com\\SECRET','','明確指定基礎 URL','未設定'),
 ])
 def test_runtime_download_presentation_never_returns_raw_values(base,scheme,mode,https):
     value = settings_status.runtime(port=8899,cookie_secure=False,trust_proxy=False,
@@ -247,7 +247,7 @@ def test_geoip_transaction_schema_unchanged_and_health_uses_own_store(web, logge
     assert post(logged_in, ROUTE, fields()).status_code == 303
     assert web.geoip_store.settings.read_bytes() == original and web.geoip_store.path.read_bytes() == database
     assert web.proxy_health.global_settings() == NEW
-    assert b'GeoIP Database' in logged_in.get('/settings').data
+    assert 'GeoIP 資料庫'.encode() in logged_in.get('/settings').data
     assert not (Path(web.DIR_STATE)/'app_settings.json').exists()
     assert not (Path(web.DIR_STATE)/'system_settings.json').exists()
 

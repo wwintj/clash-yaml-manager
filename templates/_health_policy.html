@@ -1,40 +1,40 @@
-<section class="terminal-panel mb-4" aria-label="Health-aware Policy"><div class="panel-inner">
-  <h2 class="panel-title">Health-aware Policy</h2>
-  <p class="form-text">Only fresh Full Proxy Health = UNHEALTHY (3+ failures) is excluded. SUSPECT / UNKNOWN / UNSUPPORTED / stale results remain. Endpoint Health is not used for exclusion.</p>
-  <p class="form-text">If too few candidates remain, each group fails open and keeps its original nodes. Top-level proxies and manual Select remain available. Preserve/Select policies have nothing to filter.</p>
+<section class="terminal-panel mb-4" aria-label="健康感知策略"><div class="panel-inner">
+  <h2 class="panel-title">健康感知策略</h2>
+  <p class="form-text">只排除近期完整代理健康結果為「不健康」（連續失敗 3 次以上）的節點；「可疑」、「未知」、「不支援」及過期結果都會保留。端點健康結果不會用於排除。</p>
+  <p class="form-text">若剩餘候選節點過少，該分組會保守保留（fail-open）原有節點。頂層代理節點與手動選擇仍可使用；「保留原設定」與「手動選擇」策略沒有可篩選的對象。</p>
   {% set mode = health_policy_fields.health_policy_mode %}
-  <label class="form-label" for="health-policy-mode">Mode</label>
+  <label class="form-label" for="health-policy-mode">模式</label>
   <select class="form-select terminal-select" name="health_policy_mode" id="health-policy-mode">
-    {% if mode not in ['off','exclude-unhealthy'] %}<option value="{{ mode }}" selected>Invalid mode</option>{% endif %}
-    <option value="off" {% if mode == 'off' %}selected{% endif %}>Off</option>
-    <option value="exclude-unhealthy" {% if mode == 'exclude-unhealthy' %}selected{% endif %}>Exclude confirmed unhealthy nodes</option>
+    {% if mode not in ['off','exclude-unhealthy'] %}<option value="{{ mode }}" selected>無效模式</option>{% endif %}
+    <option value="off" {% if mode == 'off' %}selected{% endif %}>關閉</option>
+    <option value="exclude-unhealthy" {% if mode == 'exclude-unhealthy' %}selected{% endif %}>排除已確認不健康的節點</option>
   </select>
   <div class="row g-3 mt-1">
-    <div class="col-md-6"><label class="form-label" for="health-policy-age">Freshness</label>
+    <div class="col-md-6"><label class="form-label" for="health-policy-age">結果有效期</label>
       <select class="form-select terminal-select" name="health_policy_max_age_seconds" id="health-policy-age">
         {% set age = health_policy_fields.health_policy_max_age_seconds %}
-        {% if age not in ['3600','21600','86400','172800','604800'] %}<option value="{{ age }}" selected>Invalid freshness</option>{% endif %}
+        {% if age not in ['3600','21600','86400','172800','604800'] %}<option value="{{ age }}" selected>無效的有效期</option>{% endif %}
         {% for seconds,label in health_policy_ages %}<option value="{{ seconds }}" {% if seconds|string == age %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
     </div>
-    <div class="col-md-6"><label class="form-label" for="health-policy-min">Minimum candidates</label>
+    <div class="col-md-6"><label class="form-label" for="health-policy-min">最少候選節點數</label>
       <input class="form-control terminal-input" type="number" name="health_policy_min_candidates" id="health-policy-min" min="1" max="16" required value="{{ health_policy_fields.health_policy_min_candidates }}">
     </div>
   </div>
   {% if not proxy_health or proxy_health.get('mode','off') == 'off' or proxy_health.get('unavailable') %}
-  <p class="form-text mt-3" data-health-policy-warning {% if mode != 'exclude-unhealthy' %}hidden{% endif %}>No new Proxy Health observations will be produced while Proxy Health is Off or unavailable; existing observations will eventually become stale and fail open.</p>
+  <p class="form-text mt-3" data-health-policy-warning {% if mode != 'exclude-unhealthy' %}hidden{% endif %}>代理健康檢查關閉或無法使用時不會產生新的觀測結果；既有結果最終會過期並保守保留（fail-open）。</p>
   {% endif %}
   {% if proxy_health and proxy_health.engine.status != 'COMPATIBLE' %}
-  <p class="form-text mt-3" data-health-policy-warning {% if mode != 'exclude-unhealthy' %}hidden{% endif %}>Mihomo engine unavailable: no new proxy observations can be produced. Saving this subscription remains available.</p>
+  <p class="form-text mt-3" data-health-policy-warning {% if mode != 'exclude-unhealthy' %}hidden{% endif %}>Mihomo 引擎無法使用，無法產生新的代理觀測結果；仍可儲存此訂閱。</p>
   {% endif %}
   {% if entry %}
     {% set audit = entry.health_policy_audit %}
-    <div class="mt-3" aria-label="Health-aware Policy Summary">
-      <p class="form-text">Saved filtering: <span data-health-policy-saved>{{ 'Off' if entry.health_policy.mode == 'off' else 'Active' }}</span> · freshness {{ entry.health_policy.max_age_seconds // 3600 }}h · minimum {{ entry.health_policy.min_candidates }}</p>
-      <p class="form-text">Last reconciliation: <span data-health-policy-time>{{ entry.health_policy_time_display }}</span> · result <span data-health-policy-result>{{ audit.result }}</span> · YAML {{ 'updated' if audit.output_changed else 'unchanged' }}</p>
-      <p class="form-text">Groups filtered: <span data-health-policy-filtered>{{ audit.groups_filtered }}</span> · Candidates excluded: <span data-health-policy-excluded>{{ audit.candidates_excluded }}</span> · Groups fail-open: <span data-health-policy-fail-open>{{ audit.groups_fail_open }}</span></p>
-      {% if audit.result == 'unavailable' %}<p class="form-text">Proxy Health state unavailable; all original candidates are retained. The health state was not reset.</p>{% endif %}
-      {% if audit.result == 'error' %}<p class="form-text">Policy reconciliation failed; previous YAML remains selected. Committed proxy observations remain saved.</p>{% endif %}
+    <div class="mt-3" aria-label="健康感知策略摘要">
+      <p class="form-text">已儲存的篩選：<span data-health-policy-saved>{{ '關閉' if entry.health_policy.mode == 'off' else '啟用中' }}</span> · 有效期 {{ entry.health_policy.max_age_seconds // 3600 }} 小時 · 最少 {{ entry.health_policy.min_candidates }} 個</p>
+      <p class="form-text">上次調整：<span data-health-policy-time>{{ entry.health_policy_time_display }}</span> · 結果 <span data-health-policy-result>{{ audit.result | ui_label }}</span> · YAML {{ '已更新' if audit.output_changed else '未變更' }}</p>
+      <p class="form-text">已篩選分組：<span data-health-policy-filtered>{{ audit.groups_filtered }}</span> · 已排除候選：<span data-health-policy-excluded>{{ audit.candidates_excluded }}</span> · 保守保留分組：<span data-health-policy-fail-open>{{ audit.groups_fail_open }}</span></p>
+      {% if audit.result == 'unavailable' %}<p class="form-text">代理健康狀態無法使用，已保留所有原始候選節點；健康狀態未被重設。</p>{% endif %}
+      {% if audit.result == 'error' %}<p class="form-text">策略調整失敗，仍使用先前的 YAML；已提交的代理觀測結果仍會保留。</p>{% endif %}
     </div>
   {% endif %}
 </div></section>

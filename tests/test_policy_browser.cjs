@@ -33,7 +33,7 @@ assert(base && new URL(base).hostname === '127.0.0.1');
         if (process.env.POLICY_SCREENSHOT_DIR) {
           fs.mkdirSync(process.env.POLICY_SCREENSHOT_DIR,{recursive:true});
           await page.screenshot({path:path.join(process.env.POLICY_SCREENSHOT_DIR,`policy-${label}-${width}.png`),fullPage:true});
-          await page.locator('section[aria-label="Policy Engine"]').screenshot({path:path.join(process.env.POLICY_SCREENSHOT_DIR,`policy-section-${label}-${width}.png`)});
+          await page.locator('section[aria-label="策略引擎"]').screenshot({path:path.join(process.env.POLICY_SCREENSHOT_DIR,`policy-section-${label}-${width}.png`)});
         }
       }
     };
@@ -60,7 +60,7 @@ assert(base && new URL(base).hostname === '127.0.0.1');
     await nav(page.locator('#generate-yaml'));
     assert.equal(await country.inputValue(),'url-test');assert.equal(await page.locator(prefix+'interval').inputValue(),'0');
     assert.equal(await page.locator(prefix+'url').inputValue(),'http://client.local/check');
-    assert(await page.getByText(/Invalid Policy settings/).isVisible());
+    assert(await page.getByText(/策略設定無效/).isVisible());
     const storage=await page.evaluate(()=>localStorage.getItem('clash-yaml-manager.draft.v1'));
     assert(!storage.includes('client.local') && !storage.includes('policy_country_groups'));
     await page.locator(prefix+'interval').fill('300');
@@ -89,7 +89,7 @@ assert(base && new URL(base).hostname === '127.0.0.1');
     assert.equal(await page.locator(prefix+'lazy').inputValue(),'false');
     await widths('fixed');
     await page.locator('#batch_nodes').fill('invalid node');await nav(page.locator('#generate-yaml'));
-    assert(await page.getByText(/Unable to save/).isVisible());
+    assert(await page.getByText(/無法儲存/).isVisible());
     assert.equal(await country.inputValue(),'url-test');assert.equal(await read(),yaml);
     await page.locator('#batch_nodes').fill(input);
     for (const kind of ['fallback','load-balance','select','preserve']) {
