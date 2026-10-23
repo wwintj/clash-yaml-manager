@@ -1,6 +1,7 @@
 # Web UI consistency contract
 
-UI LANGUAGE: ENGLISH. This contract records the two UI refinement passes.
+UI LANGUAGE: TRADITIONAL CHINESE (zh-Hant-TW) since the post-v1.9.0 change; the English
+notes below are kept as the historical record of the two UI refinement passes.
 VERSION is the version source; README Latest Stable identifies the published
 release. No new business capability is introduced by these presentation changes.
 
