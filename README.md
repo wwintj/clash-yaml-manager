@@ -42,7 +42,7 @@ v1.6.0 功能範圍：內建預設 YAML 不再預建 HK/TW/SG/JP/US/KR 六個國
 
 Fixed 舊 registry v1–v5 只在記憶體補入新功能預設，合法修改才寫入 v6；既有 Health v1 讀作 v2，Off / Manual 不會變成 Automatic。更新保留 token、已提交 YAML、來源快取與獨立狀態。普通安裝不下載 Mihomo、GeoIP 資料庫或申請憑證，也不聯絡 Telegram。
 
-Web UI 維持英文介面，使用共用字型、控制項與響應式排版，並區分主導覽、次要 tabs、主要操作與緊湊工具按鈕。可用版本以頁首 Latest Stable 為準；[設計契約](docs/UI_CONSISTENCY.md)、[第一輪驗證](docs/UI_CONSISTENCY_REPORT.md)與[密度精修驗證](docs/UI_DENSITY_REFINEMENT_REPORT.md)記錄範圍及限制。
+Web UI 只提供繁體中文介面（不再提供英文介面或語言切換），使用共用字型、控制項與響應式排版，並區分主導覽、次要 tabs、主要操作與緊湊工具按鈕。可用版本以頁首 Latest Stable 為準；[設計契約](docs/UI_CONSISTENCY.md)、[第一輪驗證](docs/UI_CONSISTENCY_REPORT.md)與[密度精修驗證](docs/UI_DENSITY_REFINEMENT_REPORT.md)記錄範圍及限制。
 
 v1.7.0 功能範圍聚焦管理介面精修：Phase 1 將登入頁收斂為支援密碼管理器的 `Password`／`Sign in` 入口，保留可見的錯誤與狀態訊息；Phase 2 將登入後標題、帳戶動作與主導覽整合為緊湊的應用程式標頭，移除靜態 dashboard 資訊；Phase 3 精簡登入後的全域回饋，移除 `ERROR LOG`／`SUCCESS` 呈現標題，單條錯誤直接顯示、多條保留清單，維持訊息語義、escaping 與 accessibility。認證、CSRF、rate limiting、session、routes 與業務功能維持原有行為；正式可用版本以頁首 Latest Stable 為準。
 
@@ -207,21 +207,21 @@ HK|GIA|vmess://xxxx
 
 節點輸入支援三種格式混用。手動指定的 COUNTRY 優先；否則從 NAME、URI fragment / VMess ps remark 識別。缺名稱時產生確定性的 Node-01 等名稱。URI 備註可包含 `|`，從第一個受支援協定開頭的欄位起整段視為連結。VLESS 保留 `flow`，VMess／VLESS 的 gRPC／H2／HTTP 偽裝／HTTPUpgrade／XHTTP 會轉成 Mihomo 對應的傳輸選項，VLESS 的 `allowInsecure` 會對應 `skip-cert-verify`。新 URI 輸入支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2；Trojan TCP / WS、TLS/SNI 與密碼規則見 [Trojan Protocol](docs/TROJAN_PROTOCOL.md)。Shadowsocks 的 SIP002 userinfo／legacy Base64、cipher／password 保真與拒絕 plugin 規則見 [Shadowsocks Protocol](docs/SHADOWSOCKS_PROTOCOL.md) 及 [驗收報告](docs/SHADOWSOCKS_PROTOCOL_REPORT.md)。Hysteria2 / HY2 自 Stable v1.4.0 起提供，輸入、連接埠跳躍、obfs 及匯入限制見 [Hysteria2 Protocol](docs/HYSTERIA2_PROTOCOL.md)，[歷史驗收報告](docs/HYSTERIA2_PROTOCOL_REPORT.md) 保留發布前記錄。這是支援的新輸入協定範圍，不代表支援所有 Clash proxy 類型。
 
-Generate 提供 **Preview YAML Changes**。它用最新輸入及同一個 Generate 轉換流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不儲存 diff 草稿。使用 Custom YAML 時需選取實際檔案；檔案過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
+「產生 YAML」頁提供 **預覽 YAML 變更**。它用最新輸入及同一個產生流程，在登入後顯示完整 unified YAML diff；不建立 output、backup 或臨時連結，也不儲存 diff 草稿。使用 Custom YAML 時需選取實際檔案；檔案過大會明確拒絕預覽，仍可正常 Generate。詳見 [功能及限制](docs/YAML_DIFF_PREVIEW.md) 與 [受控驗收](docs/YAML_DIFF_PREVIEW_REPORT.md)。
 
-Generate 的 **Node Update Mode** 預設 **Replace existing nodes**；明確選 **Merge with existing nodes** 會保持來源 proxies 順序，再依提交順序追加新節點。Custom 保留已有引用的追加契約；v1.6.0 的 Default 主 selector 使用上方的明確排序。同名會報錯，不覆蓋、不改名、不按連線去重。新節點加入一般組、所選 Special Groups 及本次國家組；顯式自動 Policy 仍依既有 contract 只用本次新候選。Merge 僅限 Generate，Fixed 仍為 Replace；新輸入仍只解析 VMess/VLESS/Trojan/Shadowsocks/Hysteria2，來源已存在的其他類型可原樣保留。Diff 使用同一個模式；詳見 [Merge Mode](docs/MERGE_MODE.md) 與 [驗收報告](docs/MERGE_MODE_REPORT.md)。
+「產生 YAML」的 **節點更新模式** 預設 **取代現有節點**；明確選 **與現有節點合併** 會保持來源 proxies 順序，再依提交順序追加新節點。Custom 保留已有引用的追加契約；v1.6.0 的 Default 主 selector 使用上方的明確排序。同名會報錯，不覆蓋、不改名、不按連線去重。新節點加入一般組、所選 Special Groups 及本次國家組；顯式自動 Policy 仍依既有 contract 只用本次新候選。Merge 僅限 Generate，Fixed 仍為 Replace；新輸入仍只解析 VMess/VLESS/Trojan/Shadowsocks/Hysteria2，來源已存在的其他類型可原樣保留。Diff 使用同一個模式；詳見 [Merge Mode](docs/MERGE_MODE.md) 與 [驗收報告](docs/MERGE_MODE_REPORT.md)。
 
-點選 **Parse Nodes** 查看 Name、Country、Protocol、Ready / Warning / Error 和來源。修改輸入後顯示 Changes not parsed yet。Preview 可修改 Country / Name，修改立即儲存；Apply edit 或 Parse Nodes 更新預覽。手動指定的國家優先，重新排序未修改的輸入不會遺失手動修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
+點選 **解析節點** 查看名稱、國家、協定、就緒／警告／錯誤狀態和來源。修改輸入後顯示「變更尚未解析」。預覽可修改國家／名稱，修改立即儲存；「套用修改」或「解析節點」更新預覽。手動指定的國家優先，重新排序未修改的輸入不會遺失手動修正。直接 Generate 也會解析最新內容，不要求先 Parse。重複名稱或無效 URI 是 Error，阻止生成。
 
-支援完整 249 個 ISO 國家/地區，使用同一份[離線資料](docs/COUNTRY_DATA.md)。Auxiliary 和 Preview 的搜尋欄支援 ISO、English、中文和別名，常用國家置頂；例如 tai 找 Taiwan / Thailand，美 找美國，JP 找日本。預設只依據旗幟、保守的名稱/代碼和城市別名，不使用 DNS。明確啟用 GeoIP 後，名稱未識別的公共字面 IP 可使用操作員提供的離線 MMDB；手動國家及名稱判斷仍優先。衝突或不明名稱為 **🌐 Unknown**，Warning 仍可 Generate，加入 **🌐 其他节点**。只為本次存在的國家建立策略組，保留來源 YAML 既有組。
+支援完整 249 個 ISO 國家/地區，使用同一份[離線資料](docs/COUNTRY_DATA.md)。輔助多節點和預覽的搜尋欄支援 ISO、英文、中文和別名；國家名稱以繁體中文顯示，常用國家置頂；例如 tai 找 Taiwan / Thailand，美 找美國，JP 找日本。預設只依據旗幟、保守的名稱/代碼和城市別名，不使用 DNS。明確啟用 GeoIP 後，名稱未識別的公共字面 IP 可使用操作員提供的離線 MMDB；手動國家及名稱判斷仍優先。衝突或不明名稱為 **🌐 未知**，顯示警告但仍可產生，加入 **🌐 其他节点**。只為本次存在的國家建立策略組，保留來源 YAML 既有組。
 
 ## 草稿
 
-Batch、全部 Auxiliary rows、Policy Options、YAML source、Node Update Mode 和 Preview 手動修正自動儲存到同一瀏覽器、同一網站 origin 的 localStorage，預設保留最後儲存後 30 天；勾選 **Keep draft until I clear it** 才跳過本機 age expiry，瀏覽器仍可能清除資料。提交前同步儲存；重新整理、登出再登入、session / CSRF 失效後可恢復，顯示 Draft restored。沒有模式欄位的舊草稿恢復為 Replace。成功生成不清空；**Clear Draft** 需確認，清除後模式回到 Replace。
+Batch、全部 Auxiliary rows、Policy Options、YAML source、Node Update Mode 和 Preview 手動修正自動儲存到同一瀏覽器、同一網站 origin 的 localStorage，預設保留最後儲存後 30 天；勾選 **保留草稿，直到我手動清除** 才跳過本機 age expiry，瀏覽器仍可能清除資料。提交前同步儲存；重新整理、登出再登入、session / CSRF 失效後可恢復，顯示「草稿已還原」。沒有模式欄位的舊草稿恢復為 Replace。成功生成不清空；**清除草稿** 需確認，清除後模式回到 Replace。
 
 不儲存上傳 YAML 的內容；恢復 Custom YAML 時必須重新選檔，不會靜默使用預設 YAML。CSRF 保護仍在；JavaScript 啟用時在明確操作前刷新 token，失敗不提交、不重送 POST，保留當前輸入。Session 過期需登入後恢復；JavaScript 停用時仍可重新整理恢復草稿。
 
-草稿含分享連結，儲存在瀏覽器本機且未加密；共用裝置用完請 Clear Draft。停用儲存、容量不足或瀏覽器清除資料會影響恢復，儲存失敗會顯示提示。更換網域或連接埠不會跨 origin 恢復草稿。
+草稿含分享連結，儲存在瀏覽器本機且未加密；共用裝置用完請按「清除草稿」。停用儲存、容量不足或瀏覽器清除資料會影響恢復，儲存失敗會顯示提示。更換網域或連接埠不會跨 origin 恢復草稿。
 
 ---
 
@@ -233,18 +233,18 @@ Debian/Ubuntu VPS 以 SSH/root 執行 `sudo bash /opt/clash-yaml-manager/httpsct
 clashyaml 執行，綁定 127.0.0.1；Nginx 使用 Certbot Webroot HTTPS，覆寫轉發標頭。
 
 `httpsctl.sh status` 為唯讀；`disable` 驗證所有權與 drift 後恢復原部署設定，
-保留憑證及 Certbot 帳戶。Settings Runtime 僅顯示安全元資料及執行設定，沒有
+保留憑證及 Certbot 帳戶。「設定 → 執行環境」僅顯示安全元資料及執行設定，沒有
 Web 部署按鈕。完整流程、私有備份、回滾和限制見 [HTTPS 文件](docs/HTTPS.md)
 及 [受控驗收報告](docs/HTTPS_REPORT.md)。**REAL HTTPS VPS: NOT RUN**。
 
 ## 可選 Telegram 通知
 
-Settings → Notifications 提供預設關閉的 Telegram 通知。儲存 `<BOT_TOKEN>` 和
+「設定 → 通知」提供預設關閉的 Telegram 通知。儲存 `<BOT_TOKEN>` 和
 數字 `<CHAT_ID>` 後，可明確傳送測試通知；儲存本身不連網。憑據只存在私有
 0600 通知狀態，頁面不回填 Token，目的地以遮罩顯示。
 
 自動來源更新、Endpoint / Full Proxy Health 和 scheduler 故障只在事故／恢復
-邊界通知，每次掃描至多一則；訊息只含清理後的訂閱名稱和彙總數量。
+邊界通知，每次掃描至多一則；訊息以繁體中文撰寫，只含清理後的訂閱名稱和彙總數量。
 Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動重送。
 啟用後會把這些資料傳到 Telegram。設定、隱私、備份及限制見
 [Notifications 文件](docs/NOTIFICATIONS.md) 和 [受控驗收報告](docs/NOTIFICATIONS_REPORT.md)。
@@ -259,7 +259,7 @@ Telegram 失敗不影響 YAML、健康結果或排程；無持久佇列及自動
 - 自動為節點名稱加入國旗。
 - 自動把節點加入通用策略組和對應國家 / 地區策略組。
 - 可選加入 Netflix、YouTube、AI、Telegram、TikTok、HBO、Disney+、X/Twitter 等特殊策略組。
-- Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示 Temporary link expires（UTC）、Download YAML / Copy Temporary Link / Clear Draft。舊 `/s/` 仍相容。
+- Generate 產生 `/t/<16 位隨機 ID>` 臨時連結，預設 24 小時有效；顯示臨時連結到期時間（UTC）及「下載 YAML／複製臨時連結／清除草稿」。舊 `/s/` 仍相容。
 - 產生 YAML 時顯示處理提示。
 - 內建瀏覽器 favicon，開啟面板時瀏覽器標籤頁會顯示圖示。
 - 盡量保留原設定裡的 `rules`、`rule-providers`、`dns`、`proxy-groups` 和其他自訂欄位。

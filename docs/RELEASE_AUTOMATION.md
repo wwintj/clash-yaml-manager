@@ -58,7 +58,7 @@ VERSION, tags and Releases remain unchanged until an explicit release instructio
 每次使用者可見功能完成、feature freeze 與 Stable 發布時，都必須由維護者或
 agent 審閱 README 的目前功能與狀態敘述，並核對相關使用者文件、CHANGELOG 和
 Release Notes。README 與一般使用者文件正文優先使用繁體中文；精確 UI 標籤、
-命令、識別字、協定／API 名稱及外部引文保留原文，Web UI 維持既有英文介面。
+命令、識別字、協定／API 名稱及外部引文保留原文，Web UI 只提供繁體中文介面。
 
 `release.py` 自動更新 Latest Stable 及安裝／升級 marker，不會理解或更新自然
 語言正文。不能只因 marker 已更新，就視為 README 同步完成。以目前 Stable 為
