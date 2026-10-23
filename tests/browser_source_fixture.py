@@ -124,7 +124,7 @@ def external_source_server(app_module=None):
         def close(self):pass
     def notification_send(self, token, chat, text):
         assert telegram.valid_token(token) and telegram.valid_chat(chat)
-        assert text.startswith('Clash YAML Manager test notification.')
+        assert text.startswith('Clash YAML Manager 測試通知：')
         state['notification_calls'] += 1
         return state['notification_result']
     try:

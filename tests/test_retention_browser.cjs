@@ -21,11 +21,11 @@ async function signIn(page){await page.bringToFront();await page.goto(base);if(a
  try{
   await launch();let page=await context.newPage();await signIn(page);
   assert.equal(await page.locator('#keep-draft').isChecked(),false);
-  assert((await page.locator('#draft-privacy').textContent()).includes('shared computer'));
+  assert((await page.locator('#draft-privacy').textContent()).includes('共用電腦'));
   assert.equal(await page.locator('#keep-draft').getAttribute('aria-describedby'),'draft-privacy');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.locator('#batch_nodes').fill(node);
-  await page.waitForFunction(()=>document.getElementById('draft-status').textContent==='Draft saved',null,{timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('draft-status').textContent==='草稿已儲存',null,{timeout:10000});
   let record=await page.evaluate(()=>JSON.parse(localStorage.getItem(Drafts.KEY)));
   assert.equal(record.version,1);assert.equal(record.retention_policy,undefined);
   await page.locator('#keep-draft').check();
@@ -54,7 +54,7 @@ async function signIn(page){await page.bringToFront();await page.goto(base);if(a
   const clicking=page.locator('.clear-draft').first().click();
   await (await dialog).accept();await clicking;
   await page.evaluate(()=>{window.saveDraft();window.dispatchEvent(new Event('pagehide'));document.dispatchEvent(new Event('visibilitychange'));});
-  await other.waitForFunction(()=>document.getElementById('draft-status').textContent==='Draft cleared in another tab',null,{timeout:10000});
+  await other.waitForFunction(()=>document.getElementById('draft-status').textContent==='草稿已在其他分頁中清除',null,{timeout:10000});
   await other.evaluate(()=>{window.saveDraft();window.dispatchEvent(new Event('pagehide'));});
   await other.close();
   await page.waitForTimeout(350);
@@ -71,18 +71,18 @@ async function signIn(page){await page.bringToFront();await page.goto(base);if(a
   await page.reload();assert.equal(await page.evaluate(()=>localStorage.getItem(Drafts.KEY)),null);
   // Timed opt-back stores a new finite timestamp; expiry still removes it.
   await page.locator('#keep-draft').uncheck();await page.locator('#batch_nodes').fill(node);
-  await page.waitForFunction(()=>document.getElementById('draft-status').textContent==='Draft saved',null,{timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('draft-status').textContent==='草稿已儲存',null,{timeout:10000});
   await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem(Drafts.KEY));d.saved_at=Date.now()-Drafts.TTL;localStorage.setItem(Drafts.KEY,JSON.stringify(d));});
   await page.reload();assert.equal(await page.locator('#batch_nodes').inputValue(),'');
   assert.equal(await page.evaluate(()=>localStorage.getItem(Drafts.KEY)),null);
   // Quota failure preserves old bytes and new DOM, never POSTs drafts to server.
   await page.locator('#batch_nodes').fill(node);
-  await page.waitForFunction(()=>document.getElementById('draft-status').textContent==='Draft saved',null,{timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('draft-status').textContent==='草稿已儲存',null,{timeout:10000});
   const old=await page.evaluate(()=>localStorage.getItem(Drafts.KEY));let posts=0;
   page.on('request',r=>{if(r.method()==='POST')posts++;});
   await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('quota','QuotaExceededError');};});
   await page.locator('#batch_nodes').fill('Unsaved synthetic input');
-  await page.waitForFunction(()=>document.getElementById('draft-status').textContent.includes('could not be saved'),null,{timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('draft-status').textContent.includes('無法儲存'),null,{timeout:10000});
   assert.equal(await page.evaluate(()=>localStorage.getItem(Drafts.KEY)),old);
   await page.locator('#keep-draft').click();assert.equal(await page.locator('#keep-draft').isChecked(),false);
   assert.equal(posts,0);assert.deepEqual(errors,[]);
@@ -91,7 +91,7 @@ async function signIn(page){await page.bringToFront();await page.goto(base);if(a
   await launch();await context.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw new DOMException('denied','SecurityError');}}));
   page=await context.newPage();await signIn(page);
   await page.locator('#batch_nodes').fill(node);
-  await page.waitForFunction(()=>document.getElementById('draft-status').textContent.includes('could not be saved'),null,{timeout:10000});
+  await page.waitForFunction(()=>document.getElementById('draft-status').textContent.includes('無法儲存'),null,{timeout:10000});
   assert.equal(await page.locator('#batch_nodes').inputValue(),node);
   assert.deepEqual(errors,[]);
   console.log('PASS retention browser: legacy 30-day default, permanent opt-in, actual browser restart, Clear Draft prevents same/cross-tab autosave resurrection, expired/corrupt records absent, sensitive fields excluded, quota/denied safe, mobile fit');

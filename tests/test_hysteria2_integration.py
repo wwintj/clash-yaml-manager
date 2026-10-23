@@ -301,6 +301,6 @@ def test_manual_refresh_and_link_regeneration_reuse_hysteria2_content(store,base
     assert store.slug(regenerated)!=slug and store.resolve(store.slug(regenerated))==content
 
 
-def test_new_hysteria2_validation_display_is_english():
+def test_new_hysteria2_validation_display_is_traditional_chinese():
     from core.ui import display_message
-    assert display_message('第 1 个节点 Hysteria2 配置无效。')=='Item 1 has invalid Hysteria2 configuration.'
+    assert display_message('第 1 个节点 Hysteria2 配置无效。')=='第 1 個節點 Hysteria2 設定無效。'

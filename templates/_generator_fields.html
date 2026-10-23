@@ -1,61 +1,61 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="ui-form-group">
-              <label class="form-label" for="yaml-source">{{ '01 / Base YAML' if fixed_editor else '01 / YAML Source' }}</label>
-              <select id="yaml-source" name="yaml_source" class="form-select terminal-select mb-2" aria-label="YAML source"><option value="default">Default YAML</option><option value="custom">Custom YAML</option></select>
+              <label class="form-label" for="yaml-source">{{ '01 / 基礎 YAML' if fixed_editor else '01 / YAML 來源' }}</label>
+              <select id="yaml-source" name="yaml_source" class="form-select terminal-select mb-2" aria-label="YAML 來源"><option value="default">預設 YAML</option><option value="custom">自訂 YAML</option></select>
               <div id="source-hint" class="form-text mb-2" role="status"></div>
-              <input class="form-control terminal-file" type="file" name="yaml_file" aria-label="Upload YAML file" accept=".yaml,.yml">
-              <div class="form-text">{% if fixed_editor %}Base YAML defines the configuration template. Leave a saved Custom upload empty to keep it; configure node sources separately below.{% else %}Upload Clash/Mihomo YAML or use the server default when no file is selected.{% endif %}</div>
+              <input class="form-control terminal-file" type="file" name="yaml_file" aria-label="上傳 YAML 檔案" accept=".yaml,.yml">
+              <div class="form-text">{% if fixed_editor %}基礎 YAML 決定設定模板。已儲存自訂 YAML 時，上傳欄留空即可保留；節點來源請在下方另行設定。{% else %}上傳 Clash/Mihomo YAML；未選擇檔案時使用伺服器預設 YAML。{% endif %}</div>
             </div>
 
             {% if not fixed_editor %}
             <div class="ui-form-group">
-              <label class="form-label" for="node-update-mode">Node Update Mode</label>
+              <label class="form-label" for="node-update-mode">節點更新模式</label>
               <select id="node-update-mode" name="node_update_mode" class="form-select terminal-select" aria-describedby="node-update-help">
-                <option value="replace" {% if node_update_mode != 'merge' %}selected{% endif %}>Replace existing nodes</option>
-                <option value="merge" {% if node_update_mode == 'merge' %}selected{% endif %}>Merge with existing nodes</option>
+                <option value="replace" {% if node_update_mode != 'merge' %}selected{% endif %}>取代現有節點</option>
+                <option value="merge" {% if node_update_mode == 'merge' %}selected{% endif %}>與現有節點合併</option>
               </select>
-              <div id="node-update-help" class="form-text">Replace: remove source proxies and use submitted nodes. Merge: keep source proxies and append submitted nodes. Existing names must not conflict.</div>
+              <div id="node-update-help" class="form-text">取代：移除來源節點，改用本次提交的節點。合併：保留來源節點並追加本次提交的節點，名稱不可與現有節點衝突。</div>
             </div>
             {% endif %}
-            {% if fixed_editor %}<h3 class="panel-title mb-3">02 / Node Sources — Manual Nodes</h3><p class="form-text">Manual nodes may be empty when external sources provide nodes.</p>{% endif %}
+            {% if fixed_editor %}<h3 class="panel-title mb-3">02 / 節點來源 — 手動節點</h3><p class="form-text">若外部來源已提供節點，手動節點可以留空。</p>{% endif %}
             <div class="ui-form-group">
-              <label class="form-label" for="batch_nodes">02 / Batch Nodes</label>
+              <label class="form-label" for="batch_nodes">02 / 批次節點</label>
               <textarea id="batch_nodes" class="form-control terminal-input" name="batch_nodes" rows="9" placeholder="US|tim|vmess://xxxx&#10;TW|TW55|vmess://xxxx&#10;KP|CHUNCHEON|vmess://xxxx&#10;HK|GIA|vmess://xxxx"></textarea>
-              <div class="form-text">One COUNTRY|NAME|URI, NAME|URI or URI per line; VMess / VLESS / Trojan / Shadowsocks / Hysteria2. Unknown countries produce a warning and can still be generated.</div>
+              <div class="form-text">每行一筆：國家|名稱|URI、名稱|URI 或 URI；支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2。國家未知時會顯示警告，但仍可產生。</div>
             </div>
 
             <div class="ui-form-group">
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
-                  <label class="form-label mb-1">03 / Auxiliary Multi Nodes</label>
-                  <div class="form-text">Add multiple nodes. Leave Country empty for detection; Parse and Generate both include these rows.</div>
+                  <label class="form-label mb-1">03 / 輔助多節點</label>
+                  <div class="form-text">可新增多個節點。國家留空時自動偵測；「解析節點」與「產生」都會包含這些列。</div>
                 </div>
-                <button type="button" id="add-node-row" class="btn btn-outline-terminal btn-terminal btn-sm">+ Add Row</button>
+                <button type="button" id="add-node-row" class="btn btn-outline-terminal btn-terminal btn-sm">+ 新增一列</button>
               </div>
 
               <div id="aux-node-rows">
                 <div class="node-row">
                   <div class="row g-3 align-items-end">
                     <div class="col-md-3">
-                      <label class="form-label">Country</label>
-                      <input class="form-control terminal-input country-search mb-1" type="search" placeholder="Search country / ISO" aria-label="Search country">
-                      <select class="form-select terminal-select aux-country" aria-label="Country">
-                        <option value="">Auto detect</option>
+                      <label class="form-label">國家</label>
+                      <input class="form-control terminal-input country-search mb-1" type="search" placeholder="搜尋國家／ISO 代碼" aria-label="搜尋國家">
+                      <select class="form-select terminal-select aux-country" aria-label="國家">
+                        <option value="">自動偵測</option>
                         {% for code, info in country_mapping.items() %}
-                          <option value="{{ code }}">{{ info.emoji }} {{ code }} · {{ info.english }}</option>
+                          <option value="{{ code }}">{{ info.emoji }} {{ code }} · {{ info.traditional }}</option>
                         {% endfor %}
                       </select>
                     </div>
                     <div class="col-md-3">
-                      <label class="form-label">Node Name</label>
-                      <input type="text" class="form-control terminal-input aux-name" aria-label="Node name" placeholder="GIA">
+                      <label class="form-label">節點名稱</label>
+                      <input type="text" class="form-control terminal-input aux-name" aria-label="節點名稱" placeholder="GIA">
                     </div>
                     <div class="col-md-5">
-                      <label class="form-label">Node Link</label>
-                      <input type="text" class="form-control terminal-input aux-link" aria-label="Node URI" placeholder="vmess://, vless://, trojan://, ss://, hysteria2:// or hy2:// URI">
+                      <label class="form-label">節點連結</label>
+                      <input type="text" class="form-control terminal-input aux-link" aria-label="節點連結" placeholder="vmess://、vless://、trojan://、ss://、hysteria2:// 或 hy2:// 連結">
                     </div>
                     <div class="col-md-1 d-grid">
-                      <button type="button" class="btn btn-danger-terminal btn-terminal btn-sm remove-node-row">DEL</button>
+                      <button type="button" class="btn btn-danger-terminal btn-terminal btn-sm remove-node-row">刪除</button>
                     </div>
                   </div>
                 </div>
@@ -68,9 +68,9 @@
             <input type="hidden" name="node_overrides" id="node-overrides-data">
             <div class="ui-form-group">
               <div class="ui-actions">
-              <button type="button" id="parse-nodes" class="btn btn-outline-terminal btn-terminal">Parse Nodes</button>
-              {% if not fixed_editor %}<button type="button" id="preview-yaml-diff" class="btn btn-outline-terminal btn-terminal">Preview YAML Changes</button>{% endif %}
-              <span id="parse-summary" class="form-text" role="status">Changes not parsed yet</span>
+              <button type="button" id="parse-nodes" class="btn btn-outline-terminal btn-terminal">解析節點</button>
+              {% if not fixed_editor %}<button type="button" id="preview-yaml-diff" class="btn btn-outline-terminal btn-terminal">預覽 YAML 變更</button>{% endif %}
+              <span id="parse-summary" class="form-text" role="status">變更尚未解析</span>
               </div>
               <div id="parse-preview" class="mt-3"></div>
             </div>
@@ -78,18 +78,18 @@
                   <section class="terminal-panel mb-4">
         <div class="panel-inner">
           <div class="panel-title-row">
-            <h2 class="panel-title">04 / Policy Options</h2>
-            <span class="panel-subtitle">Optional Groups</span>
+            <h2 class="panel-title">04 / 策略選項</h2>
+            <span class="panel-subtitle">選用分組</span>
           </div>
 
-          <p class="helper-text mb-3">Selected groups receive all new nodes. Off by default.</p>
+          <p class="helper-text mb-3">勾選的分組會加入所有新節點，預設不勾選。</p>
 
           <div class="row g-2">
             {% for group in default_special_groups %}
               <div class="col-md-6">
                 <label class="terminal-check">
                   <input class="form-check-input" type="checkbox" name="special_groups" value="{{ group }}" form="process-form" id="special_group_{{ loop.index }}">
-                  <span>{{ {'🎥 奈飞节点':'🎥 Netflix Nodes','📹 油管视频':'📹 YouTube Video','💬 Ai平台':'💬 AI Platforms','📲 电报消息':'📲 Telegram Messages'}.get(group, group) }}</span>
+                  <span>{{ {'🎥 奈飞节点':'🎥 Netflix 節點','📹 油管视频':'📹 YouTube 影片','💬 Ai平台':'💬 AI 平台','📲 电报消息':'📲 Telegram 訊息'}.get(group, group) }}</span>
                 </label>
               </div>
             {% endfor %}

@@ -72,7 +72,7 @@ def test_malformed_is_sanitized(payload, format):
 
 @pytest.mark.parametrize('payload', [(VLESS+'\n'+VLESS).encode(), clash([node(),node()])])
 def test_duplicate_names(payload):
-    with pytest.raises(SourceError, match='Duplicate node name'): sources.parse(payload)
+    with pytest.raises(SourceError, match='節點名稱重複'): sources.parse(payload)
 
 
 def test_unnamed_uris_get_ordered_names():
@@ -81,7 +81,7 @@ def test_unnamed_uris_get_ordered_names():
 
 def test_size_and_structure_budgets(monkeypatch):
     monkeypatch.setattr(sources, 'MAX_PAYLOAD', 4)
-    with pytest.raises(SourceError, match='too large'): sources.parse(b'12345')
+    with pytest.raises(SourceError, match='過大'): sources.parse(b'12345')
     with pytest.raises(SourceError): sources._plain([[[1]]], budget=[2])
     cycle = []; cycle.append(cycle)
     with pytest.raises(SourceError): sources._plain(cycle)
@@ -90,7 +90,7 @@ def test_size_and_structure_budgets(monkeypatch):
 def test_cross_source_duplicate_uses_final_display_name():
     first = sources.parse((LINK+'#Tokyo').encode())
     second = sources.parse(clash([node(name='🇯🇵 Tokyo')]))
-    with pytest.raises(SourceError, match='Duplicate node name'): sources.combine([first,second])
+    with pytest.raises(SourceError, match='節點名稱重複'): sources.combine([first,second])
 
 
 @pytest.mark.parametrize('format', ['raw', 'auto'])

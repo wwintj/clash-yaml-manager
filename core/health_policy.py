@@ -7,7 +7,7 @@ from core.node_identity import fingerprint
 from core.refresh_schedule import timestamp
 
 AGES = (3600, 21600, 86400, 172800, 604800)
-AGE_LABELS = ('1 hour', '6 hours', '24 hours', '48 hours', '7 days')
+AGE_LABELS = ('1 小時', '6 小時', '24 小時', '48 小時', '7 天')
 MESSAGE = 'Health-aware Policy settings are invalid.'
 RESULTS = ('off', 'unchanged', 'updated', 'fail-open', 'unavailable', 'error')
 COUNTS = ('groups_filtered', 'candidates_excluded', 'groups_fail_open')

@@ -78,7 +78,7 @@ def test_extract_ignores_unsupported_types(nodes):
 @pytest.mark.parametrize('change',[dict(server=''),dict(server=None),dict(port=True),dict(port='443'),
     dict(port=0),dict(port=65536)])
 def test_invalid_supported_endpoint_fails_without_probe(change):
-    with pytest.raises(HealthError,match='unavailable'): health.extract(yaml_bytes([proxy(**change)]))
+    with pytest.raises(HealthError,match='無法使用'): health.extract(yaml_bytes([proxy(**change)]))
 
 
 @pytest.mark.parametrize('bad',[b'proxies: [',b'proxies: nope',b'!!python/object/apply:os.system [PRIVATE]',
@@ -214,7 +214,7 @@ def test_default_off_no_health_file_no_network_no_fixed_mutation(store,base,obse
     description = observer['health'].describe(entry['id'])
     assert description['mode'] == 'off' and description['counts']['unknown'] == 1
     assert not observer['health'].path.exists() and observer['calls'] == []
-    with pytest.raises(HealthError,match='Enable Manual'): observer['health'].check(entry['id'])
+    with pytest.raises(HealthError,match='請先將健康檢查'): observer['health'].check(entry['id'])
     assert store.path.read_bytes() == before and store._content(entry,'current.yaml') == current
 
 
@@ -279,7 +279,7 @@ def test_node_limit_enforced_before_probe_state_unchanged(store,base,observer,co
     entry = save(store,base,config=config); worker = observer['health']; worker.settings(entry['id'],'manual')
     old = worker.path.read_bytes()
     if count == 257:
-        with pytest.raises(HealthError,match='up to 256'): worker.check(entry['id'])
+        with pytest.raises(HealthError,match='最多支援 256'): worker.check(entry['id'])
         assert worker.path.read_bytes() == old and observer['calls'] == []
     else:
         worker.check(entry['id']); assert worker.describe(entry['id'])['total'] == 256
@@ -372,7 +372,7 @@ def test_auxiliary_corruption_unavailable_but_fixed_and_healthz_work(web,logged_
     assert web.app.test_client().get('/healthz').status_code == 200
     started = time.monotonic(); page = logged_in.get(f'/fixed-subscriptions/{entry["id"]}/edit')
     assert time.monotonic()-started < 2 and page.status_code == 200
-    assert b'Health state unavailable.' in page.data and b'PRIVATE broken json' not in page.data
+    assert '健康狀態無法使用。'.encode() in page.data and b'PRIVATE broken json' not in page.data
     monkeypatch.setattr(node_probe,'probe',lambda *a:pytest.fail('corrupt state caused network'))
     assert post(logged_in,f'/fixed-subscriptions/{entry["id"]}/health/check').status_code == 303
     assert web.app.test_client().get(public).status_code == 200
@@ -391,7 +391,7 @@ def test_health_write_failure_preserves_auxiliary_and_fixed_state(web,logged_in,
     with monkeypatch.context() as injection:
         injection.setattr(health,'write_json',fail)
         result = post(logged_in,f'/fixed-subscriptions/{entry["id"]}/health/check',follow_redirects=True)
-    assert b'Health results could not be saved.' in result.data and b'PRIVATE disk secret' not in result.data
+    assert '無法儲存健康檢查結果。'.encode() in result.data and b'PRIVATE disk secret' not in result.data
     assert worker.path.read_bytes() == before and store.path.read_bytes() == fixed_before
     assert web.app.test_client().get('/s/'+store.slug(entry)).status_code == 200
 
@@ -437,8 +437,8 @@ def test_health_mode_post_auth_csrf_only_and_ui_secrecy(web,logged_in,monkeypatc
     assert post(logged_in,root+'check').status_code == 303
     page = logged_in.get(f'/fixed-subscriptions/{key}/edit')
     section = page.data.split(b'<section id="node-health"')[1].split(b'</section>')[0]
-    assert b'HEALTHY' in section and b'38 ms' in section and b'Last Success' in section
-    assert b'Endpoint reachability only.' in section and b'does not verify proxy authentication' in section
+    assert '健康'.encode() in section and b'38 ms' in section and '上次成功'.encode() in section
+    assert '只檢查端點可達性'.encode() in section and '也不會驗證代理認證'.encode() in section
     assert store.path.read_bytes() == fixed_before
     for secret in (b'example.com',b'11111111-1111-4111-8111-111111111111',LINK.encode(),entry['token'].encode()):
         assert secret not in section and secret not in worker.path.read_bytes() and secret.decode() not in caplog.text
@@ -497,7 +497,7 @@ def test_unexpected_probe_failure_is_sanitized_and_does_not_commit(store,base,ob
     entry = checked(store,base,observer); worker = observer['health']; before = worker.path.read_bytes()
     def fail(*args): raise RuntimeError('PRIVATE endpoint and UUID')
     worker.probe = fail
-    with pytest.raises(HealthError,match='could not be completed') as error: worker.check(entry['id'])
+    with pytest.raises(HealthError,match='無法完成健康檢查') as error: worker.check(entry['id'])
     assert 'PRIVATE' not in str(error.value) and worker.path.read_bytes() == before
     assert store.resolve(store.slug(entry))
 

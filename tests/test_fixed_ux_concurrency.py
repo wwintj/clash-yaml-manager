@@ -84,14 +84,14 @@ def test_list_snapshot_serializes_subscription_and_health_mutation(
     assert all(event.is_set() for event in finished.values())
     assert len(responses) == 1 and responses[0].status_code == 200
     rows = ListHTML(responses[0].get_data(as_text=True))
-    assert '1 healthy' in rows.by_class('fixed-' + family + '-summary')[0].text
+    assert '健康 1' in rows.by_class('fixed-' + family + '-summary')[0].text
     assert store.get(entry['id'])['status'] == 'disabled'
     assert json.loads(worker.path.read_bytes())['subscriptions'][entry['id']]['mode'] == 'off'
     refreshed = logged_in.get('/fixed-subscriptions')
     assert refreshed.status_code == 200
     dom = ListHTML(refreshed.get_data(as_text=True))
     assert dom.rows[0].attrs['data-status'] == 'disabled'
-    assert dom.by_class('fixed-' + family + '-summary')[0].text.strip() == family.capitalize() + 'Off'
+    assert dom.by_class('fixed-' + family + '-summary')[0].text.strip() == {'endpoint': '端點', 'proxy': '代理'}[family] + '關閉'
 
 
 @pytest.mark.parametrize('family', ['endpoint', 'proxy'])
@@ -126,7 +126,7 @@ def test_busy_health_writer_does_not_hold_list_or_fixed_mutation(
         assert completed.wait(10), 'List waited on the busy Health lock'
         assert responses[0].status_code == 200
         dom = ListHTML(responses[0].get_data(as_text=True))
-        assert 'Unavailable' in dom.by_class('fixed-' + family + '-summary')[0].text
+        assert '無法使用' in dom.by_class('fixed-' + family + '-summary')[0].text
         assert snapshot(store) == before, 'Busy list GET wrote business state'
         # The writer still owns Health; the completed list must have released Fixed.
         with store._locked(blocking=False):

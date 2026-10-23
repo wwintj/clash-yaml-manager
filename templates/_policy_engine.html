@@ -1,41 +1,41 @@
-<section class="terminal-panel mb-4" aria-label="Policy Engine"><div class="panel-inner">
-  <h2 class="panel-title">Policy Engine</h2>
-  <p class="helper-text">Preserve keeps existing YAML group behavior; Select chooses manually; URL-Test prefers lower latency; Fallback uses ordered backups; Load-Balance distributes traffic.</p>
-  <p class="form-text">{% if fixed_editor %}Health-aware filtering below is Off by default and can optionally exclude fresh Proxy UNHEALTHY candidates with fail-open.{% else %}Health observations do not automatically remove nodes in this version.{% endif %} These controls generate client policies; they do not run server health checks.</p>
+<section class="terminal-panel mb-4" aria-label="策略引擎"><div class="panel-inner">
+  <h2 class="panel-title">策略引擎</h2>
+  <p class="helper-text">保留：沿用 YAML 既有的分組行為；手動選擇：由使用者手動切換；延遲測試（URL-Test）：優先使用延遲較低的節點；故障轉移（Fallback）：依序使用備援節點；負載平衡（Load-Balance）：分散流量。</p>
+  <p class="form-text">{% if fixed_editor %}下方的健康感知篩選預設關閉，可選擇排除近期確認「不健康」的代理候選節點，候選不足時保守保留（fail-open）。{% else %}此版本的健康觀測結果不會自動移除節點。{% endif %}這些選項只會產生用戶端策略，不會在伺服器端執行健康檢查。</p>
   <div class="row g-3">
-  {% for scope, label in [('country_groups', 'Country Groups'), ('special_groups', 'Special Groups')] %}
+  {% for scope, label in [('country_groups', '國家組'), ('special_groups', '特殊組')] %}
     {% set prefix = 'policy_' + scope + '_' %}
     {% set kind = policy_fields[prefix + 'type'] %}
     {% set automatic = kind in ['url-test', 'fallback', 'load-balance'] %}
     <div class="col-md-6" data-policy-scope>
       <label class="form-label" for="{{ prefix }}type">{{ label }}</label>
       <select class="form-select terminal-select" name="{{ prefix }}type" id="{{ prefix }}type" data-policy-type>
-        {% if kind not in ['preserve', 'select', 'url-test', 'fallback', 'load-balance'] %}<option value="{{ kind }}" selected>Invalid type — select a valid policy</option>{% endif %}
-        {% for value, title in [('preserve','Preserve'), ('select','Select'), ('url-test','URL-Test'), ('fallback','Fallback'), ('load-balance','Load-Balance')] %}
+        {% if kind not in ['preserve', 'select', 'url-test', 'fallback', 'load-balance'] %}<option value="{{ kind }}" selected>無效類型，請選擇有效的策略</option>{% endif %}
+        {% for value, title in [('preserve','保留原設定'), ('select','手動選擇'), ('url-test','延遲測試（URL-Test）'), ('fallback','故障轉移（Fallback）'), ('load-balance','負載平衡（Load-Balance）')] %}
         <option value="{{ value }}" {% if value == kind %}selected{% endif %}>{{ title }}</option>
         {% endfor %}
       </select>
       <div data-policy-options {% if not automatic %}hidden{% endif %}>
-        <p class="form-text">Only generated proxy nodes assigned to this managed group become candidates. DIRECT and nested groups are not included. {% if fixed_editor %}Health-aware filtering is separately opt-in; it never ranks candidates.{% else %}Health observations do not rank or remove candidates.{% endif %}</p>
-        <label class="form-label mt-2" for="{{ prefix }}url">Client test URL</label>
+        <p class="form-text">只有分配到此受管分組的已產生代理節點會成為候選，不包含 DIRECT 與巢狀分組。{% if fixed_editor %}健康感知篩選需另行啟用，且不會為候選節點排序。{% else %}健康觀測結果不會為候選節點排序或移除候選節點。{% endif %}</p>
+        <label class="form-label mt-2" for="{{ prefix }}url">用戶端測試 URL</label>
         <input class="form-control terminal-input" name="{{ prefix }}url" id="{{ prefix }}url" type="url" maxlength="2048" value="{{ policy_fields[prefix + 'url'] }}" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
-        <div class="form-text">HTTP/HTTPS, including client-local targets. The server never fetches this URL.</div>
-        <label class="form-label mt-2" for="{{ prefix }}interval">Interval (seconds)</label>
+        <div class="form-text">支援 HTTP/HTTPS，包含用戶端本機目標；伺服器不會存取此 URL。</div>
+        <label class="form-label mt-2" for="{{ prefix }}interval">間隔（秒）</label>
         <input class="form-control terminal-input" name="{{ prefix }}interval" id="{{ prefix }}interval" type="number" min="30" max="86400" value="{{ policy_fields[prefix + 'interval'] }}" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
-        <label class="form-label mt-2" for="{{ prefix }}lazy">Lazy testing</label>
+        <label class="form-label mt-2" for="{{ prefix }}lazy">延遲測試（lazy）</label>
         <select class="form-select terminal-select" name="{{ prefix }}lazy" id="{{ prefix }}lazy" data-policy-option="common" {% if not automatic %}disabled{% endif %}>
           {% set lazy = policy_fields[prefix + 'lazy'] %}
-          {% if lazy not in ['true', 'false'] %}<option value="{{ lazy }}" selected>Invalid value</option>{% endif %}
-          <option value="true" {% if lazy == 'true' %}selected{% endif %}>True</option><option value="false" {% if lazy == 'false' %}selected{% endif %}>False</option>
+          {% if lazy not in ['true', 'false'] %}<option value="{{ lazy }}" selected>無效值</option>{% endif %}
+          <option value="true" {% if lazy == 'true' %}selected{% endif %}>是</option><option value="false" {% if lazy == 'false' %}selected{% endif %}>否</option>
         </select>
         <div data-policy-only="url-test" {% if kind != 'url-test' %}hidden{% endif %}>
-          <label class="form-label mt-2" for="{{ prefix }}tolerance">Tolerance (ms)</label>
+          <label class="form-label mt-2" for="{{ prefix }}tolerance">容差（毫秒）</label>
           <input class="form-control terminal-input" name="{{ prefix }}tolerance" id="{{ prefix }}tolerance" type="number" min="0" max="10000" value="{{ policy_fields[prefix + 'tolerance'] }}" data-policy-option="url-test" {% if kind != 'url-test' %}disabled{% endif %}>
         </div>
         <div data-policy-only="load-balance" {% if kind != 'load-balance' %}hidden{% endif %}>
-          <label class="form-label mt-2" for="{{ prefix }}strategy">Strategy</label>
+          <label class="form-label mt-2" for="{{ prefix }}strategy">策略</label>
           <select class="form-select terminal-select" name="{{ prefix }}strategy" id="{{ prefix }}strategy" data-policy-option="load-balance" {% if kind != 'load-balance' %}disabled{% endif %}>
-            {% if policy_fields[prefix + 'strategy'] != 'round-robin' %}<option value="{{ policy_fields[prefix + 'strategy'] }}" selected>Invalid strategy</option>{% endif %}
+            {% if policy_fields[prefix + 'strategy'] != 'round-robin' %}<option value="{{ policy_fields[prefix + 'strategy'] }}" selected>無效策略</option>{% endif %}
             <option value="round-robin" {% if policy_fields[prefix + 'strategy'] == 'round-robin' %}selected{% endif %}>round-robin</option>
           </select>
         </div>

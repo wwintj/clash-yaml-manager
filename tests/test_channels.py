@@ -193,7 +193,7 @@ def test_web_build_footer(web, client, channel):
     write_install_info(web.BASE_DIR,info)
     html=client.get('/').get_data(as_text=True)
     if channel=='main':
-        assert f'v{version}-dev+aaaaaaa' in html and 'DEV · Development Build' in html
+        assert f'v{version}-dev+aaaaaaa' in html and 'DEV · 開發版' in html
     else:
         assert f'Clash YAML Manager v{version}' in html and 'DEV · Development Build' not in html
 
@@ -204,8 +204,8 @@ def test_web_build_footer_rejects_metadata_for_another_version(web, client):
     write_install_info(web.BASE_DIR,make_install_info('main',other,A))
     html=client.get('/').get_data(as_text=True)
     assert f'Clash YAML Manager v{version}' in html
-    assert 'Build metadata unavailable' in html
-    assert '-dev+aaaaaaa' not in html and 'DEV · Development Build' not in html
+    assert '無法取得版本資訊' in html
+    assert '-dev+aaaaaaa' not in html and 'DEV · 開發版' not in html
 
 
 def test_real_update_hooks_preserve_state_across_main_updates(deployment):

@@ -12,6 +12,7 @@ import pytest
 from core import (fixed_subscriptions, generator, health_schedule, mihomo_manager,
                   mihomo_probe, node_health, node_probe, proxy_health, source_fetch)
 from core.node_identity import fingerprint
+from core.ui import DISPLAY_LABELS as LABELS
 from core.state import write_json
 from conftest import LINK
 from test_external_sources import payload, remote, uploaded
@@ -191,7 +192,7 @@ def test_empty_list_get_never_creates_registry_or_auxiliary_json(web, logged_in,
     calls = forbid_work(monkeypatch, web)
     for _ in range(2):
         response, dom = overview(logged_in)
-        assert b'No fixed subscriptions yet.' in response.data and not dom.rows
+        assert '尚未建立固定訂閱。'.encode() in response.data and not dom.rows
     assert snapshot(store) == before and calls == []
     assert all(not path.exists() for path in paths)
     assert not (store.state / 'node_health.lock').exists()
@@ -212,8 +213,8 @@ def test_repeated_list_get_preserves_registry_auxiliary_bytes_revisions_and_cach
         assert len(dom.rows) == 1
         for selector in ('fixed-endpoint-summary', 'fixed-proxy-summary'):
             text = dom.by_class(selector)[0].text.lower()
-            assert mode in text
-            assert ('healthy' not in text) if mode == 'off' else ('healthy' in text)
+            assert LABELS[mode] in text
+            assert ('健康' not in text) if mode == 'off' else ('健康' in text)
     assert snapshot(store) == before and calls == []
     assert json.loads(store.path.read_bytes())['version'] == 6
     for family in ('node_health.json', 'proxy_health.json'):
@@ -230,7 +231,7 @@ def test_endpoint_list_summary_current_fingerprint_is_aggregate_only(
     calls = forbid_work(monkeypatch, web)
     _, dom = overview(logged_in)
     shown = dom.by_class('fixed-endpoint-summary')[0].text.lower()
-    assert 'endpoint' in shown and 'manual' in shown and kind in shown
+    assert '端點' in shown and '手動' in shown and LABELS[kind] in shown
     assert 'mystery' not in shown and 'example.com' not in shown
     assert snapshot(store) == before and calls == []
 
@@ -245,9 +246,9 @@ def test_proxy_list_summary_does_not_conflate_unsupported_with_unhealthy(
     calls = forbid_work(monkeypatch, web)
     _, dom = overview(logged_in)
     shown = dom.by_class('fixed-proxy-summary')[0].text.lower()
-    assert 'proxy' in shown and 'manual' in shown and kind in shown
+    assert '代理' in shown and '手動' in shown and LABELS[kind] in shown
     if kind == 'unsupported':
-        assert 'unhealthy' not in shown
+        assert '不健康' not in shown
     assert snapshot(store) == before and calls == []
 
 
@@ -261,7 +262,7 @@ def test_stale_healthy_fingerprint_never_labels_current_nodes_healthy(
     calls = forbid_work(monkeypatch, web)
     _, dom = overview(logged_in)
     shown = dom.by_class('fixed-' + family + '-summary')[0].text.lower()
-    assert 'unknown' in shown and 'healthy' not in shown
+    assert '未知' in shown and '健康' not in shown
     assert snapshot(store) == before and calls == []
 
 
@@ -286,7 +287,7 @@ def test_auxiliary_failures_leave_fixed_overview_available_without_repair(
     calls = forbid_work(monkeypatch, web)
     response, dom = overview(logged_in)
     shown = dom.by_class('fixed-' + family + '-summary')[0].text.lower()
-    assert 'unavailable' in shown and len(dom.rows) == 1
+    assert '無法使用' in shown and len(dom.rows) == 1
     assert b'PRIVATE_AUXILIARY_SECRET' not in response.data
     assert snapshot(store) == before and calls == []
 
@@ -309,7 +310,7 @@ def test_unreadable_auxiliary_state_is_unavailable_without_breaking_list(
     before = snapshot(store)
     calls = forbid_work(monkeypatch, web)
     response, dom = overview(logged_in)
-    assert 'unavailable' in dom.by_class('fixed-' + family + '-summary')[0].text.lower()
+    assert '無法使用' in dom.by_class('fixed-' + family + '-summary')[0].text.lower()
     assert b'PRIVATE_IO_ERROR' not in response.data and len(dom.rows) == 1
     assert snapshot(store) == before and calls == []
 
@@ -347,8 +348,8 @@ def test_external_source_count_excludes_manual_and_does_not_fetch_or_mutate(
     calls = forbid_work(monkeypatch, web)
     response, dom = overview(logged_in)
     rows = {row.attrs['data-name']: row for row in dom.rows}
-    assert 'External Sources: 0' in rows['Manual only'].text
-    assert 'External Sources: 2' in rows['Mixed sources'].text
+    assert '外部來源：0' in rows['Manual only'].text
+    assert '外部來源：2' in rows['Mixed sources'].text
     assert b'source.example' not in response.data and b'token=PRIVATE' not in response.data
     assert LINK.encode() not in response.data
     assert snapshot(store) == before and calls == []
@@ -364,7 +365,7 @@ def test_legacy_registry_list_display_never_writes_a_schema_migration(web, logge
     before = snapshot(store)
     calls = forbid_work(monkeypatch, web)
     _, dom = overview(logged_in)
-    assert len(dom.rows) == 1 and 'External Sources: 0' in dom.rows[0].text
+    assert len(dom.rows) == 1 and '外部來源：0' in dom.rows[0].text
     assert snapshot(store) == before and calls == []
     assert json.loads(store.path.read_bytes())['version'] == 1
 
@@ -445,8 +446,8 @@ def test_without_javascript_all_subscriptions_and_authenticated_post_forms_rende
                        child.attrs.get('name') == 'csrf_token' and child.attrs.get('value')
                        for child in form.children)
             if action == 'regenerate':
-                assert form.attrs['data-confirm'] == 'This will invalidate the old subscription URL.'
+                assert form.attrs['data-confirm'] == '此操作會使舊的訂閱 URL 失效。'
             elif action == 'delete':
-                assert form.attrs['data-confirm'] == 'Delete this fixed subscription? Its URL will stop working permanently.'
+                assert form.attrs['data-confirm'] == '確定刪除這個固定訂閱？其 URL 將永久失效。'
         edit = '/fixed-subscriptions/' + entry['id'] + '/edit'
         assert any(node.tag == 'a' and node.attrs.get('href') == edit for node in dom.nodes)

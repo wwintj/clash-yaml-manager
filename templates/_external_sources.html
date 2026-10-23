@@ -2,59 +2,59 @@
 <section class="external-source terminal-panel mb-3" data-source-id="{{ fields.id or '' }}" data-source-type="{{ fields.type }}">
   <div class="panel-inner">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-      <strong>{{ 'REMOTE URL' if fields.type == 'remote_url' else 'UPLOADED SOURCE' }}</strong>
-      <span class="source-status">{{ saved.status_display if saved else 'Error' if error_messages else 'Never fetched' }}</span>
-      {% if saved %}<span>{{ saved.node_count }} nodes</span>{% endif %}
+      <strong>{{ '遠端 URL' if fields.type == 'remote_url' else '上傳來源' }}</strong>
+      <span class="source-status">{{ saved.status_display if saved else '錯誤' if error_messages else '尚未擷取' }}</span>
+      {% if saved %}<span>{{ saved.node_count }} 個節點</span>{% endif %}
     </div>
-    <div class="mb-3"><label class="form-label">Source Name<input class="source-name form-control terminal-input" value="{{ fields.name }}" required maxlength="128"></label></div>
+    <div class="mb-3"><label class="form-label">來源名稱<input class="source-name form-control terminal-input" value="{{ fields.name }}" required maxlength="128"></label></div>
     {% if fields.type == 'remote_url' %}
-    <div class="mb-3"><label class="form-label">Remote URL<input type="url" class="source-url form-control terminal-input" value="{{ fields.url }}" autocomplete="off" spellcheck="false" required placeholder="https://example.com/sub?token=..."></label></div>
-    <div class="mb-3"><label class="form-label">Auto Refresh<select class="source-refresh-interval form-select terminal-select">
+    <div class="mb-3"><label class="form-label">遠端 URL<input type="url" class="source-url form-control terminal-input" value="{{ fields.url }}" autocomplete="off" spellcheck="false" required placeholder="https://example.com/sub?token=..."></label></div>
+    <div class="mb-3"><label class="form-label">自動重新整理<select class="source-refresh-interval form-select terminal-select">
       {% for value, label in refresh_options %}<option value="{{ value if value is not none else '' }}" {% if fields.refresh_interval_seconds == value or value is none and not fields.refresh_interval_seconds %}selected{% endif %}>{{ label }}</option>{% endfor %}
     </select></label></div>
     {% else %}
-    {% if saved %}<p class="form-text">Current source file: saved. Leave empty to keep it.</p>{% endif %}
-    <div class="mb-3"><label class="form-label">Node source file<input type="file" class="source-file form-control terminal-file" {% if not saved %}required{% endif %}></label></div>
+    {% if saved %}<p class="form-text">目前來源檔案：已儲存。留空即可保留。</p>{% endif %}
+    <div class="mb-3"><label class="form-label">節點來源檔案<input type="file" class="source-file form-control terminal-file" {% if not saved %}required{% endif %}></label></div>
     {% endif %}
-    <div class="mb-3"><label class="form-label">Format<select class="source-format form-select terminal-select">
-      {% for value, label in [('auto','Auto'),('clash','Clash / Mihomo YAML'),('raw','Raw URI List'),('base64','Base64 URI List')] %}<option value="{{ value }}" {% if fields.format == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    <div class="mb-3"><label class="form-label">格式<select class="source-format form-select terminal-select">
+      {% for value, label in [('auto','自動判斷'),('clash','Clash / Mihomo YAML'),('raw','URI 清單（純文字）'),('base64','URI 清單（Base64）')] %}<option value="{{ value }}" {% if fields.format == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
     </select></label></div>
-    <label class="terminal-check mb-3"><input type="checkbox" class="source-enabled form-check-input" {% if fields.enabled %}checked{% endif %}><span>Enabled</span></label>
+    <label class="terminal-check mb-3"><input type="checkbox" class="source-enabled form-check-input" {% if fields.enabled %}checked{% endif %}><span>啟用</span></label>
     {% if saved %}
     {% if saved.type == 'remote_url' %}
     <div class="form-text source-schedule">
-      <p>Last Attempt: {{ saved.attempt_display }}</p>
-      <p>Last Success: {{ saved.success_display }}</p>
-      <p>Next Refresh: <span class="next-refresh" data-next-refresh="{{ saved.next_refresh_at if saved.next_refresh_at is not none else '' }}">{{ saved.next_display }}</span></p>
-      <p>Consecutive Failures: {{ saved.consecutive_failures }}</p>
+      <p>上次嘗試：{{ saved.attempt_display }}</p>
+      <p>上次成功：{{ saved.success_display }}</p>
+      <p>下次重新整理：<span class="next-refresh" data-next-refresh="{{ saved.next_refresh_at if saved.next_refresh_at is not none else '' }}">{{ saved.next_display }}</span></p>
+      <p>連續失敗次數：{{ saved.consecutive_failures }}</p>
     </div>
-    <details class="source-history mb-3"><summary>Recent Refreshes</summary>
-      {% for record in saved.history_display %}<p class="form-text">{{ record.at_display }} · {{ record.trigger|upper }} · {{ record.result|upper }} · {{ record.node_count }} nodes{% if record.error_display %} · {{ record.error_display }}{% endif %}</p>{% else %}<p class="form-text">No refresh history.</p>{% endfor %}
+    <details class="source-history mb-3"><summary>最近的重新整理</summary>
+      {% for record in saved.history_display %}<p class="form-text">{{ record.at_display }} · {{ record.trigger|ui_label }} · {{ record.result|ui_label }} · {{ record.node_count }} 個節點{% if record.error_display %} · {{ record.error_display }}{% endif %}</p>{% else %}<p class="form-text">沒有重新整理紀錄。</p>{% endfor %}
     </details>
-    {% else %}<p class="form-text">Last successful refresh: {{ saved.success_display }}</p>{% endif %}
-    {% if saved.using_cache %}<p class="source-warning">Using last successful data.</p>{% endif %}
+    {% else %}<p class="form-text">上次成功重新整理：{{ saved.success_display }}</p>{% endif %}
+    {% if saved.using_cache %}<p class="source-warning">正在使用上次成功取得的資料。</p>{% endif %}
     {% if saved.error_display %}<p class="source-warning">{{ saved.error_display }}</p>{% endif %}
-    {% for warning in saved.warnings %}<p class="source-warning">{{ warning }}</p>{% endfor %}
+    {% for warning in saved.warnings %}<p class="source-warning">{{ warning | ui_message }}</p>{% endfor %}
     <div class="d-flex flex-wrap gap-2">
-      {% if saved.type == 'remote_url' %}<button type="submit" form="source-{{ saved.id }}-refresh" class="btn btn-outline-terminal btn-terminal btn-sm" {% if not saved.enabled %}disabled{% endif %}>Refresh</button>{% endif %}
-      <button type="submit" form="source-{{ saved.id }}-{{ 'disable' if saved.enabled else 'enable' }}" class="btn btn-outline-terminal btn-terminal btn-sm">{{ 'Disable Source' if saved.enabled else 'Enable Source' }}</button>
-      <button type="submit" form="source-{{ saved.id }}-delete" class="btn btn-danger-terminal btn-terminal btn-sm">Delete Source</button>
+      {% if saved.type == 'remote_url' %}<button type="submit" form="source-{{ saved.id }}-refresh" class="btn btn-outline-terminal btn-terminal btn-sm" {% if not saved.enabled %}disabled{% endif %}>重新整理</button>{% endif %}
+      <button type="submit" form="source-{{ saved.id }}-{{ 'disable' if saved.enabled else 'enable' }}" class="btn btn-outline-terminal btn-terminal btn-sm">{{ '停用來源' if saved.enabled else '啟用來源' }}</button>
+      <button type="submit" form="source-{{ saved.id }}-delete" class="btn btn-danger-terminal btn-terminal btn-sm">刪除來源</button>
     </div>
-    {% else %}{% if error_messages %}<p class="source-warning">No usable saved data. Correct the source and save again.</p>{% endif %}<button type="button" class="remove-source btn btn-danger-terminal btn-terminal btn-sm">Remove unsaved source</button>{% endif %}
+    {% else %}{% if error_messages %}<p class="source-warning">沒有可用的已儲存資料，請修正來源後重新儲存。</p>{% endif %}<button type="button" class="remove-source btn btn-danger-terminal btn-terminal btn-sm">移除未儲存的來源</button>{% endif %}
   </div>
 </section>
 {% endmacro %}
 <div class="ui-section" id="external-source-section">
-  <h3 class="panel-title mb-3">External Node Sources</h3>
-  <p class="form-text">VMess / VLESS / Trojan / Shadowsocks / Hysteria2. Sources are merged in displayed order. Save fetches enabled remote URLs; failed requests can use unchanged last-good data. Refresh actions use saved settings.</p>
+  <h3 class="panel-title mb-3">外部節點來源</h3>
+  <p class="form-text">支援 VMess / VLESS / Trojan / Shadowsocks / Hysteria2。各來源依顯示順序合併。儲存時會擷取已啟用的遠端 URL；請求失敗時可沿用上次成功的資料。重新整理會使用已儲存的設定。</p>
   <div id="external-sources">{% for card in external_cards %}{{ source_card(card.fields, card.saved) }}{% endfor %}</div>
   <input type="hidden" name="sources" id="external-sources-data">
   <div class="d-flex flex-wrap gap-2">
-    <button type="button" id="add-remote-source" class="btn btn-outline-terminal btn-terminal btn-sm">Add Remote URL</button>
-    <button type="button" id="add-uploaded-source" class="btn btn-outline-terminal btn-terminal btn-sm">Add Uploaded Source</button>
-    {% if entry %}<button type="submit" form="refresh-all-sources" class="btn btn-outline-terminal btn-terminal btn-sm">Refresh All Sources</button>{% endif %}
+    <button type="button" id="add-remote-source" class="btn btn-outline-terminal btn-terminal btn-sm">新增遠端 URL</button>
+    <button type="button" id="add-uploaded-source" class="btn btn-outline-terminal btn-terminal btn-sm">新增上傳來源</button>
+    {% if entry %}<button type="submit" form="refresh-all-sources" class="btn btn-outline-terminal btn-terminal btn-sm">重新整理所有來源</button>{% endif %}
   </div>
-  <p class="form-text">Auto Refresh is Off by default. A systemd timer checks enabled remote sources every five minutes. Failed refreshes use last-good data and retry with backoff. Refresh actions use saved settings.</p>
+  <p class="form-text">自動重新整理預設關閉。systemd 計時器每五分鐘檢查一次已啟用的遠端來源；失敗時沿用上次成功的資料，並以退避方式重試。重新整理會使用已儲存的設定。</p>
 </div>
 <template id="remote-source-template">{{ source_card(dict(id='',type='remote_url',name='',url='',format='auto',enabled=true,refresh_interval_seconds=none)) }}</template>
 <template id="uploaded-source-template">{{ source_card(dict(id='',type='uploaded',name='',format='auto',enabled=true)) }}</template>

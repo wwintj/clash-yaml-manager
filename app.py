@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 
 from core import parser, generator
-from core.ui import display_message, BROWSER_DISPLAY_PHRASES
+from core.ui import display_label, display_message, BROWSER_DISPLAY_LABELS, BROWSER_DISPLAY_PHRASES
 from core import yaml_utils
 from core.security import AuthStore, CREDENTIAL_KEYS
 from core.state import StateError, file_lock, atomic_write
@@ -277,7 +277,9 @@ def login_required(func):
 
 
 app.jinja_env.filters['ui_message'] = display_message
+app.jinja_env.filters['ui_label'] = display_label
 app.jinja_env.globals['ui_display_phrases'] = BROWSER_DISPLAY_PHRASES
+app.jinja_env.globals['ui_display_labels'] = BROWSER_DISPLAY_LABELS
 
 
 def get_base_context() -> Dict[str, Any]:

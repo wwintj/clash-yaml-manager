@@ -1,2 +1,2 @@
-<p>Next Automatic Check: {{ health_schedule.next_display }}{% if entry.status == 'disabled' and health_schedule.mode == 'automatic' %} · Paused while subscription is disabled{% endif %}</p>
-<p>Last Trigger: {{ health_schedule.trigger_display }} · Scheduler Result: {{ health_schedule.scheduler_display }}</p>
+<p>下次自動檢查：{{ health_schedule.next_display }}{% if entry.status == 'disabled' and health_schedule.mode == 'automatic' %} · 訂閱停用期間暫停{% endif %}</p>
+<p>上次觸發：{{ health_schedule.trigger_display | ui_label }} · 排程結果：{{ health_schedule.scheduler_display | ui_label }}</p>

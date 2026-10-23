@@ -29,7 +29,7 @@ for item in json.loads(Path(__file__).with_name('countries.json').read_text(enco
     COUNTRIES[code] = dict(item, emoji=emoji, label=label, group=f'{emoji} {label}节点',
                            aliases=list(dict.fromkeys(item['aliases'] + CITY_ALIASES.get(code, []))))
 COUNTRIES = {code: COUNTRIES[code] for code in COMMON + sorted(set(COUNTRIES) - set(COMMON))}
-UNKNOWN = dict(code='UNKNOWN', emoji='🌐', english='Unknown', chinese='未知', label='Unknown',
+UNKNOWN = dict(code='UNKNOWN', emoji='🌐', english='Unknown', chinese='未知', traditional='未知', label='Unknown',
                group='🌐 其他节点', aliases=[])
 COUNTRY_MAPPING = dict(COUNTRIES, UNKNOWN=UNKNOWN)
 for code, country in COUNTRY_MAPPING.items():

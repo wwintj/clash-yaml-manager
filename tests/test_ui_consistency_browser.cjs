@@ -12,7 +12,7 @@ const widths = [1440,1280,1024,768,430,390,360];
 const batch = 'US|UI Node|vless://11111111-1111-4111-8111-111111111111@8.8.8.8:443?type=tcp\nUNKNOWN|Mystery|trojan://TEST_ONLY_UI_PASSWORD@8.8.4.4:443';
 const source = 'proxies: []\nproxy-groups: []\nrules: [MATCH,DIRECT]\nx-long-value: '+ 'W'.repeat(900)+'\n';
 const audit = [];
-const knownOldCopy = ['請輸入管理密碼', '每行支援', '新增多個節點', '勾選後', '修改管理密碼', '安全令牌已刷新', '节点解析失败', 'Policy 配置无效', '没有提供任何有效的新节点', 'Generate as 其他节点'];
+const knownOldCopy = ['安全令牌已刷新', '节点解析失败', 'Policy 配置无效', '没有提供任何有效的新节点', 'Generate as 其他节点'];
 async function navigate(page, action) { await Promise.all([page.waitForNavigation(),action()]); }
 async function upload(page) {
   await page.locator('#yaml-source').selectOption('custom');
@@ -64,7 +64,7 @@ async function check(page,name,width,shotSelector) {
       shellPadding:parseFloat(getComputedStyle(document.querySelector('.app-shell')).paddingLeft)};
   });
   assert.equal(details.overflow,0,`${name} ${width}: page overflow`);
-  assert.equal(details.language,'en');
+  assert.equal(details.language,'zh-Hant-TW');
   assert.deepEqual(details.fonts,[],`${name} ${width}: font mismatch`);
   assert(details.shellPadding>=16);
   for(const old of knownOldCopy) assert(!details.text.includes(old),`${name}: old UI copy ${old}`);
@@ -72,11 +72,11 @@ async function check(page,name,width,shotSelector) {
     assert.equal(nav.current,1,`${name}: active ${nav.label}`);
     assert(Math.max(...nav.height)-Math.min(...nav.height)<=1,`${name}: nav height`);
     assert.equal(new Set(nav.padding).size,1);assert(nav.usable);
-    const secondary=nav.label==='Settings sections';
+    const secondary=nav.label==='設定分區';
     const expected=width<=575?(secondary?40:42):(secondary?36:40);
     assert(nav.height.every(height=>Math.abs(height-expected)<=1),`${name}: ${nav.label} density`);
     assert(nav.gap<=(secondary?6:8),`${name}: compact nav gap`);
-    if(secondary) assert(Math.max(...nav.height)<Math.min(...details.navs.find(n=>n.label==='Main navigation').height),`${name}: secondary nav must be lighter`);
+    if(secondary) assert(Math.max(...nav.height)<Math.min(...details.navs.find(n=>n.label==='主選單').height),`${name}: secondary nav must be lighter`);
   }
   if(details.controls.length) assert(Math.max(...details.controls)-Math.min(...details.controls)<=1,`${name}: input/select heights`);
   for(const button of details.buttons) {
@@ -103,8 +103,8 @@ async function check(page,name,width,shotSelector) {
     const target=page.locator(shotSelector).first();await target.scrollIntoViewIfNeeded();
     if(['generate','fixed-edit','fixed-create','fixed-list'].includes(name)) await page.evaluate(()=>window.scrollTo(0,0));
     await page.screenshot({mask,path:path.join(artifacts,`${name}-${width}.png`)});
-    if(name==='generate') await page.getByRole('navigation',{name:'Main navigation'}).screenshot({path:path.join(artifacts,`main-nav-${width}.png`)});
-    if(name==='settings-overview') await page.getByRole('navigation',{name:'Settings sections'}).screenshot({path:path.join(artifacts,`settings-nav-${width}.png`)});
+    if(name==='generate') await page.getByRole('navigation',{name:'主選單'}).screenshot({path:path.join(artifacts,`main-nav-${width}.png`)});
+    if(name==='settings-overview') await page.getByRole('navigation',{name:'設定分區'}).screenshot({path:path.join(artifacts,`settings-nav-${width}.png`)});
     // Section detail is readable even when the complete mobile page is very tall.
     await target.screenshot({mask,path:path.join(artifacts,`${name}-${width}-detail.png`)});
   }
@@ -126,15 +126,15 @@ async function check(page,name,width,shotSelector) {
           return route.fulfill({path:process.env.BOOTSTRAP_JS_PATH,contentType:'text/javascript'});
         return route.abort();
       });
-      await page.goto(base);assert(await page.getByRole('button',{name:'Sign in',exact:true}).isVisible());
+      await page.goto(base);assert(await page.getByRole('button',{name:'登入',exact:true}).isVisible());
       await check(page,'login',width,'.login-panel');
       await page.locator('#password').fill('UI_INCORRECT_PASSWORD');
       await navigate(page,()=>page.locator('#password').press('Enter'));
-      assert(await page.getByText('Login failed. Incorrect password.').isVisible());await check(page,'login-error',width,'.login-panel');
+      assert(await page.getByText('登入失敗，密碼錯誤。').isVisible());await check(page,'login-error',width,'.login-panel');
       await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
       await navigate(page,()=>page.locator('#password').press('Enter'));
       await check(page,'generate',width,'#process-form');
-      const mainLinks=page.getByRole('navigation',{name:'Main navigation'}).getByRole('link');
+      const mainLinks=page.getByRole('navigation',{name:'主選單'}).getByRole('link');
       const activeLink=mainLinks.first(),inactiveLink=mainLinks.last();
       const beforeActive=await activeLink.boundingBox();
       await activeLink.evaluate(e=>e.removeAttribute('aria-current'));
@@ -148,24 +148,24 @@ async function check(page,name,width,shotSelector) {
       const groupLabels=await page.locator('[name=special_groups]').evaluateAll(controls=>controls.map(e=>e.closest('label').innerText.trim()));
       assert.equal(groupLabels.length,8);assert(groupLabels.every(Boolean),'Every policy checkbox must have a visible label');
       // Real Bootstrap modal, keyboard focus, close and non-empty password copy.
-      const trigger=page.getByRole('button',{name:'Change Password',exact:true});
+      const trigger=page.getByRole('button',{name:'變更密碼',exact:true});
       await Promise.all([page.evaluate(()=>new Promise(resolve=>document.getElementById('changePasswordModal').addEventListener('shown.bs.modal',()=>resolve(true),{once:true}))),trigger.click()]);
       await page.locator('#changePasswordModal').waitFor({state:'visible'});
-      assert(await page.getByLabel('Current password',{exact:true}).isVisible());
-      assert(await page.getByText('Any non-empty password is accepted. Spaces and Unicode are preserved.').isVisible());
-      await page.getByLabel('Current password',{exact:true}).focus();
-      assert(await page.getByLabel('Current password',{exact:true}).evaluate(e=>document.activeElement===e));
-      assert(await page.getByLabel('Current password',{exact:true}).evaluate(e=>parseFloat(getComputedStyle(e).outlineWidth)>0));
+      assert(await page.getByLabel('目前密碼',{exact:true}).isVisible());
+      assert(await page.getByText('接受任何非空白密碼，空格與 Unicode 字元都會原樣保留。').isVisible());
+      await page.getByLabel('目前密碼',{exact:true}).focus();
+      assert(await page.getByLabel('目前密碼',{exact:true}).evaluate(e=>document.activeElement===e));
+      assert(await page.getByLabel('目前密碼',{exact:true}).evaluate(e=>parseFloat(getComputedStyle(e).outlineWidth)>0));
       await check(page,'password-dialog',width,width===390?'#changePasswordModal':null);
       await Promise.all([page.evaluate(()=>new Promise(resolve=>document.getElementById('changePasswordModal').addEventListener('hidden.bs.modal',()=>resolve(true),{once:true}))),page.keyboard.press('Escape')]);
       await page.locator('#changePasswordModal').waitFor({state:'hidden'});
       assert(await trigger.evaluate(e=>document.activeElement===e));
       await page.locator('#batch_nodes').fill('PRIVATE_BAD_NODE');
       await action(page,'#parse-nodes','/parse-nodes');
-      assert((await page.locator('.preview-info small').innerText()).includes('Unsupported protocol.'));
+      assert((await page.locator('.preview-info small').innerText()).includes('不支援的協定'));
       await page.locator('#batch_nodes').fill(batch);await upload(page);
       await action(page,'#parse-nodes','/parse-nodes');
-      assert((await page.locator('.preview-info small').last().innerText()).includes('Other Nodes group'));
+      assert((await page.locator('.preview-info small').last().innerText()).includes('「其他節點」組'));
       assert(!(await page.locator('#parse-preview').innerText()).includes('TEST_ONLY_UI_PASSWORD'));
       await check(page,'generate-parsed',width,'#parse-preview');
       const diff=await action(page,'#preview-yaml-diff','/api/preview-yaml-diff');assert.equal(diff.status(),200);
@@ -173,7 +173,7 @@ async function check(page,name,width,shotSelector) {
       assert(await page.locator('#yaml-diff-text').evaluate(e=>e.scrollWidth>e.clientWidth && getComputedStyle(e).overflowX==='auto'));
       await check(page,'diff',width,'#yaml-diff-panel');
       await navigate(page,()=>page.locator('#generate-yaml').click());
-      assert(await page.getByText('YAML generated. Download it or remove the temporary files.').isVisible());
+      assert(await page.getByText('YAML 已產生，可以下載或刪除暫存檔案。').isVisible());
       await check(page,'generate-result',width,'#generate-result');
       await page.goto(base+'/fixed-subscriptions');await check(page,'fixed-list-before',width);
       await page.goto(base+'/fixed-subscriptions/new');await check(page,'fixed-create',width,'#process-form');
@@ -200,16 +200,16 @@ async function check(page,name,width,shotSelector) {
       for(const section of ['#node-health','#proxy-health']) await check(page,section.slice(1),width,section);
       await page.goto(base+'/fixed-subscriptions');await check(page,'fixed-list',width,'.fixed-table');
       const deletion=page.locator('form[data-confirm]').last().locator('button');
-      const editButton=page.getByRole('link',{name:'Edit',exact:true}).last();
+      const editButton=page.getByRole('link',{name:'編輯',exact:true}).last();
       assert(Math.abs((await deletion.boundingBox()).height-(width<=575?40:32))<=1,'Delete keeps utility geometry');
       assert(Math.abs((await editButton.boundingBox()).height-(width<=575?44:40))<=1,'Edit keeps standard action geometry');
       let confirmation;
       const cancelled=new Promise(resolve=>page.once('dialog',async d=>{confirmation=d.message();await d.dismiss();resolve();}));
-      await deletion.click();await cancelled;assert(confirmation?.includes('Delete this fixed subscription?'));
+      await deletion.click();await cancelled;assert(confirmation?.includes('確定刪除這個固定訂閱？'));
       await page.goto(base+'/settings');
       if([1440,390].includes(width)) await page.screenshot({path:path.join(artifacts,`settings-navigation-${width}.png`)});
       for(const section of ['overview','geoip','health','runtime','notifications']) {
-        const tab=page.getByRole('navigation',{name:'Settings sections'}).getByRole('link',{name:{overview:'Overview',geoip:'GeoIP',health:'Health',runtime:'Runtime',notifications:'Notifications'}[section],exact:true});
+        const tab=page.getByRole('navigation',{name:'設定分區'}).getByRole('link',{name:{overview:'總覽',geoip:'GeoIP',health:'健康檢查',runtime:'執行環境',notifications:'通知'}[section],exact:true});
         await tab.click();await page.waitForFunction(section=>document.querySelector('.settings-nav a[href="#'+section+'"]').getAttribute('aria-current')==='location',section);assert.equal(await tab.getAttribute('aria-current'),'location');
         await check(page,`settings-${section}`,width,`#${section}`);
       }
@@ -221,8 +221,8 @@ async function check(page,name,width,shotSelector) {
     const context=await browser.newContext({javaScriptEnabled:false}),page=await context.newPage();
     await page.goto(base);await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
     await navigate(page,()=>page.locator('#password').press('Enter'));
-    await page.goto(base+'/settings');assert(await page.getByText('System Settings',{exact:true}).isVisible());
-    await page.getByRole('navigation',{name:'Settings sections'}).getByRole('link',{name:'Runtime',exact:true}).click();
+    await page.goto(base+'/settings');assert(await page.getByText('系統設定',{exact:true}).isVisible());
+    await page.getByRole('navigation',{name:'設定分區'}).getByRole('link',{name:'執行環境',exact:true}).click();
     assert(page.url().endsWith('#runtime'));await context.close();
     fs.writeFileSync(path.join(artifacts,'geometry.json'),JSON.stringify(audit,null,2));
     console.log(`PASS UI consistency: ${audit.length} live page/width checks; screenshots: ${artifacts}`);

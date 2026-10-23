@@ -23,7 +23,7 @@ def safe_label(value):
                     r'\b(?:[A-Za-z0-9-]+\.)+[A-Za-z0-9-]+\b',
                     r'\b[0-9a-fA-F]*:[0-9a-fA-F:]+\b', r'\b-?\d{5,}\b'):
         text = re.sub(pattern, '[redacted]', text)
-    return ' '.join(text.split())[:96] or 'Subscription'
+    return ' '.join(text.split())[:96] or '訂閱'
 
 
 @dataclass(frozen=True)
@@ -101,7 +101,7 @@ def health(kind, before, after, label, at, trigger):
 
 
 def scheduler(before, after, label, at, result, kind):
-    prefix = 'Endpoint Health' if kind == 'endpoint_health' else 'Full Proxy Health'
+    prefix = '端點健康' if kind == 'endpoint_health' else '完整代理健康'
     boundary('scheduler', before, after, after, prefix + ' / ' + safe_label(label), at, result)
 
 
@@ -110,17 +110,20 @@ def utc(at):
 
 
 def message(events):
-    lines = ['Clash YAML Manager automatic notifications.']
-    names = dict(source_refresh='Source Refresh', endpoint_health='Endpoint Health',
-                 proxy_health='Full Proxy Health', scheduler='Scheduler')
+    lines = ['Clash YAML Manager 自動通知。']
+    names = dict(source_refresh='來源重新整理', endpoint_health='端點健康',
+                 proxy_health='完整代理健康', scheduler='排程')
+    transitions = dict(incident='異常', recovery='已恢復')
+    results = dict(success='成功', error='錯誤', engine_unavailable='引擎無法使用', limit='超出上限',
+                   busy='忙碌中', conflict='衝突')
     for index, event in enumerate(events):
-        detail = ('Remote source refresh degraded; last-good cache may be in use.'
+        detail = ('遠端來源重新整理異常，可能正在使用上次成功的快取資料。'
                   if event.kind == 'source_refresh' and event.transition == 'incident' else '')
-        block = (f'{names[event.kind]} {event.transition}. Subscription: {safe_label(event.label)}. '
-                 f'Count: {event.count} / {event.total}. Result: {event.result}. UTC: {utc(event.at)}. {detail}').strip()
+        block = (f'{names[event.kind]}{transitions[event.transition]}。訂閱：{safe_label(event.label)}。'
+                 f'數量：{event.count} / {event.total}。結果：{results[event.result]}。UTC：{utc(event.at)}。{detail}').strip()
         # Reserve room for the aggregate remainder notice, never split the batch.
         if len('\n'.join(lines)) + len(block) + 1 > MAX_MESSAGE - 80:
-            lines.append(f'{len(events) - index} additional events omitted.')
+            lines.append(f'另有 {len(events) - index} 個事件未列出。')
             break
         lines.append(block)
     return '\n'.join(lines)

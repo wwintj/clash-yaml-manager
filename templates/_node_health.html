@@ -1,44 +1,44 @@
 <section id="node-health" class="terminal-panel mt-4">
   <div class="panel-inner">
-    <h3 class="panel-title mb-3">NODE HEALTH / REACHABILITY</h3>
-    <p class="helper-text">Endpoint reachability only. This checks whether the node server and port are reachable from this VPS. This is a TCP observation and does not validate QUIC or Hysteria2. It does not verify proxy authentication or end-to-end proxy forwarding.</p>
-    <p class="form-text">Unhealthy nodes remain in the generated YAML. Checks use the currently saved subscription.</p>
-    {% if health_notice %}<p class="health-notice" role="status">{{ health_notice }}</p>{% endif %}
+    <h3 class="panel-title mb-3">節點健康／連線可達性</h3>
+    <p class="helper-text">只檢查端點可達性：從這台 VPS 確認節點伺服器與連接埠能否連線。這是 TCP 觀測，不會驗證 QUIC 或 Hysteria2，也不會驗證代理認證或端對端轉送。</p>
+    <p class="form-text">不健康的節點仍會保留在產生的 YAML 中。檢查使用目前已儲存的訂閱。</p>
+    {% if health_notice %}<p class="health-notice" role="status">{{ health_notice | ui_message }}</p>{% endif %}
     {% if node_health.unavailable %}<p class="source-warning" role="status">{{ node_health.unavailable }}</p>
     {% else %}
     <form id="health-settings" action="{{ url_for('fixed.health_action', key=entry.id, operation='settings') }}" method="POST" class="mb-3">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="form-label" for="health-mode">Health Checks</label>
+      <label class="form-label" for="health-mode">健康檢查</label>
       <div class="ui-actions">
         <select id="health-mode" data-health-mode name="mode" class="form-select terminal-select health-mode">
-          {% for mode in ['off','manual','automatic'] %}<option value="{{ mode }}" {% if node_health.mode == mode %}selected{% endif %}>{{ mode|capitalize }}</option>{% endfor %}
+          {% for mode in ['off','manual','automatic'] %}<option value="{{ mode }}" {% if node_health.mode == mode %}selected{% endif %}>{{ mode|ui_label }}</option>{% endfor %}
         </select>
         {% set health_schedule = node_health %}{% set health_prefix = 'health' %}{% include '_health_interval.html' %}
-        <button type="submit" class="btn btn-outline-terminal btn-terminal">Save Health Settings</button>
+        <button type="submit" class="btn btn-outline-terminal btn-terminal">儲存健康檢查設定</button>
       </div>
     </form>
     {% if node_health.mode in ['manual','automatic'] %}
     <form id="health-check" action="{{ url_for('fixed.health_action', key=entry.id, operation='check') }}" method="POST" class="mb-3" data-health-check>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-green btn-terminal">Check Now</button>
-      <span class="form-text">Up to 256 nodes per run; checks may take about a minute.</span>
+      <button type="submit" class="btn btn-green btn-terminal">立即檢查</button>
+      <span class="form-text">每次最多 256 個節點，檢查可能需要約一分鐘。</span>
     </form>
     {% endif %}
     <div class="health-summary form-text mb-3">
-      <p>{{ node_health.total }} Nodes · Healthy {{ node_health.counts.healthy }} · Suspect {{ node_health.counts.suspect }} · Unhealthy {{ node_health.counts.unhealthy }} · Unknown {{ node_health.counts.unknown }}</p>
-      <p>Last Check: {{ node_health.check_display }}</p>
+      <p>{{ node_health.total }} 個節點 · 健康 {{ node_health.counts.healthy }} · 可疑 {{ node_health.counts.suspect }} · 不健康 {{ node_health.counts.unhealthy }} · 未知 {{ node_health.counts.unknown }}</p>
+      <p>上次檢查：{{ node_health.check_display }}</p>
       {% set health_schedule = node_health %}{% include '_health_schedule_status.html' %}
     </div>
-    <div class="table-scroll" role="region" aria-label="Subscription status table" tabindex="0"><table class="health-table"><thead><tr>{% for title in ['Node','Protocol','Status','Connect Latency','Failures','Last Checked','Last Success'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
+    <div class="table-scroll" role="region" aria-label="節點健康狀態表" tabindex="0"><table class="health-table"><thead><tr>{% for title in ['節點','協定','狀態','連線延遲','失敗次數','上次檢查','上次成功'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
       <tbody>{% for node in node_health.rows %}<tr>
-        <td data-label="Node">{{ node.name }}</td>
-        <td data-label="Protocol">{{ node.protocol|upper }}</td>
-        <td data-label="Status"><span class="health-badge health-{{ node.status }}">{{ node.status|upper }}</span>{% if node.error_display %}<small class="health-error">{{ node.error_display }}</small>{% endif %}</td>
-        <td data-label="Connect Latency">{{ node.latency_display }}</td>
-        <td data-label="Failures">{{ node.consecutive_failures }}</td>
-        <td data-label="Last Checked">{{ node.checked_display }}</td>
-        <td data-label="Last Success">{{ node.success_display }}</td>
-      </tr>{% else %}<tr><td colspan="7">No supported VMess / VLESS / Trojan / Shadowsocks / Hysteria2 nodes.</td></tr>{% endfor %}</tbody>
+        <td data-label="節點">{{ node.name }}</td>
+        <td data-label="協定">{{ node.protocol|upper }}</td>
+        <td data-label="狀態"><span class="health-badge health-{{ node.status }}">{{ node.status|ui_label }}</span>{% if node.error_display %}<small class="health-error">{{ node.error_display }}</small>{% endif %}</td>
+        <td data-label="連線延遲">{{ node.latency_display }}</td>
+        <td data-label="失敗次數">{{ node.consecutive_failures }}</td>
+        <td data-label="上次檢查">{{ node.checked_display }}</td>
+        <td data-label="上次成功">{{ node.success_display }}</td>
+      </tr>{% else %}<tr><td colspan="7">沒有支援的 VMess / VLESS / Trojan / Shadowsocks / Hysteria2 節點。</td></tr>{% endfor %}</tbody>
     </table></div>
     {% endif %}
   </div>

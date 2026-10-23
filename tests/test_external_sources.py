@@ -167,7 +167,7 @@ def test_external_only_empty_manual_and_delete_last_source_fails(store, base, re
     assert entry['node_count'] == 1 and entry['sources'][0]['node_count'] == 0
     old=store.path.read_bytes()
     for action in ('disable','delete'):
-        with pytest.raises(SourceError,match='No supported'): store.source_action(entry['id'],action,base,entry['sources'][1]['id'])
+        with pytest.raises(SourceError,match='沒有支援的節點'): store.source_action(entry['id'],action,base,entry['sources'][1]['id'])
         assert store.path.read_bytes() == old
 
 
@@ -175,7 +175,7 @@ def test_duplicate_across_sources_blocks_generation(store, base, response):
     response['payload']=payload('First')
     # Match the explicit manual country flag in the remote remark.
     response['payload']=payload('🇺🇸 First')
-    with pytest.raises(SourceError,match='Duplicate node name'): external_save(store,base,sources=[remote()])
+    with pytest.raises(SourceError,match='節點名稱重複'): external_save(store,base,sources=[remote()])
     assert store.list() == []
 
 
@@ -276,7 +276,7 @@ def test_source_views_auth_csrf_status_secrecy_and_upload(web,logged_in,response
     assert post(logged_in,'/fixed-subscriptions/new',config).status_code==303
     entry=web.fixed_subscriptions.list()[0]; key=entry['id']; identifier=entry['sources'][1]['id']
     page=logged_in.get(f'/fixed-subscriptions/{key}/edit')
-    assert b'PRIVATE' in page.data and b'Current source file: saved' in page.data
+    assert b'PRIVATE' in page.data and '目前來源檔案：已儲存'.encode() in page.data
     assert b'PRIVATE' not in logged_in.get('/fixed-subscriptions').data
     assert page.headers['Referrer-Policy']=='no-referrer' and page.headers['Cache-Control']=='no-store'
     for route in [f'/fixed-subscriptions/{key}/sources/refresh-all']+[
@@ -289,7 +289,7 @@ def test_source_views_auth_csrf_status_secrecy_and_upload(web,logged_in,response
     response['error']='http_500'
     assert post(logged_in,f'/fixed-subscriptions/{key}/sources/refresh-all').status_code==303
     page=logged_in.get(f'/fixed-subscriptions/{key}/edit')
-    assert b'Cached' in page.data and b'Using last successful data.' in page.data
+    assert '使用快取'.encode() in page.data and '正在使用上次成功取得的資料。'.encode() in page.data
     assert 'PRIVATE' not in caplog.text
     assert b'../../PRIVATE.yaml' not in web.fixed_subscriptions.path.read_bytes()
 
@@ -380,7 +380,7 @@ def test_source_action_conflict_after_delete_shows_retry_notice(web,logged_in,re
         return payload('Tokyo-stale')
     monkeypatch.setattr(source_fetch,'fetch',fetch)
     result=post(logged_in,f'/fixed-subscriptions/{entry["id"]}/sources/refresh-all',follow_redirects=True)
-    assert result.status_code==200 and b'Subscription changed while refreshing. Please retry.' in result.data
+    assert result.status_code==200 and '重新整理期間訂閱已變更，請重試'.encode() in result.data
     assert store.list()==[]
 
 

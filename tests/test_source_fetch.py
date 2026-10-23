@@ -78,7 +78,7 @@ def test_pinned_connection_original_host_minimal_headers_proxy_isolation(network
     '224.0.0.1','240.0.0.1','192.0.2.1','198.51.100.1','203.0.113.1',
     '[::ffff:127.0.0.1]','[2002:7f00:1::]','private.example','mixed.example','localhost'])
 def test_non_global_and_mixed_dns_rejected(network, host):
-    with pytest.raises(SourceError, match='not public'): fetcher.fetch(f'http://{host}/')
+    with pytest.raises(SourceError, match='不是公開位址'): fetcher.fetch(f'http://{host}/')
     assert network.connections == []
 
 
@@ -111,7 +111,7 @@ def test_redirect_revalidates(network, target):
 
 def test_redirect_limit(network):
     network.routes['/'] = {'status':302,'headers':{'Location':'/'}}
-    with pytest.raises(SourceError, match='redirect'): fetcher.fetch(network.url)
+    with pytest.raises(SourceError, match='重新導向'): fetcher.fetch(network.url)
     assert len(network.connections) == 4
 
 
@@ -126,7 +126,7 @@ def test_status_never_echoes_body(network, status):
 def test_response_limit(network, monkeypatch, stream):
     monkeypatch.setattr(fetcher, 'MAX_PAYLOAD', 64)
     network.routes['/'] = {'stream':stream,'body':b'x'*65}
-    with pytest.raises(SourceError, match='too large'): fetcher.fetch(network.url)
+    with pytest.raises(SourceError, match='過大'): fetcher.fetch(network.url)
 
 
 @pytest.mark.parametrize('case', ['delay','slow_headers'])
@@ -134,7 +134,7 @@ def test_total_budget_includes_slow_headers_and_body(network, monkeypatch, case)
     monkeypatch.setattr(fetcher, 'TOTAL_TIMEOUT', .05)
     network.routes['/'] = {case:True}
     start = time.monotonic()
-    with pytest.raises(SourceError, match='timed out'): fetcher.fetch(network.url)
+    with pytest.raises(SourceError, match='逾時'): fetcher.fetch(network.url)
     assert time.monotonic() - start < .5
 
 
@@ -156,7 +156,7 @@ def test_tls_requires_ca_and_original_sni(network, monkeypatch):
         raise ssl.SSLCertVerificationError('PRIVATE certificate details')
     monkeypatch.setattr(context, 'wrap_socket', wrap)
     monkeypatch.setattr(fetcher.ssl, 'create_default_context', lambda: context)
-    with pytest.raises(SourceError, match='TLS verification failed') as error:
+    with pytest.raises(SourceError, match='TLS 驗證失敗') as error:
         fetcher.fetch(network.url.replace('http:', 'https:') + '/?secret=PRIVATE')
     assert seen == ['source.example'] and 'PRIVATE' not in str(error.value)
 
@@ -165,7 +165,7 @@ def test_truncated_response_and_encoding(network):
     network.routes['/'] = {'length':200, 'body':b'short'}
     with pytest.raises(SourceError): fetcher.fetch(network.url)
     network.routes['/'] = {'headers':{'Content-Encoding':'gzip'}}
-    with pytest.raises(SourceError, match='encoding'): fetcher.fetch(network.url)
+    with pytest.raises(SourceError, match='編碼'): fetcher.fetch(network.url)
 
 
 def test_connect_timeout_closes_socket(monkeypatch):
@@ -175,7 +175,7 @@ def test_connect_timeout_closes_socket(monkeypatch):
         def connect(self, address): raise TimeoutError('PRIVATE')
         def close(self): events.append('closed')
     monkeypatch.setattr(fetcher.socket, 'socket', lambda *args: FakeSocket())
-    with pytest.raises(SourceError, match='timed out'): fetcher.fetch('http://8.8.8.8/')
+    with pytest.raises(SourceError, match='逾時'): fetcher.fetch('http://8.8.8.8/')
     assert events[0][1] <= 5 and events[-1] == 'closed'
 
 
@@ -198,7 +198,7 @@ def test_https_to_http_redirect_downgrade_rejected(network, monkeypatch):
         def getresponse(self): return Response()
         def close(self): pass
     monkeypatch.setattr(fetcher, '_PinnedConnection', Connection)
-    with pytest.raises(SourceError, match='redirect'):
+    with pytest.raises(SourceError, match='重新導向'):
         fetcher.fetch('https://source.example/feed')
     assert network.resolutions == ['source.example']
 

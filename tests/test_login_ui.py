@@ -21,25 +21,25 @@ def test_password_only_login_contract(client):
     tags = Markup(html).tags
     assert sum(tag == 'h1' for tag, _ in tags) == 1
     assert '<h1 class="login-title">Clash YAML Manager</h1>' in html
-    assert '<label for="password" class="form-label">Password</label>' in html
+    assert '<label for="password" class="form-label">密碼</label>' in html
     field = next(attrs for tag, attrs in tags if tag == 'input' and attrs.get('id') == 'password')
     assert field['type'] == field['name'] == 'password'
-    assert field['placeholder'] == 'Enter password'
+    assert field['placeholder'] == '輸入密碼'
     assert field['autocomplete'] == 'current-password'
     assert 'required' in field and 'autofocus' in field
     assert any(tag == 'form' and attrs.get('action') == '/login' and attrs.get('method') == 'POST'
                for tag, attrs in tags)
     assert any(tag == 'input' and attrs.get('type') == 'hidden' and attrs.get('name') == 'csrf_token'
                and attrs.get('value') for tag, attrs in tags)
-    assert '>Sign in</button>' in html
+    assert '>登入</button>' in html
     for old in ('Private VPS Tool', 'ONLINE', 'ACCESS PASSWORD', 'Enter management password',
                 'Enter the management password to continue.', 'ERROR LOG', '>SUCCESS<'):
         assert old not in html
 
 
 @pytest.mark.parametrize('messages,expected', [
-    (['登录失败，密码错误。'], ['Login failed. Incorrect password.']),
-    (['登录尝试过多，请在 900 秒后重试。'], ['Too many login attempts. Try again in 900 seconds.']),
+    (['登录失败，密码错误。'], ['登入失敗，密碼錯誤。']),
+    (['登录尝试过多，请在 900 秒后重试。'], ['登入嘗試次數過多，請在 900 秒後重試。']),
     (['<img src=x onerror=alert(1)>', 'Long message ' + 'x' * 600],
      ['&lt;img src=x onerror=alert(1)&gt;', 'Long message ' + 'x' * 600]),
 ])
@@ -54,7 +54,7 @@ def test_login_error_content_stays_visible_and_escaped(client, messages, expecte
 
 
 @pytest.mark.parametrize('message,expected', [
-    ('管理密码已更新，请使用新密码重新登录。', 'Password updated. Log in again with the new password.'),
+    ('管理密码已更新，请使用新密码重新登录。', '管理密碼已更新，請使用新密碼重新登入。'),
     ('<script>alert(1)</script>', '&lt;script&gt;alert(1)&lt;/script&gt;'),
 ])
 def test_login_success_path_stays_visible_and_escaped(client, message, expected):
@@ -78,8 +78,8 @@ def test_login_csrf_notice_remains_in_card(client):
 
 def test_authenticated_header_navigation_and_password_dialog_remain(logged_in):
     html = logged_in.get('/').text
-    for text in ('Clash YAML Manager', 'Change Password', 'Logout',
-                 'Generate YAML', 'Fixed Subscriptions', 'Settings'):
+    for text in ('Clash YAML Manager', '變更密碼', '登出',
+                 '產生 YAML', '固定訂閱', '設定'):
         assert text in html
     assert 'class="login-page"' not in html and 'class="login-heading"' not in html
     for component in ('app-header', 'app-header-main', 'brand-title', 'changePasswordModal'):

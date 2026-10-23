@@ -1,25 +1,25 @@
 {% extends 'fixed_list.html' %}
 {% block workspace %}
 <section class="terminal-panel"><div class="panel-inner">
-  <div class="panel-title-row"><h2 class="panel-title">{{ 'Edit Fixed Subscription' if entry else 'Create Fixed Subscription' }}</h2></div>
-  {% if entry %}<div class="ui-form-group"><label class="form-label">Subscription URL</label><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal btn-sm copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></div>{% endif %}
+  <div class="panel-title-row"><h2 class="panel-title">{{ '編輯固定訂閱' if entry else '建立固定訂閱' }}</h2></div>
+  {% if entry %}<div class="ui-form-group"><label class="form-label">訂閱 URL</label><input class="form-control terminal-input fixed-url" aria-label="訂閱 URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal btn-sm copy-fixed-url">複製 URL</button><span class="copy-status" role="status"></span></div>{% endif %}
   <form id="process-form" method="POST" enctype="multipart/form-data" data-fixed="true" data-saved-custom="{{ 'true' if saved_custom else 'false' }}">
-    <div class="ui-form-group"><label class="form-label" for="subscription-name">Name</label><input id="subscription-name" class="form-control terminal-input" name="name" value="{{ fields.name }}" required maxlength="128"></div>
-    <div class="ui-form-group"><label class="form-label" for="url-prefix">URL Prefix</label><input id="url-prefix" class="form-control terminal-input" name="prefix" value="{{ fields.prefix }}"><div class="form-text">Letters, numbers and hyphens; normalized to 1–64 characters. Changing the prefix invalidates the old URL.</div></div>
-    {% if saved_custom %}<p class="form-text">Current custom YAML: saved. Leave the upload empty to keep it.</p>{% endif %}
+    <div class="ui-form-group"><label class="form-label" for="subscription-name">名稱</label><input id="subscription-name" class="form-control terminal-input" name="name" value="{{ fields.name }}" required maxlength="128"></div>
+    <div class="ui-form-group"><label class="form-label" for="url-prefix">URL 前綴</label><input id="url-prefix" class="form-control terminal-input" name="prefix" value="{{ fields.prefix }}"><div class="form-text">可使用英文字母、數字與連字號，會正規化為 1–64 個字元。變更前綴會使舊 URL 失效。</div></div>
+    {% if saved_custom %}<p class="form-text">目前自訂 YAML：已儲存。上傳欄留空即可保留。</p>{% endif %}
     {% set fixed_editor = true %}
     {% include '_generator_fields.html' %}
     {% include '_health_policy.html' %}
     <div class="ui-actions">
-    <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal ui-primary">{{ 'Save Changes' if entry else 'Create Fixed Subscription' }}</button>
-    <a href="{{ url_for('fixed.index') }}" class="btn btn-outline-terminal btn-terminal">Back to list</a>
+    <button id="generate-yaml" type="submit" class="btn btn-green btn-terminal ui-primary">{{ '儲存變更' if entry else '建立固定訂閱' }}</button>
+    <a href="{{ url_for('fixed.index') }}" class="btn btn-outline-terminal btn-terminal">返回清單</a>
     </div>
   </form>
   {% if entry %}
   <form id="refresh-all-sources" method="POST" action="{{ url_for('fixed.source_action', key=entry.id) }}" data-source-action><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
   {% for card in external_cards if card.saved %}
     {% for operation in ['refresh', 'enable', 'disable', 'delete'] %}
-    <form id="source-{{ card.saved.id }}-{{ operation }}" method="POST" action="{{ url_for('fixed.source_action', key=entry.id, identifier=card.saved.id, operation=operation) }}" data-source-action {% if operation == 'delete' %}data-confirm="Delete this source and regenerate the subscription?"{% endif %}><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+    <form id="source-{{ card.saved.id }}-{{ operation }}" method="POST" action="{{ url_for('fixed.source_action', key=entry.id, identifier=card.saved.id, operation=operation) }}" data-source-action {% if operation == 'delete' %}data-confirm="確定刪除此來源並重新產生訂閱？"{% endif %}><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
     {% endfor %}
   {% endfor %}
   {% endif %}

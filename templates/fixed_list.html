@@ -3,42 +3,42 @@
 {% block workspace %}
 <section class="terminal-panel"><div class="panel-inner">
   <div class="panel-title-row flex-wrap gap-3">
-    <h2 class="panel-title">Fixed Subscriptions</h2>
-    <a href="{{ url_for('fixed.create') }}" class="btn btn-green btn-terminal ui-primary">Create Fixed Subscription</a>
+    <h2 class="panel-title">固定訂閱</h2>
+    <a href="{{ url_for('fixed.create') }}" class="btn btn-green btn-terminal ui-primary">建立固定訂閱</a>
   </div>
-  <p class="helper-text">Saved subscriptions keep their URL until you change the prefix, regenerate the link, or delete them.</p>
+  <p class="helper-text">已儲存的訂閱會保持相同 URL，直到你變更前綴、重新產生連結或刪除訂閱。</p>
   {% if entries %}
-  <div id="fixed-toolbar" class="fixed-toolbar" role="group" aria-label="Subscription list controls" hidden>
-    <div class="fixed-search-control"><label for="fixed-search" class="form-label">Search subscriptions</label><input id="fixed-search" type="search" class="form-control terminal-input" placeholder="Search subscriptions..." autocomplete="off"></div>
-    <div class="fixed-status-control"><label for="fixed-status" class="form-label">Status</label><select id="fixed-status" class="form-select terminal-select"><option value="all">All Status</option><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
-    <div class="fixed-sort-control"><label for="fixed-sort" class="form-label">Sort</label><select id="fixed-sort" class="form-select terminal-select">
-      <option value="updated-desc">Updated — Newest</option><option value="updated-asc">Updated — Oldest</option>
-      <option value="name-asc">Name — A to Z</option><option value="name-desc">Name — Z to A</option>
-      <option value="nodes-desc">Nodes — High to Low</option><option value="nodes-asc">Nodes — Low to High</option>
+  <div id="fixed-toolbar" class="fixed-toolbar" role="group" aria-label="訂閱清單控制項" hidden>
+    <div class="fixed-search-control"><label for="fixed-search" class="form-label">搜尋訂閱</label><input id="fixed-search" type="search" class="form-control terminal-input" placeholder="搜尋訂閱…" autocomplete="off"></div>
+    <div class="fixed-status-control"><label for="fixed-status" class="form-label">狀態</label><select id="fixed-status" class="form-select terminal-select"><option value="all">全部狀態</option><option value="active">啟用中</option><option value="disabled">已停用</option></select></div>
+    <div class="fixed-sort-control"><label for="fixed-sort" class="form-label">排序</label><select id="fixed-sort" class="form-select terminal-select">
+      <option value="updated-desc">更新時間：最新優先</option><option value="updated-asc">更新時間：最舊優先</option>
+      <option value="name-asc">名稱：A 到 Z</option><option value="name-desc">名稱：Z 到 A</option>
+      <option value="nodes-desc">節點數：多到少</option><option value="nodes-asc">節點數：少到多</option>
     </select></div>
-    <button id="fixed-clear" type="button" class="btn btn-outline-terminal btn-terminal btn-sm" disabled>Clear filters</button>
+    <button id="fixed-clear" type="button" class="btn btn-outline-terminal btn-terminal btn-sm" disabled>清除篩選</button>
   </div>
   {% endif %}
-  <p id="fixed-result-count" class="helper-text fixed-result-count" role="status" aria-live="polite" aria-atomic="true">{{ entries | length }} {{ 'subscription' if entries | length == 1 else 'subscriptions' }}</p>
+  <p id="fixed-result-count" class="helper-text fixed-result-count" role="status" aria-live="polite" aria-atomic="true">共 {{ entries | length }} 個訂閱</p>
   {% if not entries %}
-    <p>No fixed subscriptions yet.</p><p>Create your first fixed subscription.</p>
+    <p>尚未建立固定訂閱。</p><p>建立你的第一個固定訂閱。</p>
   {% else %}
-  <p id="fixed-no-results" class="fixed-no-results" hidden>No subscriptions match your filters.</p>
-  <div class="table-scroll fixed-list-region" role="region" aria-label="Subscription status table" tabindex="0"><table class="fixed-table"><thead><tr>{% for title in ['Name','Status','Nodes / Sources','Health','Updated','Last Access','Subscription URL','Actions'] %}<th scope="col">{{ title }}</th>{% endfor %}</tr></thead>
+  <p id="fixed-no-results" class="fixed-no-results" hidden>沒有符合篩選條件的訂閱。</p>
+  <div class="table-scroll fixed-list-region" role="region" aria-label="訂閱狀態表" tabindex="0"><table class="fixed-table"><thead><tr>{% for title in ['名稱','狀態','節點／來源','健康狀態','更新時間','上次存取','訂閱 URL','操作'] %}<th scope="col">{{ title }}</th>{% endfor %}</tr></thead>
   <tbody>{% for entry in entries %}<tr data-name="{{ entry.name }}" data-prefix="{{ entry.prefix }}" data-status="{{ entry.status }}" data-node-count="{{ entry.node_count }}" data-updated="{{ entry.updated_at_sort }}">
-    <td data-label="Name"><span class="fixed-name">{{ entry.name }}</span><span class="fixed-prefix">Prefix: {{ entry.prefix }}</span></td>
-    <td data-label="Status"><span class="badge fixed-status-{{ entry.status }}">{{ entry.status | capitalize }}</span></td>
-    <td data-label="Nodes / Sources"><span>{{ entry.node_count }} {{ 'node' if entry.node_count == 1 else 'nodes' }}</span><span class="fixed-source-count">External Sources: {{ entry.external_source_count }}</span></td>
-    <td data-label="Health" class="fixed-health-summary">
-      <div class="fixed-endpoint-summary"><span class="fixed-health-label">Endpoint</span><span class="fixed-health-value health-{{ entry.endpoint_summary.status }}">{{ entry.endpoint_summary.text }}</span></div>
-      <div class="fixed-proxy-summary"><span class="fixed-health-label">Proxy</span><span class="fixed-health-value health-{{ entry.proxy_summary.status }}">{{ entry.proxy_summary.text }}</span></div>
+    <td data-label="名稱"><span class="fixed-name">{{ entry.name }}</span><span class="fixed-prefix">前綴：{{ entry.prefix }}</span></td>
+    <td data-label="狀態"><span class="badge fixed-status-{{ entry.status }}">{{ entry.status | ui_label }}</span></td>
+    <td data-label="節點／來源"><span>{{ entry.node_count }} 個節點</span><span class="fixed-source-count">外部來源：{{ entry.external_source_count }}</span></td>
+    <td data-label="健康狀態" class="fixed-health-summary">
+      <div class="fixed-endpoint-summary"><span class="fixed-health-label">端點</span><span class="fixed-health-value health-{{ entry.endpoint_summary.status }}">{{ entry.endpoint_summary.text }}</span></div>
+      <div class="fixed-proxy-summary"><span class="fixed-health-label">代理</span><span class="fixed-health-value health-{{ entry.proxy_summary.status }}">{{ entry.proxy_summary.text }}</span></div>
     </td>
-    <td data-label="Updated">{{ entry.updated_at_display }}</td>
-    <td data-label="Last Access">{{ entry.last_access_at_display }}</td>
-    <td data-label="Subscription URL"><input class="form-control terminal-input fixed-url" aria-label="Subscription URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal btn-sm copy-fixed-url">Copy URL</button><span class="copy-status" role="status"></span></td>
-    <td data-label="Actions"><div class="fixed-actions ui-actions">
-      <a class="btn btn-secondary-terminal btn-terminal" href="{{ url_for('fixed.edit',key=entry.id) }}">Edit</a>
-      {% for action, label, confirmation in [('disable' if entry.status == 'active' else 'enable', 'Disable' if entry.status == 'active' else 'Enable', ''), ('regenerate','Regenerate Link','This will invalidate the old subscription URL.'), ('delete','Delete','Delete this fixed subscription? Its URL will stop working permanently.')] %}
+    <td data-label="更新時間">{{ entry.updated_at_display }}</td>
+    <td data-label="上次存取">{{ entry.last_access_at_display }}</td>
+    <td data-label="訂閱 URL"><input class="form-control terminal-input fixed-url" aria-label="訂閱 URL" value="{{ entry.public_url }}" readonly><button type="button" class="btn btn-outline-terminal btn-terminal btn-sm copy-fixed-url">複製 URL</button><span class="copy-status" role="status"></span></td>
+    <td data-label="操作"><div class="fixed-actions ui-actions">
+      <a class="btn btn-secondary-terminal btn-terminal" href="{{ url_for('fixed.edit',key=entry.id) }}">編輯</a>
+      {% for action, label, confirmation in [('disable' if entry.status == 'active' else 'enable', '停用' if entry.status == 'active' else '啟用', ''), ('regenerate','重新產生連結','此操作會使舊的訂閱 URL 失效。'), ('delete','刪除','確定刪除這個固定訂閱？其 URL 將永久失效。')] %}
       <form method="POST" action="{{ url_for('fixed.action',key=entry.id,action=action) }}" {% if confirmation %}data-confirm="{{ confirmation }}"{% endif %}>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn {{ 'btn-danger-terminal' if action == 'delete' else 'btn-outline-terminal' }}{{ ' fixed-warning-action' if action == 'regenerate' else '' }} btn-terminal btn-sm" type="submit">{{ label }}</button>
       </form>{% endfor %}

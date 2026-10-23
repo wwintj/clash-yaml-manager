@@ -1,10 +1,10 @@
 {% extends 'fixed_list.html' %}
 {% block workspace %}
 <section class="terminal-panel"><div class="panel-inner">
-  <h2 class="panel-title">System Settings</h2>
-  <p class="helper-text">Global controls and local status. Subscription-specific settings remain on each Fixed edit page.</p>
-  <nav class="settings-nav ui-nav ui-nav--secondary" aria-label="Settings sections">
-    {% for section, label in [('overview','Overview'),('geoip','GeoIP'),('health','Health'),('runtime','Runtime'),('notifications','Notifications')] %}
+  <h2 class="panel-title">系統設定</h2>
+  <p class="helper-text">全域控制與本機狀態。個別訂閱的設定請在各固定訂閱的編輯頁面調整。</p>
+  <nav class="settings-nav ui-nav ui-nav--secondary" aria-label="設定分區">
+    {% for section, label in [('overview','總覽'),('geoip','GeoIP'),('health','健康檢查'),('runtime','執行環境'),('notifications','通知')] %}
     <a class="btn btn-outline-terminal btn-terminal" href="#{{ section }}" {% if section == 'overview' %}aria-current="location"{% endif %}>{{ label }}</a>
     {% endfor %}
   </nav>

@@ -149,13 +149,13 @@ def test_settings_auth_csrf_status_upload_invalid_replace_and_remove(web,logged_
     assert client.get('/settings').status_code==302
     assert client.get('/settings/upload').status_code==405 and client.get('/settings/remove').status_code==405
     assert post(client,'/settings/upload',{'geoip_file':(io.BytesIO(b'SYNTHETIC:SG'),'country.mmdb')}).status_code==302
-    assert b'Not installed' in logged_in.get('/settings').data
+    assert '未安裝'.encode() in logged_in.get('/settings').data
     assert logged_in.post('/settings/upload',data={'geoip_file':(io.BytesIO(b'SYNTHETIC:SG'),'country.mmdb')}).status_code==303
     assert not web.geoip_store.path.exists() # CSRF rejected and not replayed.
     assert post(logged_in,'/settings/upload',{'geoip_file':(io.BytesIO(b'SYNTHETIC:SG'),'../../country.mmdb')}).status_code==303
     old=(web.geoip_store.path.read_bytes(),web.geoip_store.settings.read_bytes())
     page=logged_in.get('/settings');assert page.headers['Cache-Control']=='no-store' and page.headers['Referrer-Policy']=='no-referrer'
-    assert b'Synthetic-Country' in page.data and b'data-geoip-status>Ready' in page.data and b'UTC' in page.data
+    assert b'Synthetic-Country' in page.data and 'data-geoip-status>就緒'.encode() in page.data and b'UTC' in page.data
     assert str(web.geoip_store.path).encode() not in page.data
     assert post(logged_in,'/settings/upload',{'geoip_file':(io.BytesIO(b'PRIVATE broken'),'secret.mmdb')}).status_code==400
     assert (web.geoip_store.path.read_bytes(),web.geoip_store.settings.read_bytes())==old
@@ -166,7 +166,7 @@ def test_settings_auth_csrf_status_upload_invalid_replace_and_remove(web,logged_
 def test_preview_generate_and_fixed_saved_mode_warning_and_errors(web,logged_in,readers):
     preview=post(logged_in,'/parse-nodes',{'batch_nodes':'Opaque|'+link(),'country_geoip':'literal-ip'}).json
     assert preview['nodes'][0]['country']=='UNKNOWN' and preview['nodes'][0]['status']=='Warning'
-    page=logged_in.get('/');assert b'No GeoIP database is installed' in page.data and b'value="off" selected' in page.data
+    page=logged_in.get('/');assert '尚未安裝 GeoIP 資料庫'.encode() in page.data and b'value="off" selected' in page.data
     post(logged_in,'/settings/upload',{'geoip_file':(io.BytesIO(b'SYNTHETIC:SG'),'country.mmdb')})
     preview=post(logged_in,'/parse-nodes',{'batch_nodes':'Opaque|'+link(),'country_geoip':'literal-ip'}).json
     assert preview['nodes'][0]['country']=='SG' and preview['nodes'][0]['source']=='GeoIP' and preview['nodes'][0]['status']=='Ready'
@@ -178,7 +178,7 @@ def test_preview_generate_and_fixed_saved_mode_warning_and_errors(web,logged_in,
     bad=post(logged_in,path,dict(name=entry['name'],prefix=entry['prefix'],yaml_source='custom',batch_nodes='Opaque|'+link(),country_geoip='dns'))
     assert bad.status_code==400 and b'value="dns" selected' in bad.data and store.snapshot(key)==before
     post(logged_in,'/settings/remove');page=logged_in.get(path)
-    assert b'value="literal-ip" selected' in page.data and b'No GeoIP database is installed' in page.data and store.snapshot(key)==before
+    assert b'value="literal-ip" selected' in page.data and '尚未安裝 GeoIP 資料庫'.encode() in page.data and store.snapshot(key)==before
     response=post(logged_in,'/process',{'batch_nodes':'Opaque|'+link(),'country_geoip':'literal-ip'},follow_redirects=True)
     assert response.status_code==200
     assert b'value="off" selected' in logged_in.get('/').data

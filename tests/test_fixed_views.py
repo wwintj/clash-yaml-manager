@@ -22,7 +22,7 @@ def create(web, client, **extra):
 
 
 def test_full_crud_and_server_restoration(web, logged_in):
-    assert b'No fixed subscriptions yet.' in logged_in.get('/fixed-subscriptions').data
+    assert '尚未建立固定訂閱。'.encode() in logged_in.get('/fixed-subscriptions').data
     entry = create(web, logged_in, aux_nodes=json.dumps([dict(country='JP', name='Tokyo', link=LINK)]),
                    special_groups=['🎥 奈飞节点'])
     store = web.fixed_subscriptions; url = '/s/' + store.slug(entry)
@@ -34,7 +34,7 @@ def test_full_crud_and_server_restoration(web, logged_in):
     assert response.headers['Content-Type'].startswith('application/x-yaml')
     assert 'attachment' in anonymous.get(url + '?download=1').headers['Content-Disposition']
     page = logged_in.get('/fixed-subscriptions/' + entry['id'] + '/edit')
-    assert b'Current custom YAML: saved' in page.data and b'draft.js' not in page.data
+    assert '目前自訂 YAML：已儲存'.encode() in page.data and b'draft.js' not in page.data
     assert b'Tokyo' in page.data and b'Mystery' in page.data
     assert page.headers['Cache-Control'] == 'no-store'
     edit = dict(name='New Name', prefix=entry['prefix'], yaml_source='custom', batch_nodes='US|Changed|' + LINK)
@@ -49,7 +49,7 @@ def test_full_crud_and_server_restoration(web, logged_in):
     assert anonymous.get(url).status_code == 404 and anonymous.get(new_url).status_code == 200
     assert post(logged_in, f'/fixed-subscriptions/{entry["id"]}/delete').status_code == 303
     assert anonymous.get(new_url).status_code == 404
-    assert b'Fixed subscription deleted.' in logged_in.get('/fixed-subscriptions').data
+    assert '固定訂閱已刪除。'.encode() in logged_in.get('/fixed-subscriptions').data
 
 
 def test_fixed_v2_legacy_and_temporary_coexist(web, logged_in):

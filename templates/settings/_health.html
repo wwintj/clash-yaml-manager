@@ -1,28 +1,28 @@
-<section id="health" class="terminal-panel settings-section" aria-label="Settings Health"><div class="panel-inner">
-  <h3 class="panel-title">Health</h3>
+<section id="health" class="terminal-panel settings-section" aria-label="健康檢查設定"><div class="panel-inner">
+  <h3 class="panel-title">健康檢查</h3>
   <div class="proxy-engine-card mb-4">
-    <h4 class="panel-title">Managed Mihomo</h4>
+    <h4 class="panel-title">受管 Mihomo</h4>
     <dl class="settings-metadata">
-      {% for field, label in [('status','Status'),('required','Required'),('installed','Installed'),('architecture','Architecture'),('cpu_level','CPU Level'),('build','Build'),('preferred_build','Preferred Build')] %}
-      <dt>{{ label }}</dt><dd>{{ engine.get(field,'—') }}</dd>
+      {% for field, label in [('status','狀態'),('required','需求版本'),('installed','已安裝'),('architecture','架構'),('cpu_level','CPU 等級'),('build','建置'),('preferred_build','建議建置')] %}
+      <dt>{{ label }}</dt><dd>{{ engine.get(field,'—') | ui_label if field == 'status' else engine.get(field,'—') }}</dd>
       {% endfor %}
     </dl>
-    <p class="form-text">Local file, checksum and metadata validation only; execution capability is not checked here. Full CLI/probe validation remains authoritative.</p>
-    <p class="form-text">Manage over SSH: <code>sudo bash /opt/clash-yaml-manager/mihomoctl.sh status</code> / <code>install</code> / <code>update</code>. Settings never installs, downloads or executes Mihomo.</p>
+    <p class="form-text">此處只驗證本機檔案、校驗碼與中繼資料，不檢查能否實際執行；以完整的命令列／探測驗證結果為準。</p>
+    <p class="form-text">請透過 SSH 管理：<code>sudo bash /opt/clash-yaml-manager/mihomoctl.sh status</code> / <code>install</code> / <code>update</code>。設定頁面不會安裝、下載或執行 Mihomo。</p>
   </div>
-  <h4 class="panel-title">Global Full Proxy Probe Defaults</h4>
-  <p class="form-text">Changing these defaults resets observations and schedules for subscriptions using global settings when values change. Custom probe settings remain unchanged. Fixed YAML, URLs, sources and policies are not directly changed.</p>
+  <h4 class="panel-title">全域完整代理探測預設值</h4>
+  <p class="form-text">變更這些預設值時，使用全域設定的訂閱會重設觀測結果與排程；自訂探測設定不受影響。固定訂閱的 YAML、URL、來源與策略不會直接變更。</p>
   {% if proxy_defaults %}
   <form id="proxy-defaults" method="POST" action="{{ url_for('settings.proxy_defaults') }}" class="settings-probe-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="proxy-settings-grid">
-      <label for="global-probe-url">HTTPS Probe URL<input id="global-probe-url" name="global_url" class="form-control terminal-input" type="url" value="{{ proxy_defaults.url }}" required maxlength="2048"></label>
-      <label for="global-probe-status">Expected HTTP Status<input id="global-probe-status" name="global_expected_status" class="form-control terminal-input" type="number" min="100" max="599" value="{{ proxy_defaults.expected_status }}" required></label>
-      <label for="global-probe-timeout">Timeout<select id="global-probe-timeout" name="global_timeout_ms" class="form-select terminal-select">{% for value in [proxy_defaults.timeout_ms,3000,5000,8000,10000,15000]|unique %}<option value="{{ value }}" {% if proxy_defaults.timeout_ms == value %}selected{% endif %}>{{ value }} ms</option>{% endfor %}</select></label>
+      <label for="global-probe-url">HTTPS 探測 URL<input id="global-probe-url" name="global_url" class="form-control terminal-input" type="url" value="{{ proxy_defaults.url }}" required maxlength="2048"></label>
+      <label for="global-probe-status">預期 HTTP 狀態碼<input id="global-probe-status" name="global_expected_status" class="form-control terminal-input" type="number" min="100" max="599" value="{{ proxy_defaults.expected_status }}" required></label>
+      <label for="global-probe-timeout">逾時<select id="global-probe-timeout" name="global_timeout_ms" class="form-select terminal-select">{% for value in [proxy_defaults.timeout_ms,3000,5000,8000,10000,15000]|unique %}<option value="{{ value }}" {% if proxy_defaults.timeout_ms == value %}selected{% endif %}>{{ value }} 毫秒</option>{% endfor %}</select></label>
     </div>
-    <button type="submit" class="btn btn-outline-terminal btn-terminal ui-primary mt-3">Save Global Defaults</button>
+    <button type="submit" class="btn btn-outline-terminal btn-terminal ui-primary mt-3">儲存全域預設值</button>
   </form>
-  {% else %}<p class="source-warning" role="status">Proxy health settings unavailable.</p>{% endif %}
-  <p class="form-text mt-4">Endpoint Health measures per-subscription TCP reachability. Endpoint/Proxy modes, custom probe settings, automatic intervals and manual checks remain on each Fixed edit page.</p>
-  <p class="form-text">Automatic checks use the deployment's <code>clash-yaml-manager-health.timer</code>; source refresh uses <code>clash-yaml-manager-refresh.timer</code>. Actual enabled/active/due execution status requires an SSH/operator check.</p>
+  {% else %}<p class="source-warning" role="status">代理健康設定無法使用。</p>{% endif %}
+  <p class="form-text mt-4">端點健康會依訂閱量測 TCP 可達性。端點／代理模式、自訂探測設定、自動檢查間隔與手動檢查，請在各固定訂閱的編輯頁面操作。</p>
+  <p class="form-text">自動檢查使用部署中的 <code>clash-yaml-manager-health.timer</code>；來源重新整理使用 <code>clash-yaml-manager-refresh.timer</code>。實際的啟用、執行與到期狀態需透過 SSH 檢查。</p>
 </div></section>

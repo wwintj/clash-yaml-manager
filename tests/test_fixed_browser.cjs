@@ -25,7 +25,7 @@ const link = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?type=
       assert.equal(response.status(), status);
       return response.text();
     }
-    const nav = () => clickNavigate(page.getByRole('link',{name:'Fixed Subscriptions',exact:true}));
+    const nav = () => clickNavigate(page.getByRole('link',{name:'固定訂閱',exact:true}));
     await page.goto(base); await page.locator('#password').fill(process.env.PREVIEW_TEST_PASSWORD);
     await Promise.all([page.waitForNavigation(), page.locator('#password').press('Enter')]);
     await page.locator('#batch_nodes').fill('temporary draft kept');
@@ -34,8 +34,8 @@ const link = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?type=
     // Generate may flush its pending draft on pagehide. Snapshot after leaving it.
     const draft = await page.evaluate(() => localStorage.getItem('clash-yaml-manager.draft.v1'));
     assert.equal(JSON.parse(draft).batch, 'temporary draft kept');
-    assert(await page.getByText('No fixed subscriptions yet.').isVisible());
-    await clickNavigate(page.getByRole('link',{name:'Create Fixed Subscription',exact:true}));
+    assert(await page.getByText('尚未建立固定訂閱。').isVisible());
+    await clickNavigate(page.getByRole('link',{name:'建立固定訂閱',exact:true}));
     await page.locator('#subscription-name').fill('My Home Proxy');
     assert.equal(await page.locator('#url-prefix').inputValue(),'my-home-proxy');
     await page.locator('#yaml-source').selectOption('custom');
@@ -44,7 +44,7 @@ const link = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?type=
     await page.locator('.aux-name').fill('Tokyo'); await page.locator('.aux-link').fill(link);
     await page.locator('[name=special_groups]').first().check();
     await page.locator('#parse-nodes').click();
-    await page.waitForFunction(() => document.getElementById('parse-summary').textContent.includes('2 nodes detected'));
+    await page.waitForFunction(() => document.getElementById('parse-summary').textContent.includes('偵測到 2 個節點'));
     await page.locator('.preview-name input').first().fill('Edited Mystery');
     await page.locator('.preview-action').first().click();
     await page.waitForFunction(() => !document.getElementById('parse-nodes').disabled);
@@ -53,12 +53,12 @@ const link = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?type=
     assert(/\/s\/my-home-proxy-fs_[A-Za-z0-9_-]{22}$/.test(url));
     const first = await publicRead(url,200); assert(first.includes('Edited Mystery') && first.includes('其他节点'));
     await page.locator('.copy-fixed-url').click();
-    await page.getByText('Copied',{exact:true}).waitFor();
+    await page.getByText('已複製',{exact:true}).waitFor();
     assert(await page.evaluate(() => navigator.clipboard.readText()) === url);
     assert.equal(await page.locator('#yaml-source').inputValue(),'custom');
     assert.equal(await page.locator('.aux-name').inputValue(),'Tokyo');
     assert(await page.locator('[name=special_groups]').first().isChecked());
-    assert(await page.getByText('Current custom YAML: saved. Leave the upload empty to keep it.').isVisible());
+    assert(await page.getByText('目前自訂 YAML：已儲存。上傳欄留空即可保留。').isVisible());
     await page.locator('#subscription-name').fill('Renamed');
     await page.locator('#batch_nodes').fill('US|Updated|' + link);
     await clickNavigate(page.locator('#generate-yaml'));
@@ -66,29 +66,29 @@ const link = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?type=
     const updated = await publicRead(url,200); assert(updated.includes('Updated') && updated !== first);
     await page.locator('#batch_nodes').fill('not a valid node');
     await clickNavigate(page.locator('#generate-yaml'));
-    assert(await page.getByText(/Unable to save/).isVisible());
+    assert(await page.getByText(/無法儲存/).isVisible());
     assert(await publicRead(url,200) === updated);
     await nav();
     assert(await page.getByText('Renamed',{exact:true}).isVisible());
     for (const width of [1440,390]) {
       await page.setViewportSize({width,height:900});
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-      assert(await page.getByRole('button',{name:'Copy URL',exact:true}).isVisible());
-      assert(await page.getByRole('button',{name:'Delete',exact:true}).isVisible());
+      assert(await page.getByRole('button',{name:'複製 URL',exact:true}).isVisible());
+      assert(await page.getByRole('button',{name:'刪除',exact:true}).isVisible());
       if (process.env.FIXED_SCREENSHOT_DIR)
         await page.screenshot({path:path.join(process.env.FIXED_SCREENSHOT_DIR,`fixed-${width}.png`),fullPage:true});
     }
-    await clickNavigate(page.getByRole('button',{name:'Disable',exact:true})); await publicRead(url,404);
-    await clickNavigate(page.getByRole('button',{name:'Enable',exact:true})); await publicRead(url,200);
+    await clickNavigate(page.getByRole('button',{name:'停用',exact:true})); await publicRead(url,404);
+    await clickNavigate(page.getByRole('button',{name:'啟用',exact:true})); await publicRead(url,200);
     const cancelled = new Promise(resolve => page.once('dialog', async dialog => {await dialog.dismiss();resolve();}));
-    await page.getByRole('button',{name:'Regenerate Link',exact:true}).click(); await cancelled; await publicRead(url,200);
+    await page.getByRole('button',{name:'重新產生連結',exact:true}).click(); await cancelled; await publicRead(url,200);
     page.once('dialog', dialog => dialog.accept());
-    await clickNavigate(page.getByRole('button',{name:'Regenerate Link',exact:true}));
+    await clickNavigate(page.getByRole('button',{name:'重新產生連結',exact:true}));
     const replacement = await page.locator('.fixed-url').inputValue(); assert(replacement !== url);
     await publicRead(url,404); await publicRead(replacement,200);
     page.once('dialog', dialog => dialog.accept());
-    await clickNavigate(page.getByRole('button',{name:'Delete',exact:true})); await publicRead(replacement,404);
-    assert(await page.getByText('Fixed subscription deleted.',{exact:true}).isVisible());
+    await clickNavigate(page.getByRole('button',{name:'刪除',exact:true})); await publicRead(replacement,404);
+    assert(await page.getByText('固定訂閱已刪除。',{exact:true}).isVisible());
     assert.equal(await page.evaluate(() => localStorage.getItem('clash-yaml-manager.draft.v1')),draft);
     assert.deepEqual(errors,[]);
     console.log('PASS Fixed browser: custom source, overrides, auxiliary/policies restore, Copy, stable URL edit, failed save, disable/enable, confirmed regenerate/delete, anonymous reads, desktop/mobile, isolated draft');

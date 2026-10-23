@@ -183,4 +183,4 @@ def test_mixed_refresh_revision_recheck_outside_lock(store,base,response,clock,m
 
 def test_empty_source_error_uses_current_protocol_neutral_text():
     from core.source_errors import SourceError
-    assert str(SourceError('empty'))=='No supported nodes'
+    assert str(SourceError('empty'))=='沒有支援的節點'

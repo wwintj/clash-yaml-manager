@@ -1,59 +1,59 @@
 <section id="proxy-health" class="terminal-panel mt-4"><div class="panel-inner">
-  <h3 class="panel-title mb-3">FULL PROXY VALIDATION</h3>
-  <p class="helper-text">End-to-end proxy probe through Mihomo. Tests the selected proxy against the configured HTTPS target. A healthy result applies only to that probe target.</p>
-  <p class="form-text">Manual or opt-in Automatic. Proxy results are independent of TCP endpoint results and preserve top-level nodes. Enabled Health-aware Policy may regenerate managed group candidates after a committed check.</p>
-  {% if proxy_notice %}<p class="health-notice" role="status">{{ proxy_notice }}</p>{% endif %}
+  <h3 class="panel-title mb-3">完整代理驗證</h3>
+  <p class="helper-text">透過 Mihomo 進行端對端代理探測：使用選定的代理連線至設定的 HTTPS 目標。「健康」結果只代表該探測目標可用。</p>
+  <p class="form-text">可選手動或自動（需另行啟用）。代理結果與 TCP 端點結果彼此獨立，並保留頂層節點。若啟用健康感知策略，檢查完成後可能會重新產生受管分組的候選節點。</p>
+  {% if proxy_notice %}<p class="health-notice" role="status">{{ proxy_notice | ui_message }}</p>{% endif %}
   <div class="proxy-engine-card mb-4">
-    <h4 class="panel-title">PROXY PROBE ENGINE</h4>
-    <p>Status: <strong>{{ proxy_health.engine.status }}</strong> · Required: {{ proxy_health.engine.required }} · Installed: {{ proxy_health.engine.installed or '—' }} · Architecture: {{ proxy_health.engine.architecture }}</p>
-    {% if proxy_health.engine.get('preferred_build') %}<p>CPU Level: {{ proxy_health.engine.get('cpu_level') or '—' }} · Build: {{ proxy_health.engine.get('build') or '—' }} · Preferred Build: {{ proxy_health.engine.preferred_build }}</p>{% endif %}
-    <p class="form-text">Install or update over SSH: <code>sudo bash /opt/clash-yaml-manager/mihomoctl.sh status</code> / <code>install</code>. The Web app never installs Mihomo.</p>
+    <h4 class="panel-title">代理探測引擎</h4>
+    <p>狀態：<strong>{{ proxy_health.engine.status | ui_label }}</strong> · 需求版本：{{ proxy_health.engine.required }} · 已安裝：{{ proxy_health.engine.installed or '—' }} · 架構：{{ proxy_health.engine.architecture }}</p>
+    {% if proxy_health.engine.get('preferred_build') %}<p>CPU 等級：{{ proxy_health.engine.get('cpu_level') or '—' }} · 建置：{{ proxy_health.engine.get('build') or '—' }} · 建議建置：{{ proxy_health.engine.preferred_build }}</p>{% endif %}
+    <p class="form-text">請透過 SSH 安裝或更新：<code>sudo bash /opt/clash-yaml-manager/mihomoctl.sh status</code> / <code>install</code>。網頁介面不會安裝 Mihomo。</p>
   </div>
-  {% if proxy_health.unavailable %}<p class="source-warning" role="status">{{ proxy_health.unavailable }}</p>
+  {% if proxy_health.unavailable %}<p class="source-warning" role="status">{{ proxy_health.unavailable | ui_message }}</p>
   {% else %}
-  {% if proxy_health.mode == 'automatic' and proxy_health.engine.status != 'COMPATIBLE' %}<p class="source-warning" role="status">Automatic proxy checks require a compatible managed engine. Unavailable-engine jobs use scheduler backoff and preserve node observations.</p>{% endif %}
+  {% if proxy_health.mode == 'automatic' and proxy_health.engine.status != 'COMPATIBLE' %}<p class="source-warning" role="status">自動代理檢查需要相容的受管引擎。引擎無法使用時，排程會以退避方式重試，並保留節點觀測結果。</p>{% endif %}
   <div id="global-proxy-summary" class="proxy-engine-card mb-4">
-    <h4 class="panel-title">GLOBAL PROXY DEFAULTS</h4>
-    <p>Using global defaults: {{ proxy_health.global_settings.url }} · Expected status {{ proxy_health.global_settings.expected_status }} · Timeout {{ proxy_health.global_settings.timeout_ms }} ms</p>
-    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal btn-sm">Global Defaults in Settings</a>
+    <h4 class="panel-title">全域代理預設值</h4>
+    <p>使用全域預設值：{{ proxy_health.global_settings.url }} · 預期狀態碼 {{ proxy_health.global_settings.expected_status }} · 逾時 {{ proxy_health.global_settings.timeout_ms }} 毫秒</p>
+    <a href="{{ url_for('settings.index', _anchor='health') }}" class="btn btn-outline-terminal btn-terminal btn-sm">前往設定中的全域預設值</a>
   </div>
   <form id="proxy-settings" method="POST" action="{{ url_for('fixed.proxy_action', key=entry.id, operation='settings') }}" class="mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <h4 class="panel-title">THIS SUBSCRIPTION</h4>
+    <h4 class="panel-title">此訂閱</h4>
     <div class="proxy-settings-grid">
-      <label>Full Proxy Checks<select id="proxy-mode" data-health-mode name="mode" class="form-select terminal-select">{% for mode in ['off','manual','automatic'] %}<option value="{{ mode }}" {% if proxy_health.mode == mode %}selected{% endif %}>{{ mode|capitalize }}</option>{% endfor %}</select></label>
-      <label>Probe Settings<select id="proxy-scope" name="scope" class="form-select terminal-select" data-proxy-scope><option value="global" {% if proxy_health.use_global %}selected{% endif %}>Use global defaults</option><option value="custom" {% if not proxy_health.use_global %}selected{% endif %}>Custom probe settings</option></select></label>
+      <label>完整代理檢查<select id="proxy-mode" data-health-mode name="mode" class="form-select terminal-select">{% for mode in ['off','manual','automatic'] %}<option value="{{ mode }}" {% if proxy_health.mode == mode %}selected{% endif %}>{{ mode|ui_label }}</option>{% endfor %}</select></label>
+      <label>探測設定<select id="proxy-scope" name="scope" class="form-select terminal-select" data-proxy-scope><option value="global" {% if proxy_health.use_global %}selected{% endif %}>使用全域預設值</option><option value="custom" {% if not proxy_health.use_global %}selected{% endif %}>自訂探測設定</option></select></label>
     </div>
     {% set health_schedule = proxy_health %}{% set health_prefix = 'proxy' %}{% include '_health_interval.html' %}
     {% set custom = proxy_health.override or proxy_health.global_settings %}
     <div id="proxy-custom-fields" class="proxy-settings-grid mt-2" {% if proxy_health.use_global %}hidden{% endif %}>
-      <label>Custom HTTPS URL<input name="custom_url" class="form-control terminal-input" type="url" value="{{ custom.url }}" maxlength="2048"></label>
-      <label>Expected HTTP Status<input name="custom_expected_status" class="form-control terminal-input" type="number" min="100" max="599" value="{{ custom.expected_status }}"></label>
-      <label>Timeout<select name="custom_timeout_ms" class="form-select terminal-select">{% for value in [5000,8000,10000,15000] %}<option value="{{ value }}" {% if custom.timeout_ms == value %}selected{% endif %}>{{ value // 1000 }}s</option>{% endfor %}</select></label>
+      <label>自訂 HTTPS URL<input name="custom_url" class="form-control terminal-input" type="url" value="{{ custom.url }}" maxlength="2048"></label>
+      <label>預期 HTTP 狀態碼<input name="custom_expected_status" class="form-control terminal-input" type="number" min="100" max="599" value="{{ custom.expected_status }}"></label>
+      <label>逾時<select name="custom_timeout_ms" class="form-select terminal-select">{% for value in [5000,8000,10000,15000] %}<option value="{{ value }}" {% if custom.timeout_ms == value %}selected{% endif %}>{{ value // 1000 }} 秒</option>{% endfor %}</select></label>
     </div>
-    <button type="submit" class="btn btn-outline-terminal btn-terminal mt-2">Save Proxy Settings</button>
+    <button type="submit" class="btn btn-outline-terminal btn-terminal mt-2">儲存代理設定</button>
   </form>
   {% if proxy_health.mode in ['manual','automatic'] %}
   <form id="proxy-check" action="{{ url_for('fixed.proxy_action', key=entry.id, operation='check') }}" method="POST" class="mb-3" data-proxy-check>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-green btn-terminal" {% if proxy_health.engine.status != 'COMPATIBLE' %}disabled{% endif %}>Check Proxies Now</button>
-    <span class="form-text">Up to 256 nodes; a validation can take several minutes.</span>
+    <button type="submit" class="btn btn-green btn-terminal" {% if proxy_health.engine.status != 'COMPATIBLE' %}disabled{% endif %}>立即檢查代理</button>
+    <span class="form-text">最多 256 個節點，驗證可能需要數分鐘。</span>
   </form>
   {% endif %}
   <div class="health-summary form-text mb-3">
-    <p>{{ proxy_health.total }} Nodes · Healthy {{ proxy_health.counts.healthy }} · Suspect {{ proxy_health.counts.suspect }} · Unhealthy {{ proxy_health.counts.unhealthy }} · Unknown {{ proxy_health.counts.unknown }} · Unsupported {{ proxy_health.counts.unsupported }}</p>
+    <p>{{ proxy_health.total }} 個節點 · 健康 {{ proxy_health.counts.healthy }} · 可疑 {{ proxy_health.counts.suspect }} · 不健康 {{ proxy_health.counts.unhealthy }} · 未知 {{ proxy_health.counts.unknown }} · 不支援 {{ proxy_health.counts.unsupported }}</p>
     {% set health_schedule = proxy_health %}{% include '_health_schedule_status.html' %}
-    <p>Last Proxy Check: {{ proxy_health.check_display }} · Active target: {{ proxy_health.effective.url }} · Expected: {{ proxy_health.effective.expected_status }}</p>
+    <p>上次代理檢查：{{ proxy_health.check_display }} · 目前目標：{{ proxy_health.effective.url }} · 預期：{{ proxy_health.effective.expected_status }}</p>
   </div>
-  <div class="table-scroll" role="region" aria-label="Subscription status table" tabindex="0"><table class="proxy-health-table"><thead><tr>{% for title in ['Node','Protocol','Endpoint','Proxy','TCP Latency','Proxy Latency','Endpoint Failures','Proxy Failures','Last Proxy Check'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
+  <div class="table-scroll" role="region" aria-label="代理健康狀態表" tabindex="0"><table class="proxy-health-table"><thead><tr>{% for title in ['節點','協定','端點','代理','TCP 延遲','代理延遲','端點失敗次數','代理失敗次數','上次代理檢查'] %}<th>{{ title }}</th>{% endfor %}</tr></thead>
     <tbody>{% for node in proxy_health.rows %}<tr>
-      <td data-label="Node">{{ node.name }}</td><td data-label="Protocol">{{ node.protocol|upper }}</td>
-      <td data-label="Endpoint"><span class="health-badge health-{{ node.endpoint_status }}">{{ node.endpoint_status|upper }}</span></td>
-      <td data-label="Proxy"><span class="health-badge health-{{ node.status }}">{{ node.status|upper }}</span></td>
-      <td data-label="TCP Latency">{{ node.tcp_latency_display }}</td><td data-label="Proxy Latency">{{ node.proxy_latency_display }}</td>
-      <td data-label="Endpoint Failures">{{ node.endpoint_failures }}</td><td data-label="Proxy Failures">{{ node.consecutive_failures }}</td>
-      <td data-label="Last Proxy Check">{{ node.proxy_check_display }}</td>
-    </tr>{% else %}<tr><td colspan="9">No supported VMess / VLESS / Trojan / Shadowsocks / Hysteria2 nodes.</td></tr>{% endfor %}</tbody>
+      <td data-label="節點">{{ node.name }}</td><td data-label="協定">{{ node.protocol|upper }}</td>
+      <td data-label="端點"><span class="health-badge health-{{ node.endpoint_status }}">{{ node.endpoint_status|ui_label }}</span></td>
+      <td data-label="代理"><span class="health-badge health-{{ node.status }}">{{ node.status|ui_label }}</span></td>
+      <td data-label="TCP 延遲">{{ node.tcp_latency_display }}</td><td data-label="代理延遲">{{ node.proxy_latency_display }}</td>
+      <td data-label="端點失敗次數">{{ node.endpoint_failures }}</td><td data-label="代理失敗次數">{{ node.consecutive_failures }}</td>
+      <td data-label="上次代理檢查">{{ node.proxy_check_display }}</td>
+    </tr>{% else %}<tr><td colspan="9">沒有支援的 VMess / VLESS / Trojan / Shadowsocks / Hysteria2 節點。</td></tr>{% endfor %}</tbody>
   </table></div>
   {% endif %}
 </div></section>

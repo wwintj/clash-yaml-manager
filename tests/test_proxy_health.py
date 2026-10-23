@@ -57,7 +57,7 @@ def test_off_default_optional_engine_and_no_mutation(store,base,observer):
     shown = worker.describe(entry['id'])
     assert shown['mode']=='off' and shown['counts']['unknown']==1
     assert not worker.path.exists() and observer['calls']==[]
-    with pytest.raises(ProxyHealthError,match='Enable Manual'):
+    with pytest.raises(ProxyHealthError,match='請先將完整代理驗證'):
         worker.check(entry['id'])
     assert store.path.read_bytes()==fixed and store._content(entry,'current.yaml')==yaml
 
@@ -102,7 +102,7 @@ def test_changing_effective_probe_target_invalidates_old_observations(store,base
 ])
 def test_probe_target_blocks_unsafe_or_ambiguous_url(url,observer):
     settings=dict(DEFAULT_PROBE,url=url)
-    with pytest.raises(ProxyHealthError,match='public HTTPS'):
+    with pytest.raises(ProxyHealthError,match='公開的 HTTPS'):
         observer['worker'].set_global(settings)
     assert not observer['worker'].path.exists()
 
@@ -149,11 +149,11 @@ def test_failure_threshold_reset_unsupported_and_no_exclusion(store,base,observe
 def test_engine_error_and_invalid_runner_outcome_do_not_penalize(store,base,observer):
     entry=checked(store,base,observer); worker=observer['worker']; before=worker.path.read_bytes()
     worker.runner=lambda *a:(_ for _ in ()).throw(mihomo_probe.ProbeEngineError('PRIVATE secret'))
-    with pytest.raises(ProxyHealthError,match='engine could not complete'):
+    with pytest.raises(ProxyHealthError,match='無法完成此次檢查'):
         worker.check(entry['id'])
     assert worker.path.read_bytes()==before
     worker.runner=lambda *a:{'not-fingerprint':dict(kind='failure',error='proxy_failed')}
-    with pytest.raises(ProxyHealthError,match='engine could not complete'):
+    with pytest.raises(ProxyHealthError,match='無法完成此次檢查'):
         worker.check(entry['id'])
     assert worker.path.read_bytes()==before
 
@@ -177,7 +177,7 @@ def test_256_limit_before_engine_and_state_mutation(store,base,observer,count):
     entry=save(store,base,config=config); worker=observer['worker']; worker.settings(entry['id'],'manual',True)
     before=worker.path.read_bytes()
     if count==257:
-        with pytest.raises(ProxyHealthError,match='up to 256'):
+        with pytest.raises(ProxyHealthError,match='最多支援 256'):
             worker.check(entry['id'])
         assert observer['calls']==[] and worker.path.read_bytes()==before
     else:
@@ -187,7 +187,7 @@ def test_256_limit_before_engine_and_state_mutation(store,base,observer,count):
 def test_global_singleton_busy_without_second_probe(store,base,observer):
     entry=save(store,base); worker=observer['worker']; worker.settings(entry['id'],'manual',True)
     with file_lock(worker.job_lock):
-        with pytest.raises(ProxyHealthError,match='already running'):
+        with pytest.raises(ProxyHealthError,match='正在執行'):
             worker.check(entry['id'])
     assert observer['calls']==[]
 
@@ -255,7 +255,7 @@ def test_corrupt_auxiliary_state_does_not_break_fixed_endpoint_or_healthz(web,lo
     assert web.app.test_client().get(public).status_code==200
     assert web.app.test_client().get('/healthz').status_code==200
     page=logged_in.get(f'/fixed-subscriptions/{entry["id"]}/edit')
-    assert page.status_code==200 and b'Proxy health state unavailable.' in page.data
+    assert page.status_code==200 and '代理健康狀態無法使用。'.encode() in page.data
     assert b'PRIVATE broken json' not in page.data
     assert node_health.NodeHealth(store).describe(entry['id'])['mode']=='off'
 
@@ -276,7 +276,7 @@ def test_proxy_state_write_failure_restores_old_and_fixed(web,logged_in,monkeypa
     with monkeypatch.context() as patcher:
         patcher.setattr(proxy_health,'write_json',fail)
         result=post(logged_in,f'/fixed-subscriptions/{key}/proxy-health/check',follow_redirects=True)
-    assert b'Proxy health results could not be saved.' in result.data
+    assert '無法儲存代理健康檢查結果。'.encode() in result.data
     assert b'PRIVATE disk detail' not in result.data
     assert worker.path.read_bytes()==before and store.path.read_bytes()==fixed
     assert web.app.test_client().get('/s/'+store.slug(entry)).status_code==200
@@ -310,7 +310,7 @@ def test_web_auth_csrf_engine_status_and_no_secret_html(web,logged_in,monkeypatc
     root=f'/fixed-subscriptions/{key}/proxy-health/'
     page=logged_in.get(f'/fixed-subscriptions/{key}/edit')
     section=page.data.split(b'<section id="proxy-health"')[1].split(b'</section>')[0]
-    assert b'NOT INSTALLED' in section and b'Check Proxies Now' not in section
+    assert '未安裝'.encode() in section and '立即檢查代理'.encode() not in section
     assert b'Proxy health is relative' not in section  # Copy uses a complete target-relative sentence.
     for operation in ('settings','check'):
         assert logged_in.get(root+operation).status_code==405
@@ -326,7 +326,7 @@ def test_web_auth_csrf_engine_status_and_no_secret_html(web,logged_in,monkeypatc
     assert post(logged_in,root+'check').status_code==303
     page=logged_in.get(f'/fixed-subscriptions/{key}/edit')
     section=page.data.split(b'<section id="proxy-health"')[1].split(b'</section>')[0]
-    assert b'HEALTHY' in section and b'38 ms' in section
+    assert '健康'.encode() in section and b'38 ms' in section
     for secret in (LINK.encode(),entry['token'].encode(),b'example.com',b'11111111-1111-4111-8111-111111111111'):
         assert secret not in section and secret not in worker.path.read_bytes()
     assert b'v1.19.31' in section

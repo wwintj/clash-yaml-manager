@@ -13,6 +13,7 @@ from core.proxy_health import ProxyHealth, ProxyHealthError, DEFAULT_PROBE
 from core.settings_status import probe_fields
 from core.source_errors import SourceError, message
 from core.source_parser import MAX_PAYLOAD
+from core.ui import DISPLAY_LABELS as LABELS
 
 
 def blueprint(store, base_context, login_required, default_yaml, special_groups, public_url, *, proxy_store=None):
@@ -38,23 +39,23 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
     def display(entry):
         value = dict(entry, public_url=public_url(store.slug(entry)))
         for field in ('updated_at', 'last_access_at'):
-            value[field + '_display'] = ('Never' if entry[field] is None else
+            value[field + '_display'] = ('從未' if entry[field] is None else
                 datetime.fromtimestamp(entry[field], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
         at = entry['health_policy_audit']['last_reconciled_at']
-        value['health_policy_time_display'] = ('Never' if at is None else
+        value['health_policy_time_display'] = ('從未' if at is None else
             datetime.fromtimestamp(at, timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
         return value
 
     def source_display(item):
         value = dict(item)
-        value['status_display'] = ('Disabled' if not item['enabled'] else
-            'Cached' if item['using_cache'] else 'Error' if item['last_error'] else
-            'Ready' if item['last_success_at'] is not None else 'Never fetched')
-        value['success_display'] = ('Never' if item['last_success_at'] is None else
+        value['status_display'] = ('已停用' if not item['enabled'] else
+            '使用快取' if item['using_cache'] else '錯誤' if item['last_error'] else
+            '就緒' if item['last_success_at'] is not None else '尚未擷取')
+        value['success_display'] = ('從未' if item['last_success_at'] is None else
             datetime.fromtimestamp(item['last_success_at'], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
         value['error_display'] = message(item['last_error']) if item['last_error'] else ''
         if item['type'] == 'remote_url':
-            def utc(at, empty='Never'):
+            def utc(at, empty='從未'):
                 return empty if at is None else datetime.fromtimestamp(at, timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
             value['attempt_display'] = utc(item['last_attempt_at'])
             value['next_display'] = utc(item['next_refresh_at'], '—')
@@ -69,7 +70,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         try:
             value = health.describe(key)
         except KeyError:
-            return dict(unavailable='Health state unavailable.')
+            return dict(unavailable='健康狀態無法使用。')
         except HealthError as error:
             return dict(unavailable=str(error))
         for row in value['rows']:
@@ -89,12 +90,12 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
         engine = (proxy_health.engine.status() if proxy_health else
                   dict(status='BROKEN',required='v1.19.31',installed=None,architecture='unknown'))
         if proxy_health is None:
-            return dict(engine=engine,unavailable='Proxy health state unavailable.',global_settings=DEFAULT_PROBE)
+            return dict(engine=engine,unavailable='代理健康狀態無法使用。',global_settings=DEFAULT_PROBE)
         try:
             value = proxy_health.describe(key)
         except (KeyError, ProxyHealthError, HealthError) as error:
             return dict(engine=engine,unavailable=(str(error) if isinstance(error, ProxyHealthError)
-                else 'Proxy health state unavailable.'),global_settings=DEFAULT_PROBE)
+                else '代理健康狀態無法使用。'),global_settings=DEFAULT_PROBE)
         endpoint_rows = ({row['fingerprint']:row for row in endpoint['rows']}
                          if 'rows' in endpoint and endpoint.get('revision') == value['revision'] else {})
         for row in value['rows']:
@@ -121,15 +122,15 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
 
         def summary_display(summary):
             if summary is None or summary['status'] == 'unavailable':
-                return dict(status='unavailable', text='Unavailable')
+                return dict(status='unavailable', text='無法使用')
             if summary['mode'] == 'off' and summary['status'] == 'off':
-                return dict(status='off', text='Off')
+                return dict(status='off', text='關閉')
             counts = summary['counts']
-            parts = [f'{counts.get(state, 0)} {state}' for state in
+            parts = [f'{LABELS[state]} {counts.get(state, 0)}' for state in
                      ('unhealthy', 'suspect', 'unsupported', 'healthy', 'unknown') if counts.get(state, 0)]
-            mode = summary['mode'].capitalize()
+            mode = summary['mode']
             return dict(status=summary['status'], text=' · '.join(
-                ([mode] if mode != 'Off' else []) + (parts or ['Unknown'])))
+                ([LABELS[mode]] if mode != 'off' else []) + (parts or [LABELS['unknown']])))
 
         # The overview has its own small projection: no source settings or node
         # credentials are added to its context or client-side management index.
@@ -142,7 +143,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                        endpoint_summary=summary_display(endpoint[entry['id']]),
                        proxy_summary=summary_display(proxy.get(entry['id'])))
             for field in ('updated_at', 'last_access_at'):
-                row[field + '_display'] = ('Never' if entry[field] is None else
+                row[field + '_display'] = ('從未' if entry[field] is None else
                     datetime.fromtimestamp(entry[field], timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
             rows.append(row)
         return render_template('fixed_list.html', **context(), entries=rows)
@@ -193,13 +194,13 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                         uploads[index] = upload.read(MAX_PAYLOAD + 1)
                 saved = store.save(key, fields['name'], fields['prefix'], source, parsed, default_yaml, custom,
                                    sources=external, uploads=uploads, expected=entry)
-                session['fixed_notice'] = 'Fixed subscription saved.' if key else 'Fixed subscription created.'
+                session['fixed_notice'] = '固定訂閱已儲存。' if key else '固定訂閱已建立。'
                 return redirect(url_for('fixed.edit', key=saved['id']), code=303)
             except SourceError as error:
-                ctx['error_messages'] = ['Unable to save. ' + message(error.code) + '. The previous subscription is unchanged.']
+                ctx['error_messages'] = ['無法儲存：' + message(error.code) + '。原訂閱保持不變。']
                 status = 409 if error.code == 'conflict' else 400
             except (ValueError, TypeError):
-                ctx['error_messages'] = ['Unable to save. Check the name, nodes, YAML and policy references. The previous subscription is unchanged.']
+                ctx['error_messages'] = ['無法儲存，請檢查名稱、節點、YAML 與策略引用。原訂閱保持不變。']
                 status = 400
             except KeyError:
                 abort(404)
@@ -258,10 +259,10 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                 except ValueError:
                     raise HealthError('config') from None
                 health.settings(key, request.form.get('mode'),seconds)
-                session['health_notice'] = 'Health settings saved.'
+                session['health_notice'] = '健康檢查設定已儲存。'
             else:
                 health.check(key)
-                session['health_notice'] = 'Endpoint reachability check completed.'
+                session['health_notice'] = '端點可達性檢查已完成。'
         except KeyError:
             abort(404)
         except HealthError as error:
@@ -282,7 +283,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             if proxy_health is None:
                 raise ProxyHealthError('compatible')
             proxy_health.set_global(probe_fields(request.form))
-            session['proxy_notice'] = 'Proxy probe defaults saved.'
+            session['proxy_notice'] = '代理探測預設值已儲存。'
         except ProxyHealthError as error:
             session['proxy_notice'] = str(error)
         return redirect(url_for('fixed.edit', key=key), code=303)
@@ -305,10 +306,10 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
                     raise ProxyHealthError('settings') from None
                 proxy_health.settings(key, request.form.get('mode'), scope == 'global',
                                       probe_fields(request.form, 'custom_') if scope == 'custom' else None,seconds)
-                session['proxy_notice'] = 'Full proxy validation settings saved.'
+                session['proxy_notice'] = '完整代理驗證設定已儲存。'
             else:
                 proxy_health.check(key)
-                session['proxy_notice'] = 'Full proxy validation completed.'
+                session['proxy_notice'] = '完整代理驗證已完成。'
         except KeyError:
             abort(404)
         except ProxyHealthError as error:
@@ -331,10 +332,10 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             abort(404)
         except (SourceError, GenerationError) as error:
             # Only allowlisted source codes may be surfaced; never arbitrary exceptions.
-            session['fixed_error'] = ('Unable to update. ' + message(error.code)
-                if isinstance(error, SourceError) else 'Unable to generate. The previous subscription is unchanged.')
+            session['fixed_error'] = ('無法更新：' + message(error.code)
+                if isinstance(error, SourceError) else '無法產生，原訂閱保持不變。')
         else:
-            session['fixed_notice'] = 'Sources updated. Cached sources use their last successful data.'
+            session['fixed_notice'] = '來源已更新。使用快取的來源會沿用上次成功的資料。'
         return redirect(url_for('fixed.edit', key=key) if store.get(key) else url_for('fixed.index'), code=303)
 
     @views.route('/<key>/<action>', methods=['POST'])
@@ -346,7 +347,7 @@ def blueprint(store, base_context, login_required, default_yaml, special_groups,
             store.action(key, action)
         except KeyError:
             abort(404)
-        session['fixed_notice'] = 'Fixed subscription deleted.' if action == 'delete' else 'Fixed subscription updated.'
+        session['fixed_notice'] = '固定訂閱已刪除。' if action == 'delete' else '固定訂閱已更新。'
         return redirect(url_for('fixed.index'), code=303)
 
     return views

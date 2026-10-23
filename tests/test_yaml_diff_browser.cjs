@@ -41,12 +41,12 @@ async function setup(browser,width) {
     const dom=await page.evaluate(()=>{
       const result=document.getElementById('generate-result'), title=result?.querySelector('.panel-title-row .panel-subtitle')?.textContent?.trim();
       const body=Array.from(document.querySelectorAll('[role="alert"]')).slice(0,8).map(e=>e.textContent.slice(0,2048)).join('\n'), form=document.getElementById('process-form');
-      const known=['Custom YAML needs to be selected again.','No valid new nodes provided.',
+      const known=['需要重新選擇自訂 YAML 檔案。','No valid new nodes provided.',
         'Invalid Policy settings.','Session expired','Security token','Unsupported country code.'];
       const categories=[
         ['MODE_INVALID','Node Update Mode is invalid.'],
         ['POLICY_INVALID','Invalid Policy settings.'],
-        ['SOURCE_SELECTION','Custom YAML needs to be selected again.'],
+        ['SOURCE_SELECTION','需要重新選擇自訂 YAML 檔案。'],
         ['SOURCE_FORMAT','Unsupported file format.'],
         ['COUNTRY_SETTINGS','Country Detection settings are invalid.'],
         ['FORM_NODES','Invalid auxiliary nodes or edits.'],
@@ -64,7 +64,7 @@ async function setup(browser,width) {
       ].filter(([,message])=>body.includes(message)).map(([category])=>category);
       const enumValue=(id,allowed)=>{const value=document.getElementById(id)?.value;return allowed.includes(value)?value:'OTHER_OR_ABSENT';};
       return {download_count:document.querySelectorAll('#download-url').length,
-        generate_result_present:!!result,generate_result_status:['Ready','Waiting'].includes(title)?title:'ABSENT_OR_OTHER',
+        generate_result_present:!!result,generate_result_status:['就緒','Waiting'].includes(title)?title:'ABSENT_OR_OTHER',
         error_count:document.querySelectorAll('[role="alert"]').length,known_errors:known.filter(v=>body.includes(v)),
         business_error_categories:categories.length?categories:(body.trim()?['UNCLASSIFIED_ALERT']:[]),
         login_present:!!document.getElementById('password'),csrf_feedback_present:!!document.querySelector('[data-csrf-feedback]'),
@@ -138,7 +138,7 @@ async function generateChecked(fixture,phase,source) {
     return response.json();
    }
    await page.locator('#batch_nodes').fill(batch);
-   assert((await preview()).changed);assert.equal(await status.textContent(),'Changed');
+   assert((await preview()).changed);assert.equal(await status.textContent(),'有變更');
    assert((await page.locator('#yaml-diff-code').textContent()).startsWith('--- source.yaml\n+++ generated.yaml\n'));
    assert.equal(count('/process'),0);
    const parsed=page.waitForResponse(r=>new URL(r.url()).pathname==='/parse-nodes');
@@ -149,7 +149,7 @@ async function generateChecked(fixture,phase,source) {
    assert(!(await page.locator('#yaml-diff-code').textContent()).includes('OldTest'));
    await page.locator('#yaml-source').selectOption('custom');
    const missingCount=count(routePath);await button.click();
-   assert((await status.textContent()).includes('Custom YAML needs to be selected again.'));
+   assert((await status.textContent()).includes('需要重新選擇自訂 YAML 檔案。'));
    assert.equal(count(routePath),missingCount);assert.equal(count('/process'),0);
    async function upload(text) {await page.locator('[name=yaml_file]').setInputFiles({name:'custom.yaml',mimeType:'application/yaml',buffer:Buffer.from(text)});}
    await upload(source);const custom=await preview();
@@ -172,7 +172,7 @@ async function generateChecked(fixture,phase,source) {
    await button.click();await intercepted;
    await page.locator('#batch_nodes').fill(latest.replace('LatestTest','ChangedDuringPreview'));
    release();await page.waitForFunction(()=>!document.getElementById('preview-yaml-diff').disabled);
-   assert.equal(await status.textContent(),'Inputs changed; preview again.');
+   assert.equal(await status.textContent(),'輸入已變更，請重新預覽。');
    assert.equal(await page.locator('#yaml-diff-code').textContent(),'');await page.unroute('**/api/preview-yaml-diff');
    await page.locator('#batch_nodes').fill(latest);
    await generateChecked(fixture,'custom-generate','custom');
@@ -180,10 +180,10 @@ async function generateChecked(fixture,phase,source) {
    const download=await context.request.get(await page.locator('#download-url').inputValue());
    assert(download.ok());const generated=await download.text();
    await upload(generated);const unchanged=await preview();
-   assert(!unchanged.changed);assert.equal(unchanged.diff,'');assert.equal(await status.textContent(),'No YAML changes.');
+   assert(!unchanged.changed);assert.equal(unchanged.diff,'');assert.equal(await status.textContent(),'YAML 沒有變更。');
    assert(await page.locator('#yaml-diff-text').isHidden());
    await page.locator('#batch_nodes').fill('PRIVATE-invalid-uri');await preview(400);
-   assert((await status.textContent()).includes('Preview unavailable'));
+   assert((await status.textContent()).includes('無法預覽'));
    await page.locator('#batch_nodes').fill(latest);
    await page.locator('#process-form [name=csrf_token]').evaluate(input=>{input.value='invalid';});
    // Reject a real POST after successful preflight refresh; no automatic replay.
@@ -191,9 +191,9 @@ async function generateChecked(fixture,phase,source) {
     const data=new URLSearchParams(route.request().postData());data.set('csrf_token','invalid');
     return route.continue({postData:data.toString(),headers:{...route.request().headers(),'content-type':'application/x-www-form-urlencoded'}});
    });
-   await preview(400);assert((await status.textContent()).includes('refresh or log in again'));
+   await preview(400);assert((await status.textContent()).includes('請重新整理或重新登入'));
    await page.unroute('**/api/preview-yaml-diff');
-   await page.reload();await button.click();assert((await status.textContent()).includes('Custom YAML needs to be selected again.'));
+   await page.reload();await button.click();assert((await status.textContent()).includes('需要重新選擇自訂 YAML 檔案。'));
    await upload(generated);
    const csrf=await page.locator('#process-form [name=csrf_token]').inputValue();
    await context.request.post(base+'/logout',{form:{csrf_token:csrf}});
@@ -203,7 +203,7 @@ async function generateChecked(fixture,phase,source) {
    const prior=count(routePath),expired=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/csrf-token');
    await button.click();assert.equal((await expired).status(),401);
    await page.waitForFunction(()=>!document.getElementById('preview-yaml-diff').disabled);
-   assert((await status.textContent()).includes('Session expired'));assert.equal(count(routePath),prior);
+   assert((await status.textContent()).includes('登入已逾時'));assert.equal(count(routePath),prior);
    await context.close();
    // Independent normal generation never requires Diff Preview.
    const direct=await setup(browser,width);

@@ -1,12 +1,15 @@
 # Offline country catalog
 
 `core/countries.json` contains the 249 assigned ISO 3166-1 alpha-2 codes, alpha-3
-search aliases and English / Simplified Chinese display names. It was generated
+search aliases and English / Simplified Chinese / Traditional Chinese display names. It was generated
 on 2026-09-27 using the code assignments in
 [pycountry's iso-codes database](https://github.com/pycountry/pycountry/blob/main/src/pycountry/databases/iso3166-1.json)
 and `Intl.DisplayNames` in Node 24.18.0 (ICU 78.3, CLDR 48.0, Unicode 17.0).
 Only the code assignments are taken from iso-codes; localized display names are
-Unicode CLDR data. The [Unicode license notice](UNICODE_LICENSE.txt) is included.
+Unicode CLDR data. The Traditional Chinese `traditional` names shown by the Web UI were
+added on 2026-10-23 with `new Intl.DisplayNames(['zh-Hant-TW'], {type:'region', style:'short'})`
+in Node 22.22.0 (ICU 77.1, CLDR 47.0, Unicode 16.0); detection still uses the
+Simplified names and aliases only. The [Unicode license notice](UNICODE_LICENSE.txt) is included.
 These are region display names, not a political or routing classification.
 
 There is no runtime dependency on Node, pycountry, GeoIP or a network service.

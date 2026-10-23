@@ -1,23 +1,23 @@
-  <section id="geoip" class="terminal-panel settings-section" aria-label="GeoIP Database"><div class="panel-inner">
-    <h3 class="panel-title">GeoIP Database</h3>
-    <p class="form-text">Administrator-supplied offline MMDB only. No database downloads or DNS. Country Assist is Off by default for every generation.</p>
+  <section id="geoip" class="terminal-panel settings-section" aria-label="GeoIP 資料庫"><div class="panel-inner">
+    <h3 class="panel-title">GeoIP 資料庫</h3>
+    <p class="form-text">只使用管理員提供的離線 MMDB，不會下載資料庫或進行 DNS 查詢。每次產生時，GeoIP 國家輔助預設皆為關閉。</p>
     <dl class="row geoip-metadata">
-      <dt class="col-sm-4">Database status</dt><dd class="col-sm-8" data-geoip-status>{{ database.status }}</dd>
-      <dt class="col-sm-4">Database type</dt><dd class="col-sm-8" data-geoip-type>{{ database.get('database_type','—') }}</dd>
-      <dt class="col-sm-4">File size</dt><dd class="col-sm-8">{{ database.get('size','—') }}{% if database.get('size') %} bytes{% endif %}</dd>
+      <dt class="col-sm-4">資料庫狀態</dt><dd class="col-sm-8" data-geoip-status>{{ database.status | ui_label }}</dd>
+      <dt class="col-sm-4">資料庫類型</dt><dd class="col-sm-8" data-geoip-type>{{ database.get('database_type','—') }}</dd>
+      <dt class="col-sm-4">檔案大小</dt><dd class="col-sm-8">{{ database.get('size','—') }}{% if database.get('size') %} 位元組{% endif %}</dd>
       <dt class="col-sm-4">SHA-256</dt><dd class="col-sm-8" data-geoip-checksum>{{ database.get('checksum_prefix','—') }}</dd>
-      <dt class="col-sm-4">Uploaded (UTC)</dt><dd class="col-sm-8">{{ database.uploaded_display }}</dd>
+      <dt class="col-sm-4">上傳時間（UTC）</dt><dd class="col-sm-8">{{ database.uploaded_display }}</dd>
     </dl>
     <form method="POST" action="{{ url_for('settings.upload') }}" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="form-label" for="geoip-file">Choose .mmdb (maximum {{ database_limit }} MiB)</label>
+      <label class="form-label" for="geoip-file">選擇 .mmdb 檔案（上限 {{ database_limit }} MiB）</label>
       <input class="form-control terminal-input mb-3" type="file" id="geoip-file" name="geoip_file" accept=".mmdb" required>
-      <button class="btn btn-green btn-terminal ui-primary" type="submit">Upload / Replace</button>
+      <button class="btn btn-green btn-terminal ui-primary" type="submit">上傳／取代</button>
     </form>
     {% if database.status != 'Not installed' %}
     <form class="mt-3" method="POST" action="{{ url_for('settings.remove') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-danger-terminal btn-terminal btn-sm" type="submit">Remove Database</button>
+      <button class="btn btn-danger-terminal btn-terminal btn-sm" type="submit">移除資料庫</button>
     </form>{% endif %}
-    <p class="form-text mt-3">Uploading or removing a database does not regenerate subscriptions, change URLs or touch Health. New classification occurs on the next save, refresh or normal regeneration.</p>
+    <p class="form-text mt-3">上傳或移除資料庫不會重新產生訂閱、變更 URL 或影響健康檢查。新的國家分類會在下次儲存、重新整理或正常重新產生時生效。</p>
   </div></section>

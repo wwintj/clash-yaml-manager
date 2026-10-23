@@ -32,7 +32,7 @@ async function setup(browser,width) {
    const {page,context,errors,count}=await setup(browser,width);
    const mode=page.locator('#node-update-mode'),status=page.locator('#yaml-diff-status');
    assert(await mode.isVisible());assert.equal(await mode.inputValue(),'replace');
-   assert((await page.locator('#node-update-help').textContent()).includes('keep source proxies and append submitted nodes'));
+   assert((await page.locator('#node-update-help').textContent()).includes('保留來源節點並追加本次提交的節點'));
    await page.locator('#batch_nodes').fill(batch);await page.locator('#yaml-source').selectOption('custom');
    const upload=()=>page.locator('[name=yaml_file]').setInputFiles({name:'custom.yaml',mimeType:'application/yaml',buffer:Buffer.from(source)});
    const preview=async expected=>{
@@ -44,14 +44,14 @@ async function setup(browser,width) {
     return response.json();
    };
    await upload();const replace=await preview();assert(replace.changed && /^-.*old-a/m.test(replace.diff));
-   await mode.selectOption('merge');assert.equal(await status.textContent(),'Inputs changed; preview again.');
+   await mode.selectOption('merge');assert.equal(await status.textContent(),'輸入已變更，請重新預覽。');
    assert.equal(await page.locator('#yaml-diff-code').textContent(),'');
    const merge=await preview();assert(merge.changed && merge.summary.old_node_count===1 && merge.summary.new_node_count===1);
    assert(!/^-.*old-a/m.test(merge.diff));assert(merge.diff.includes('Browser-new'));assert.equal(count('/process'),0);
    let draft=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),key));assert.equal(draft.node_update_mode,'merge');
    await page.reload();assert.equal(await mode.inputValue(),'merge');
    assert.equal(await page.locator('#batch_nodes').inputValue(),batch);
-   await page.locator('#preview-yaml-diff').click();assert((await status.textContent()).includes('Custom YAML needs to be selected again.'));
+   await page.locator('#preview-yaml-diff').click();assert((await status.textContent()).includes('需要重新選擇自訂 YAML 檔案。'));
    // Legacy drafts keep other input but cannot opt into Merge.
    await page.evaluate(k=>{const value=JSON.parse(localStorage.getItem(k));delete value.node_update_mode;localStorage.setItem(k,JSON.stringify(value));},key);
    await page.reload();assert.equal(await mode.inputValue(),'replace');assert.equal(await page.locator('#batch_nodes').inputValue(),batch);
@@ -62,7 +62,7 @@ async function setup(browser,width) {
    await page.route('**/api/preview-yaml-diff',async route=>{const response=await route.fetch();seen();await held;await route.fulfill({response});});
    await page.locator('#preview-yaml-diff').click();await intercepted;await mode.selectOption('replace');release();
    await page.waitForFunction(()=>!document.getElementById('preview-yaml-diff').disabled);
-   assert.equal(await status.textContent(),'Inputs changed; preview again.');assert.equal(await page.locator('#yaml-diff-code').textContent(),'');
+   assert.equal(await status.textContent(),'輸入已變更，請重新預覽。');assert.equal(await page.locator('#yaml-diff-code').textContent(),'');
    await page.unroute('**/api/preview-yaml-diff');await mode.selectOption('merge');
    await Promise.all([page.waitForNavigation(),page.locator('#generate-yaml').click()]);
    assert.equal(await mode.inputValue(),'merge');assert.equal(count('/process'),1);
@@ -71,9 +71,9 @@ async function setup(browser,width) {
    for(const fragment of ['name: old-a # retained old node','type: trojan','password: "TEST_ONLY"','proxies: [old-a]','Browser-new'])assert(generated.includes(fragment),fragment);
    // Collision is visible; server redisplays valid Merge even without a draft.
    await page.locator('[name=yaml_file]').setInputFiles({name:'merged.yaml',mimeType:'application/yaml',buffer:Buffer.from(generated)});
-   await preview(400);assert((await status.textContent()).includes('Node name already exists in source YAML.'));
+   await preview(400);assert((await status.textContent()).includes('節點名稱已存在於來源 YAML 中。'));
    await Promise.all([page.waitForNavigation(),page.locator('#generate-yaml').click()]);
-   assert.equal(await mode.inputValue(),'merge');assert(await page.getByText('Node name already exists in source YAML.',{exact:true}).isVisible());
+   assert.equal(await mode.inputValue(),'merge');assert(await page.getByText('節點名稱已存在於來源 YAML 中。',{exact:true}).isVisible());
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    await mode.locator('..').screenshot({path:`/private/tmp/clash-merge-${width}.png`});
    page.once('dialog',dialog=>dialog.accept());await page.locator('.clear-draft').first().click();

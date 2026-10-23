@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
       clearTimeout(resetTimer);
       try {
         await navigator.clipboard.writeText(input.value);
-        button.textContent = 'Copied';
-        status.textContent = 'URL copied.';
+        button.textContent = '已複製';
+        status.textContent = 'URL 已複製。';
         resetTimer = setTimeout(() => {
           button.textContent = idleText;
           status.textContent = '';
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (_) {
         button.textContent = idleText;
         input.focus(); input.select();
-        status.textContent = 'Copy failed — select the URL and copy manually.';
+        status.textContent = '複製失敗，請手動選取 URL 並複製。';
       } finally {
         copying = false;
       }
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fragment.append(item.row);
       }
       body.append(fragment);
-      result.textContent = `${visible === rows.length ? visible : `${visible} of ${rows.length}`} ${rows.length === 1 ? 'subscription' : 'subscriptions'}`;
+      result.textContent = visible === rows.length ? `共 ${visible} 個訂閱` : `顯示 ${visible} 個，共 ${rows.length} 個訂閱`;
       empty.hidden = visible !== 0;
       region.hidden = visible === 0;
       clear.disabled = !search.value && status.value === 'all' && sort.value === 'updated-desc';
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       action.dataset.busy = 'true';
       document.querySelectorAll('button[form="' + action.id + '"]').forEach(button => {
         button.dataset.idleText = button.textContent;
-        button.disabled = true; button.textContent = 'Refreshing...';
+        button.disabled = true; button.textContent = '重新整理中…';
       });
     });
   });
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
       action.dataset.busy = 'true';
       const button = action.querySelector('button');
       button.dataset.idleText = button.textContent;
-      button.disabled = true; button.textContent = 'Checking...';
+      button.disabled = true; button.textContent = '檢查中…';
     });
   });
   document.querySelectorAll('[data-health-mode]').forEach(mode => {
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!event.defaultPrevented) {
         document.getElementById('generate-yaml').dataset.idleText = document.getElementById('generate-yaml').textContent;
         document.getElementById('generate-yaml').disabled = true;
-        document.getElementById('generate-yaml').textContent = 'Saving and refreshing...';
+        document.getElementById('generate-yaml').textContent = '儲存並重新整理中…';
       }
     });
   });
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function syncSource() {
     file.disabled = source.value !== 'custom';
     document.getElementById('source-hint').textContent = source.value !== 'custom' ? '' :
-      (form.dataset.savedCustom === 'true' ? 'Current custom YAML: saved' : 'Select a Custom YAML file.');
+      (form.dataset.savedCustom === 'true' ? '目前自訂 YAML：已儲存' : '請選擇自訂 YAML 檔案。');
   }
   source.addEventListener('change', syncSource); syncSource();
   const rows = document.getElementById('aux-node-rows');

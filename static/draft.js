@@ -67,7 +67,7 @@
     root.nodeOverrides = {};
     function syncSource() {
       file.disabled = source.value !== 'custom';
-      hint.textContent = source.value === 'custom' && !file.files.length ? 'Custom YAML needs to be selected again.' : '';
+      hint.textContent = source.value === 'custom' && !file.files.length ? '需要重新選擇自訂 YAML 檔案。' : '';
     }
     function snapshot() {
       return {batch: batch.value, source: source.value, node_update_mode: updateMode.value,
@@ -80,10 +80,10 @@
       if (cleared) return false;
       try {
         store(localStorage, snapshot(), Date.now(), retention);
-        status.textContent = 'Draft saved';
+        status.textContent = '草稿已儲存';
         return true;
       }
-      catch (_) { status.textContent = 'Draft could not be saved — browser storage unavailable or full.'; return false; }
+      catch (_) { status.textContent = '無法儲存草稿：瀏覽器儲存空間無法使用或已滿。'; return false; }
     }
     root.saveDraft = save;
     try {
@@ -101,14 +101,14 @@
         });
         policies.forEach(p => { p.checked = draft.policies.includes(p.value); });
         root.nodeOverrides = draft.overrides && typeof draft.overrides === 'object' && !Array.isArray(draft.overrides) ? draft.overrides : {};
-        status.textContent = 'Draft restored';
+        status.textContent = '草稿已還原';
       }
-    } catch (_) { status.textContent = 'Draft storage unavailable.'; }
+    } catch (_) { status.textContent = '草稿儲存空間無法使用。'; }
     syncSource();
     window.addEventListener('storage', event => {
       if (event.key === null || event.key === KEY && event.newValue === null) {
         cleared = true; clearTimeout(timer); timer = null;
-        status.textContent = 'Draft cleared in another tab';
+        status.textContent = '草稿已在其他分頁中清除';
       }
       if (event.key === null || event.key === POLICY_KEY) {
         retention = event.newValue === 'keep' ? 'keep' : 'timed';
@@ -122,16 +122,16 @@
         const existing = restore(localStorage);
         const next = keep.checked ? 'keep' : 'timed'; setPolicy(localStorage, next); retention = next;
         if (!cleared && (existing || timer)) save();
-        else status.textContent = retention === 'keep' ? 'Future drafts kept until cleared / this browser' : 'Draft autosave / 30 days / this browser';
+        else status.textContent = retention === 'keep' ? '之後的草稿會保留到手動清除／僅限此瀏覽器' : '草稿自動儲存／保留 30 天／僅限此瀏覽器';
       } catch (_) {
         keep.checked = retention === 'keep';
-        status.textContent = 'Draft policy could not be saved — browser storage unavailable or full.';
+        status.textContent = '無法儲存草稿保留設定：瀏覽器儲存空間無法使用或已滿。';
       }
     });
     document.addEventListener('input', event => {
       if (!form.contains(event.target) && !policies.includes(event.target)) return;
       cleared = false;
-      status.textContent = 'Saving…'; clearTimeout(timer); timer = setTimeout(save, 250);
+      status.textContent = '儲存中…'; clearTimeout(timer); timer = setTimeout(save, 250);
     });
     document.addEventListener('change', event => {
       if (!form.contains(event.target) && !policies.includes(event.target)) return;
@@ -141,7 +141,7 @@
     document.addEventListener('click', event => {
       if (event.target.closest('#add-node-row, .remove-node-row')) { cleared = false; setTimeout(save, 0); }
       if (!event.target.closest('.clear-draft')) return;
-      if (!confirm('Clear the saved draft and all node inputs?')) return;
+      if (!confirm('確定清除已儲存的草稿與所有節點輸入？')) return;
       clearTimeout(timer); timer = null;
       cleared = true;
       let removed = true;
@@ -150,7 +150,7 @@
       updateMode.value = 'replace';
       rows.replaceChildren(template.cloneNode(true)); root.nodeOverrides = {};
       syncSource(); document.dispatchEvent(new Event('draft-cleared'));
-      status.textContent = removed ? 'Draft cleared' : 'Draft could not be removed — browser storage unavailable. Clear site data in your browser.';
+      status.textContent = removed ? '草稿已清除' : '無法移除草稿：瀏覽器儲存空間無法使用，請在瀏覽器中清除網站資料。';
     });
     // Capture before other submit handlers; also covers logout and password changes.
     document.addEventListener('submit', save, true);

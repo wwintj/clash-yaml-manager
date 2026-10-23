@@ -54,7 +54,7 @@ async function changePassword(context, page, current, next) {
   const response=await context.request.post(base+'/change-password',{form:{csrf_token:token,current_password:current,new_password:next,confirm_password:next},maxRedirects:0});
   assert.equal(response.status(),302);
   await page.goto(base);
-  assert(await page.getByRole('status').filter({hasText:'Password updated. Log in again with the new password.'}).isVisible());
+  assert(await page.getByRole('status').filter({hasText:'管理密碼已更新，請使用新密碼重新登入。'}).isVisible());
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
@@ -72,7 +72,7 @@ async function changePassword(context, page, current, next) {
         return route.abort();
       });
       await page.goto(base);
-      const password=page.getByLabel('Password',{exact:true}),button=page.getByRole('button',{name:'Sign in',exact:true});
+      const password=page.getByLabel('密碼',{exact:true}),button=page.getByRole('button',{name:'登入',exact:true});
       assert(await password.evaluate(e=>document.activeElement===e && e.autocomplete==='current-password' && e.required));
       assert.equal(await password.getAttribute('name'),'password');
       await check(page,'normal',width,height);
@@ -82,21 +82,21 @@ async function changePassword(context, page, current, next) {
       assert(await password.evaluate(e=>parseFloat(getComputedStyle(e).outlineWidth)>=2));
       await page.keyboard.type('TEST_ONLY_INCORRECT_PASSWORD');
       await navigate(page,()=>page.keyboard.press('Enter'));
-      assert.equal(await page.getByRole('alert').innerText(),'Login failed. Incorrect password.');
+      assert.equal(await page.getByRole('alert').innerText(),'登入失敗，密碼錯誤。');
       assert.equal(await password.inputValue(),'');
       await check(page,'error',width,height);
       // One inert rendered-HTML fixture exercises long and multiple errors without new routes.
       const errorHtml=await page.content();
-      await page.route(base+'/__login-long-message',route=>route.fulfill({body:errorHtml.replace('Login failed. Incorrect password.','Long message '+ 'x'.repeat(600)+'</li><li>Second error.'),contentType:'text/html'}));
+      await page.route(base+'/__login-long-message',route=>route.fulfill({body:errorHtml.replace('登入失敗，密碼錯誤。','Long message '+ 'x'.repeat(600)+'</li><li>Second error.'),contentType:'text/html'}));
       await page.goto(base+'/__login-long-message');await check(page,'long-errors',width,height);
       await page.goto(base);
       await page.locator('[name=csrf_token]').first().evaluate(e=>{e.value='invalid';});
       await password.fill('TEST_ONLY_CSRF_PASSWORD');
       await navigate(page,()=>password.press('Enter'));
-      assert(await page.getByRole('status').filter({hasText:'Log in again; any saved draft will be restored after login.'}).isVisible());
+      assert(await page.getByRole('status').filter({hasText:'請重新登入；已儲存的草稿會在登入後自動還原。'}).isVisible());
       await check(page,'csrf',width,height);
       await password.fill(originalPassword);await navigate(page,()=>password.press('Enter'));
-      for(const text of ['Clash YAML Manager','Change Password','Logout','Generate YAML','Fixed Subscriptions','Settings'])
+      for(const text of ['Clash YAML Manager','變更密碼','登出','產生 YAML','固定訂閱','設定'])
         assert((await page.locator('.app-header').innerText()).includes(text));
       assert.equal(await page.locator('.login-panel').count(),0);
       // Exercise the actual success path; only the disposable app's password is changed.
@@ -119,7 +119,7 @@ async function changePassword(context, page, current, next) {
       await retry.locator('#password').fill('TEST_ONLY_RATE_LIMIT_PASSWORD');
       await navigate(retry,()=>retry.locator('#password').press('Enter'));
     }
-    assert.equal(await retry.getByRole('alert').innerText(),'Too many login attempts. Try again in 900 seconds.');
+    assert.equal(await retry.getByRole('alert').innerText(),'登入嘗試次數過多，請在 900 秒後重試。');
     await check(retry,'rate-limit',1280,720);await limited.close();
     fs.writeFileSync(path.join(artifacts,'login-geometry.json'),JSON.stringify(audit,null,2));
     console.log(`PASS Login UI: ${audit.length} state/viewport checks; keyboard, Enter, real CSRF / success / rate-limit paths; screenshots: ${artifacts}`);

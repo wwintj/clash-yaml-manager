@@ -50,7 +50,7 @@ async function matching(page, expected) {
   assert.deepEqual(await visibleOrder(page), expected);
   const total = await rows(page).count();
   assert.equal((await page.locator('#fixed-result-count').textContent()).trim(),
-    `${expected.length === total ? total : `${expected.length} of ${total}`} ${total===1?'subscription':'subscriptions'}`);
+    expected.length === total ? `共 ${total} 個訂閱` : `顯示 ${expected.length} 個，共 ${total} 個訂閱`);
 }
 async function clear(page) {
   if (await page.locator('#fixed-clear').isEnabled()) await page.locator('#fixed-clear').click();
@@ -109,7 +109,7 @@ async function layout(page,width) {
       viewport:innerWidth,boxes,buttons,names,language:document.documentElement.lang};
   });
   assert.equal(detail.overflow,0,`Fixed list document overflow at ${width}`);
-  assert.equal(detail.language,'en');
+  assert.equal(detail.language,'zh-Hant-TW');
   assert(detail.boxes.every(e=>e.left>=0 && e.right<=width+1),'Toolbar controls stay in the viewport');
   for (const button of detail.buttons) {
     assert(button.center<=2,`Button centered at ${width}: ${button.text}`);
@@ -152,9 +152,9 @@ async function layout(page,width) {
     const unauthenticated=await anonymous.request.get(base+'/fixed-subscriptions',{maxRedirects:0});
     assert.equal(unauthenticated.status(),302);
     await seed('empty');await login(page);await page.goto(base+'/fixed-subscriptions');
-    assert(await page.getByText('No fixed subscriptions yet.',{exact:true}).isVisible());
-    assert(await page.getByRole('link',{name:'Create Fixed Subscription',exact:true}).isVisible());
-    assert.equal((await page.locator('#fixed-result-count').textContent()).trim(),'0 subscriptions');
+    assert(await page.getByText('尚未建立固定訂閱。',{exact:true}).isVisible());
+    assert(await page.getByRole('link',{name:'建立固定訂閱',exact:true}).isVisible());
+    assert.equal((await page.locator('#fixed-result-count').textContent()).trim(),'共 0 個訂閱');
     for(const width of [1440,390])await shot(page,'fixed-empty',width);
 
     let fixture=await seed('populated');const before=await snapshot();
@@ -167,22 +167,22 @@ async function layout(page,width) {
     assert.deepEqual(await snapshot(),before,'List GET does not create auxiliary health JSON or change registry');
     await matching(page,orders['updated-desc']);
     assert.equal(await page.locator('#fixed-search').getAttribute('type'),'search');
-    assert.equal(await page.locator('#fixed-search').getAttribute('placeholder'),'Search subscriptions...');
-    assert.equal(await page.getByLabel('Search subscriptions',{exact:true}).count(),1);
-    assert.equal(await page.getByLabel('Status',{exact:true}).count(),1);
-    assert.equal(await page.getByLabel('Sort',{exact:true}).count(),1);
+    assert.equal(await page.locator('#fixed-search').getAttribute('placeholder'),'搜尋訂閱…');
+    assert.equal(await page.getByLabel('搜尋訂閱',{exact:true}).count(),1);
+    assert.equal(await page.getByLabel('狀態',{exact:true}).count(),1);
+    assert.equal(await page.getByLabel('排序',{exact:true}).count(),1);
     assert.equal(await page.locator('#fixed-result-count').getAttribute('aria-live'),'polite');
     assert.equal(await page.locator('#fixed-result-count').getAttribute('role'),'status');
     for(const entry of fixture.entries) {
       const item=row(page,entry.prefix);
-      assert.equal((await item.locator('.fixed-source-count').textContent()).trim(),`External Sources: ${entry.sources}`);
-      assert.equal((await item.locator('td[data-label="Status"] .badge').textContent()).trim(),entry.status==='active'?'Active':'Disabled');
-      assert((await item.locator('td[data-label="Updated"]').textContent()).includes('UTC'));
-      assert.equal((await item.locator('td[data-label="Last Access"]').textContent()).trim(),'Never');
+      assert.equal((await item.locator('.fixed-source-count').textContent()).trim(),`外部來源：${entry.sources}`);
+      assert.equal((await item.locator('td[data-label="狀態"] .badge').textContent()).trim(),entry.status==='active'?'啟用中':'已停用');
+      assert((await item.locator('td[data-label="更新時間"]').textContent()).includes('UTC'));
+      assert.equal((await item.locator('td[data-label="上次存取"]').textContent()).trim(),'從未');
       assert.equal(await item.locator('.fixed-url').inputValue(),new URL(entry.url,base).href);
       assert(await item.locator('.fixed-url').getAttribute('readonly')!==null);
       assert.equal(await item.locator('.copy-status').getAttribute('role'),'status');
-      assert(!await item.getByRole('button',{name:'Check Now',exact:true}).count());
+      assert(!await item.getByRole('button',{name:'立即檢查',exact:true}).count());
       assert(!await item.getByRole('button',{name:'Refresh Sources',exact:true}).count());
     }
     assert.equal(fixture.entries.find(e=>e.prefix===longPrefix).name.length,128);
@@ -204,8 +204,8 @@ async function layout(page,width) {
     audit.search.push('Unicode name');
     for(const query of [fixture.entries[0].url.split('fs_')[1],new URL(fixture.entries[0].url,base).href,fixture.secrets[0]]) {
       await clear(page);await page.locator('#fixed-search').fill(query);await matching(page,[]);
-      assert(await page.getByText('No subscriptions match your filters.',{exact:true}).isVisible());
-      assert.equal(await page.getByText('No fixed subscriptions yet.',{exact:true}).count(),0);
+      assert(await page.getByText('沒有符合篩選條件的訂閱。',{exact:true}).isVisible());
+      assert.equal(await page.getByText('尚未建立固定訂閱。',{exact:true}).count(),0);
     }
     audit.search.push('no token, full URL or node-secret search');
     for(const width of [1440,390])await shot(page,'fixed-filtered-empty',width);
@@ -233,29 +233,29 @@ async function layout(page,width) {
     const secondUrl=await second.locator('.fixed-url').inputValue(),firstUrl=await first.locator('.fixed-url').inputValue();
     assert.notEqual(firstUrl,secondUrl);
     await second.locator('.copy-fixed-url').click();
-    await second.getByRole('button',{name:'Copied',exact:true}).waitFor();
+    await second.getByRole('button',{name:'已複製',exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),secondUrl);
-    assert.equal((await second.locator('.copy-status').textContent()).trim(),'URL copied.');
-    assert.equal((await first.locator('.copy-fixed-url').textContent()).trim(),'Copy URL');
+    assert.equal((await second.locator('.copy-status').textContent()).trim(),'URL 已複製。');
+    assert.equal((await first.locator('.copy-fixed-url').textContent()).trim(),'複製 URL');
     await first.locator('.copy-fixed-url').click();
     assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),firstUrl);
-    await page.waitForFunction(()=>[...document.querySelectorAll('.copy-fixed-url')].every(e=>e.textContent.trim()==='Copy URL'),null,{timeout:2600});
+    await page.waitForFunction(()=>[...document.querySelectorAll('.copy-fixed-url')].every(e=>e.textContent.trim()==='複製 URL'),null,{timeout:2600});
     assert.equal((await second.locator('.copy-status').textContent()).trim(),'');
     await page.evaluate(()=>Object.defineProperty(navigator.clipboard,'writeText',{configurable:true,value:async()=>{throw new Error('Synthetic clipboard rejection');}}));
     await second.locator('.copy-fixed-url').click();
-    assert.equal((await second.locator('.copy-status').textContent()).trim(),'Copy failed — select the URL and copy manually.');
+    assert.equal((await second.locator('.copy-status').textContent()).trim(),'複製失敗，請手動選取 URL 並複製。');
     assert(await second.locator('.fixed-url').evaluate(e=>document.activeElement===e && e.selectionStart===0 && e.selectionEnd===e.value.length));
-    assert.equal((await second.locator('.copy-fixed-url').textContent()).trim(),'Copy URL');
+    assert.equal((await second.locator('.copy-fixed-url').textContent()).trim(),'複製 URL');
     audit.copy={secondRow:true,independentRows:true,actualClipboard:true,reset:true,failureFallback:true};
 
     fixture=await seed('health');const healthBefore=await snapshot();
     assert.equal((await page.reload()).status(),200);
     assert.deepEqual(await snapshot(),healthBefore,'Healthy/stale fingerprint aggregation is observational only');
     const healthChecks=[
-      [alpha,'Endpoint','Manual','2 healthy'],[beta,'Endpoint','Manual','1 suspect'],
-      [gamma,'Endpoint','Automatic','1 unhealthy'],[alphaTie,'Endpoint','Manual','2 unknown'],
-      [gamma,'Proxy','Automatic','1 unhealthy'],[alphaTie,'Proxy','Manual','2 unsupported'],
-      [longPrefix,'Proxy','Manual','3 healthy'],[tokyo,'Endpoint','Off','Off'],[tokyo,'Proxy','Off','Off']
+      [alpha,'Endpoint','手動','健康 2'],[beta,'Endpoint','手動','可疑 1'],
+      [gamma,'Endpoint','自動','不健康 1'],[alphaTie,'Endpoint','手動','未知 2'],
+      [gamma,'Proxy','自動','不健康 1'],[alphaTie,'Proxy','手動','不支援 2'],
+      [longPrefix,'Proxy','手動','健康 3'],[tokyo,'Endpoint','關閉','關閉'],[tokyo,'Proxy','關閉','關閉']
     ];
     for(const [prefix,type,mode,status] of healthChecks) {
       const summary=row(page,prefix).locator(type==='Endpoint'?'.fixed-endpoint-summary':'.fixed-proxy-summary');
@@ -268,17 +268,17 @@ async function layout(page,width) {
     fixture=await seed('corrupt');const corruptBefore=await snapshot();
     assert.equal((await page.reload()).status(),200);assert.deepEqual(await snapshot(),corruptBefore);
     assert.equal(await rows(page).count(),6);
-    assert(await rows(page).evaluateAll(elements=>elements.every(e=>e.querySelector('.fixed-endpoint-summary').textContent.includes('Unavailable')&&e.querySelector('.fixed-proxy-summary').textContent.includes('Unavailable'))));
+    assert(await rows(page).evaluateAll(elements=>elements.every(e=>e.querySelector('.fixed-endpoint-summary').textContent.includes('無法使用')&&e.querySelector('.fixed-proxy-summary').textContent.includes('無法使用'))));
     await privacy(page,fixture);audit.health.push({corrupt:'Unavailable; list usable; bytes unchanged'});
     await seed('missing');const missingBefore=await snapshot();
     assert.equal((await page.reload()).status(),200);assert.deepEqual(await snapshot(),missingBefore);
-    assert(await page.locator('.fixed-health-value').evaluateAll(elements=>elements.every(e=>e.textContent.trim()==='Off')));
+    assert(await page.locator('.fixed-health-value').evaluateAll(elements=>elements.every(e=>e.textContent.trim()==='關閉')));
     audit.health.push({missing:'Off; no file creation'});
 
     // Existing JS confirmation semantics stay in place before No-JS action checks.
     const cancelRow=row(page,gamma),oldGamma=await cancelRow.locator('.fixed-url').inputValue();
-    for(const [button,message] of [['Regenerate Link','This will invalidate the old subscription URL.'],
-      ['Delete','Delete this fixed subscription? Its URL will stop working permanently.']]) {
+    for(const [button,message] of [['重新產生連結','此操作會使舊的訂閱 URL 失效。'],
+      ['刪除','確定刪除這個固定訂閱？其 URL 將永久失效。']]) {
       let observed;
       const cancelled=new Promise(resolve=>page.once('dialog',async dialog=>{observed=dialog.message();await dialog.dismiss();resolve();}));
       await cancelRow.getByRole('button',{name:button,exact:true}).click();
@@ -290,14 +290,14 @@ async function layout(page,width) {
     await noPage.goto(base+'/fixed-subscriptions');assert.equal(await rows(noPage).count(),6);
     assert.deepEqual(await visibleOrder(noPage),fixture.entries.map(e=>e.prefix));
     assert(await noPage.locator('#fixed-toolbar').isHidden());
-    await Promise.all([noPage.waitForNavigation(),noPage.getByRole('link',{name:'Create Fixed Subscription',exact:true}).click()]);
+    await Promise.all([noPage.waitForNavigation(),noPage.getByRole('link',{name:'建立固定訂閱',exact:true}).click()]);
     assert(await noPage.locator('#subscription-name').isVisible());
     await noPage.goto(base+'/fixed-subscriptions');
-    await Promise.all([noPage.waitForNavigation(),row(noPage,alpha).getByRole('link',{name:'Edit',exact:true}).click()]);
-    assert(await noPage.getByRole('heading',{name:'Edit Fixed Subscription',exact:true}).isVisible());
+    await Promise.all([noPage.waitForNavigation(),row(noPage,alpha).getByRole('link',{name:'編輯',exact:true}).click()]);
+    assert(await noPage.getByRole('heading',{name:'編輯固定訂閱',exact:true}).isVisible());
     await noPage.goto(base+'/fixed-subscriptions');
     const alphaRow=()=>row(noPage,alpha),oldAlpha=await alphaRow().locator('.fixed-url').inputValue();
-    const action=await alphaRow().getByRole('button',{name:'Disable',exact:true}).evaluate(e=>e.form.action);
+    const action=await alphaRow().getByRole('button',{name:'停用',exact:true}).evaluate(e=>e.form.action);
     const secured=await noJS.request.post(action,{form:{csrf_token:'expired'},maxRedirects:0});
     assert.equal(secured.status(),303);await publicRead(oldAlpha,200);
     const missingToken=await noJS.request.post(action,{form:{},maxRedirects:0});
@@ -305,13 +305,13 @@ async function layout(page,width) {
     const unauthenticatedPost=await anonymous.request.post(action,{form:{csrf_token:'expired'},maxRedirects:0});
     assert.equal(unauthenticatedPost.status(),303);await publicRead(oldAlpha,200);
     await noPage.reload();
-    await postNavigate(noPage,alphaRow().getByRole('button',{name:'Disable',exact:true}));await publicRead(oldAlpha,404);
-    await postNavigate(noPage,alphaRow().getByRole('button',{name:'Enable',exact:true}));await publicRead(oldAlpha,200);
-    assert.equal(await alphaRow().getByRole('button',{name:'Regenerate Link',exact:true}).evaluate(e=>e.form.dataset.confirm),'This will invalidate the old subscription URL.');
-    await postNavigate(noPage,alphaRow().getByRole('button',{name:'Regenerate Link',exact:true}));
+    await postNavigate(noPage,alphaRow().getByRole('button',{name:'停用',exact:true}));await publicRead(oldAlpha,404);
+    await postNavigate(noPage,alphaRow().getByRole('button',{name:'啟用',exact:true}));await publicRead(oldAlpha,200);
+    assert.equal(await alphaRow().getByRole('button',{name:'重新產生連結',exact:true}).evaluate(e=>e.form.dataset.confirm),'此操作會使舊的訂閱 URL 失效。');
+    await postNavigate(noPage,alphaRow().getByRole('button',{name:'重新產生連結',exact:true}));
     const replacement=await alphaRow().locator('.fixed-url').inputValue();assert.notEqual(replacement,oldAlpha);
     await publicRead(oldAlpha,404);await publicRead(replacement,200);
-    await postNavigate(noPage,alphaRow().getByRole('button',{name:'Delete',exact:true}));await publicRead(replacement,404);
+    await postNavigate(noPage,alphaRow().getByRole('button',{name:'刪除',exact:true}));await publicRead(replacement,404);
     assert.equal(await rows(noPage).count(),5);
     audit.noJS={allRowsVisible:true,createAndEditNavigation:true,enableDisable:true,regenerate:true,delete:true,
       authenticated:true,csrfProtected:true,post303:true,scope:'List progressive enhancement; existing editor save/create and no-JS confirmations are unchanged'};

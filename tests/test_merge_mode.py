@@ -11,6 +11,7 @@ from werkzeug.datastructures import MultiDict
 
 from conftest import LINK, ROOT, post
 from core import generator, node_update, policy_engine, yaml_diff, yaml_utils as yaml
+from core.ui import display_message
 from test_yaml_diff import apply_diff, fields, body, APPROVED_HASHES, SOURCE, ROUTE, snapshot, token
 
 BASE = (ROOT/'tests/fixtures/merge/base.yaml').read_text()
@@ -145,7 +146,7 @@ def test_invalid_mode_safe_400_before_source_or_output(web,logged_in,mode,route)
     values=fields();values['node_update_mode']=mode
     before=snapshot(web)
     response=post(logged_in,route,body(values))
-    assert response.status_code==400 and node_update.MESSAGE in response.text
+    assert response.status_code==400 and (node_update.MESSAGE if route == ROUTE else display_message(node_update.MESSAGE)) in response.text
     assert 'PRIVATE<script>' not in response.text and snapshot(web)==before
 
 
@@ -162,14 +163,14 @@ def test_http_duplicate_mode_rejected(web,logged_in,route):
     values=MultiDict(fields());values.add('node_update_mode','replace');values.add('node_update_mode','merge')
     values.add('csrf_token',token(logged_in));values.add('yaml_file',(io.BytesIO(SOURCE.encode()),'custom.yaml'))
     response=logged_in.post(route,data=values)
-    assert response.status_code==400 and node_update.MESSAGE in response.text
+    assert response.status_code==400 and (node_update.MESSAGE if route == ROUTE else display_message(node_update.MESSAGE)) in response.text
     assert not list(Path(web.DIR_OUTPUTS).iterdir())
 
 
 @pytest.mark.parametrize('route',[ROUTE,'/process'])
 def test_invalid_mode_without_other_form_fields_is_400(logged_in,route):
     response=post(logged_in,route,{'node_update_mode':'INVALID'})
-    assert response.status_code==400 and node_update.MESSAGE in response.text
+    assert response.status_code==400 and (node_update.MESSAGE if route == ROUTE else display_message(node_update.MESSAGE)) in response.text
 
 
 @pytest.mark.parametrize('mode',[None,'replace'])

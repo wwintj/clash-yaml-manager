@@ -245,7 +245,7 @@ def test_reconcile_failure_keeps_successful_observations_and_previous_yaml(store
 def test_failed_proxy_job_never_reconciles(store,base,scenario,monkeypatch,failure):
     key=scenario['entry']['id'];worker=scenario['worker'];before=store.snapshot(key)
     calls=[];monkeypatch.setattr(store,'reconcile_health_policy',lambda *a,**kw:calls.append(a))
-    if failure=='engine':worker.engine.status=lambda:dict(status='NOT INSTALLED')
+    if failure=='engine':worker.engine.status=lambda:dict(status='未安裝')
     if failure=='health-commit':monkeypatch.setattr(worker,'_commit',lambda *args:(_ for _ in ()).throw(ProxyHealthError('save')))
     if failure=='busy':
         with file_lock(worker.job_lock):
@@ -436,7 +436,7 @@ def test_fixed_health_controls_strict_redisplay_and_auth_only(web,logged_in,inva
         aux_nodes=json.dumps([dict(country='SG',name='Keep auxiliary',link=LINK)]),health_policy_mode='exclude-unhealthy',
         health_policy_max_age_seconds='21600',health_policy_min_candidates='3',policy_country_groups_type='fallback')
     data.update(invalid);response=post(logged_in,path,data)
-    assert response.status_code==400 and b'Unable to save' in response.data
+    assert response.status_code==400 and '無法儲存'.encode() in response.data
     assert b'Keep auxiliary' in response.data and b'value="fallback" selected' in response.data
     for value in invalid.values():assert ('value="'+value+'"').encode() in response.data
     assert store.snapshot(entry['id'])==old

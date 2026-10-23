@@ -42,13 +42,13 @@ def test_settings_safe_metadata_runtime_no_execution(web,logged_in,monkeypatch,m
     before=path.read_bytes() if path.exists() else None
     response=logged_in.get('/settings');assert response.status_code==200
     html=response.get_data(as_text=True)
-    expected={'absent':'Not configured','configured':'Configured','invalid':'Metadata unavailable','manual':'Not configured'}[mode]
+    expected={'absent':'未設定','configured':'已設定','invalid':'中繼資料無法使用','manual':'未設定'}[mode]
     assert f'data-runtime="managed_https">{expected}</dd>' in html
     assert ('data-runtime="managed_domain">example.com</dd>' in html)==(mode=='configured')
     if mode in ('configured','manual'):
-        assert 'data-runtime="bind">Loopback only</dd>' in html
-        assert 'data-runtime="cookie_secure">Enabled</dd>' in html
-        assert 'data-runtime="trust_proxy">Enabled</dd>' in html
+        assert 'data-runtime="bind">僅限本機迴路</dd>' in html
+        assert 'data-runtime="cookie_secure">已啟用</dd>' in html
+        assert 'data-runtime="trust_proxy">已啟用</dd>' in html
     for secret in sentinel+[web.SECRET_KEY if hasattr(web,'SECRET_KEY') else 'test-only-fixed-secret']:
         assert secret not in html
     assert 'sudo bash /opt/clash-yaml-manager/httpsctl.sh status' in html
@@ -72,7 +72,7 @@ def test_metadata_rejects_unsafe_projection(web,logged_in,metadata_reader,bad):
     if bad=='timestamp':path.write_text(json.dumps(dict(info,configured_at='2026-99-30T00:00:00+00:00')))
     if bad=='backup':path.write_text(json.dumps(dict(info,previous_backup='/tmp/arbitrary')))
     html=logged_in.get('/settings').get_data(as_text=True)
-    assert 'data-runtime="managed_https">Metadata unavailable</dd>' in html
+    assert 'data-runtime="managed_https">中繼資料無法使用</dd>' in html
     assert 'FORBIDDEN' not in html and 'data-runtime="managed_domain"' not in html
 
 
@@ -104,4 +104,4 @@ def test_startup_rejects_invalid_bind_without_runtime_writes(tmp_path,host):
 
 def test_default_http_bind_runtime(web):
     assert web.APP_BIND_HOST == '0.0.0.0'
-    assert web.settings_runtime()['bind'] == 'All interfaces'
+    assert web.settings_runtime()['bind'] == '所有網路介面'

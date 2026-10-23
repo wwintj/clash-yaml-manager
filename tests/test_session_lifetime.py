@@ -195,14 +195,14 @@ def test_secret_key_change_rejects_old_login(web, logged_in, monkeypatch):
     assert b'id="password"' in logged_in.get('/').data
 
 
-@pytest.mark.parametrize('web,expected', [({},'30 days'),({'SESSION_LIFETIME_DAYS':'1'},'1 day'),
-    ({'SESSION_LIFETIME_DAYS':'3650'},'3650 days')], indirect=['web'])
+@pytest.mark.parametrize('web,expected', [({},'30 天'),({'SESSION_LIFETIME_DAYS':'1'},'1 天'),
+    ({'SESSION_LIFETIME_DAYS':'3650'},'3650 天')], indirect=['web'])
 def test_runtime_reports_effective_lifetime(web, logged_in, expected):
     assert web.settings_runtime()['session_lifetime'] == expected
     assert f'data-runtime="session_lifetime">{expected}<' in logged_in.get('/settings').text
     # Projection follows the actual Flask lifetime rather than a stale env constant.
     web.app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=2)
-    assert web.settings_runtime()['session_lifetime'] == '2 days'
+    assert web.settings_runtime()['session_lifetime'] == '2 天'
 
 
 def _gunicorn_failure_evidence(process, readiness, error_log, iteration, phase,

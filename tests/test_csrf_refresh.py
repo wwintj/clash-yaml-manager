@@ -128,5 +128,5 @@ def test_runtime_does_not_project_raw_or_invalid_session_values(value):
     result = runtime(port=8899,cookie_secure=False,trust_proxy=False,download_base='',download_scheme='',
         upload_retention=3600,output_retention=86400,cleanup_interval=3600,backup_retention=604800,
         session_lifetime_days=value)
-    assert result['session_lifetime'] == 'Unavailable'
+    assert result['session_lifetime'] == '無法使用'
     assert 'PRIVATE_SESSION_VALUE' not in str(result)

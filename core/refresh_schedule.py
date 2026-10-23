@@ -4,9 +4,9 @@ import math
 from core.source_errors import SourceError, valid_code
 
 INTERVALS = (900, 1800, 3600, 10800, 21600, 43200, 86400)
-OPTIONS = ((None, 'Off'), (900, 'Every 15 minutes'), (1800, 'Every 30 minutes'),
-           (3600, 'Every 1 hour'), (10800, 'Every 3 hours'), (21600, 'Every 6 hours'),
-           (43200, 'Every 12 hours'), (86400, 'Every 24 hours'))
+OPTIONS = ((None, '關閉'), (900, '每 15 分鐘'), (1800, '每 30 分鐘'),
+           (3600, '每 1 小時'), (10800, '每 3 小時'), (21600, '每 6 小時'),
+           (43200, '每 12 小時'), (86400, '每 24 小時'))
 BACKOFF = (300, 900, 1800, 3600, 7200, 21600)
 HISTORY_LIMIT = 20
 FIELDS = ('refresh_interval_seconds', 'next_refresh_at', 'consecutive_failures',

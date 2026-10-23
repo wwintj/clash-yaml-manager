@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,10 +45,10 @@
             <form action="/login" method="POST">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="ui-form-group">
-                <label for="password" class="form-label">Password</label>
-                <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="Enter password" autocomplete="current-password" required autofocus>
+                <label for="password" class="form-label">密碼</label>
+                <input id="password" type="password" class="form-control terminal-input" name="password" placeholder="輸入密碼" autocomplete="current-password" required autofocus>
               </div>
-              <button type="submit" class="btn btn-green btn-terminal ui-primary w-100">Sign in</button>
+              <button type="submit" class="btn btn-green btn-terminal ui-primary w-100">登入</button>
             </form>
           </div>
         </div>
@@ -59,18 +59,18 @@
           <div class="app-header-main">
             <h1 class="brand-title">Clash YAML Manager</h1>
             <div class="ui-actions app-header-actions">
-              <button type="button" class="btn btn-outline-terminal btn-terminal btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</button>
+              <button type="button" class="btn btn-outline-terminal btn-terminal btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">變更密碼</button>
               <form action="/logout" method="POST" class="m-0">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-terminal btn-terminal btn-sm">Logout</button>
+                <button type="submit" class="btn btn-outline-terminal btn-terminal btn-sm">登出</button>
               </form>
             </div>
           </div>
 
-          <nav class="ui-nav app-header-nav" aria-label="Main navigation">
-            <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint in ('index', 'process_config') %}aria-current="page"{% endif %}>Generate YAML</a>
-            <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>Fixed Subscriptions</a>
-            <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>Settings</a>
+          <nav class="ui-nav app-header-nav" aria-label="主選單">
+            <a class="btn btn-outline-terminal btn-terminal" href="/" {% if request.endpoint in ('index', 'process_config') %}aria-current="page"{% endif %}>產生 YAML</a>
+            <a class="btn btn-outline-terminal btn-terminal" href="/fixed-subscriptions" {% if request.blueprint == 'fixed' %}aria-current="page"{% endif %}>固定訂閱</a>
+            <a class="btn btn-outline-terminal btn-terminal" href="/settings" {% if request.blueprint == 'settings' %}aria-current="page"{% endif %}>設定</a>
           </nav>
         </div>
       </header>
@@ -99,21 +99,21 @@
       <section class="terminal-panel mb-4">
         <div class="panel-inner">
           <div class="panel-title-row">
-            <h2 class="panel-title">Config Input</h2>
-            <span class="panel-subtitle">Upload / Nodes</span>
+            <h2 class="panel-title">設定輸入</h2>
+            <span class="panel-subtitle">上傳／節點</span>
           </div>
 
-          <div class="ui-actions mb-3"><span id="draft-status" class="form-text" role="status">Draft autosave / 30 days / this browser</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm">Clear Draft</button></div>
+          <div class="ui-actions mb-3"><span id="draft-status" class="form-text" role="status">草稿自動儲存／保留 30 天／僅限此瀏覽器</span><button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm">清除草稿</button></div>
           <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox" id="keep-draft" aria-describedby="draft-privacy">
-            <label class="form-check-label" for="keep-draft">Keep draft until I clear it</label>
+            <label class="form-check-label" for="keep-draft">保留草稿，直到我手動清除</label>
           </div>
-          <p id="draft-privacy" class="form-text mb-3">Drafts may contain sensitive node URLs. Anyone using this browser on a shared computer may read them. Stored only in this browser; Clear Draft removes saved inputs. Browser storage may still be cleared or unavailable.</p>
+          <p id="draft-privacy" class="form-text mb-3">草稿可能包含敏感的節點連結，在共用電腦上使用此瀏覽器的人都可能讀取。草稿僅儲存在此瀏覽器中；「清除草稿」會移除已儲存的輸入。瀏覽器儲存空間仍可能被清除或無法使用。</p>
           <form id="process-form" action="/process" method="POST" enctype="multipart/form-data">
             {% include '_generator_fields.html' %}
-            <label class="form-label">05 / Generate YAML</label>
+            <label class="form-label">05 / 產生 YAML</label>
             <div class="ui-actions">
-              <button type="submit" id="generate-yaml" name="action" value="generate" class="btn btn-green btn-terminal btn-lg">Generate YAML</button>
+              <button type="submit" id="generate-yaml" name="action" value="generate" class="btn btn-green btn-terminal btn-lg">產生 YAML</button>
             </div>
           </form>
         </div>
@@ -121,62 +121,62 @@
 
       <section id="yaml-diff-panel" class="terminal-panel mb-4" hidden>
         <div class="panel-inner">
-          <div class="panel-title-row"><h2 class="panel-title">YAML Changes</h2><span id="yaml-diff-status" class="panel-subtitle" role="status" aria-live="polite"></span></div>
-          <p class="form-text">Private preview of current inputs. Nothing is generated or saved. YAML may contain credentials.</p>
+          <div class="panel-title-row"><h2 class="panel-title">YAML 變更</h2><span id="yaml-diff-status" class="panel-subtitle" role="status" aria-live="polite"></span></div>
+          <p class="form-text">目前輸入的私人預覽，不會產生或儲存任何檔案。YAML 可能包含憑證。</p>
           <p id="yaml-diff-summary" class="form-text"></p>
-          <pre id="yaml-diff-text" class="yaml-diff-text" tabindex="0" aria-label="Full YAML unified diff" hidden><code id="yaml-diff-code"></code></pre>
+          <pre id="yaml-diff-text" class="yaml-diff-text" tabindex="0" aria-label="完整 YAML 差異" hidden><code id="yaml-diff-code"></code></pre>
         </div>
       </section>
 
       <section id="generate-result" class="terminal-panel mb-4">
         <div class="panel-inner">
           <div class="panel-title-row">
-            <h2 class="panel-title">Generate Result</h2>
-            <span class="panel-subtitle">{% if result %}Ready{% else %}Waiting{% endif %}</span>
+            <h2 class="panel-title">產生結果</h2>
+            <span class="panel-subtitle">{% if result %}已完成{% else %}等待中{% endif %}</span>
           </div>
 
           {% if result %}
             {% if success_message %}
               <div class="terminal-alert success mb-4" role="status">
-                <div class="panel-subtitle mb-1">Generation Complete</div>
+                <div class="panel-subtitle mb-1">產生完成</div>
                 <p class="mb-0">{{ success_message | ui_message }}</p>
               </div>
             {% endif %}
 
-            <p>Temporary link expires: <time datetime="{{ result.expires_at }}">{{ result.expires_at }} (UTC)</time></p>
-            <button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm mb-3">Clear Draft</button>
+            <p>臨時連結到期時間：<time datetime="{{ result.expires_at }}">{{ result.expires_at }} (UTC)</time></p>
+            <button type="button" class="clear-draft btn btn-outline-terminal btn-terminal btn-sm mb-3">清除草稿</button>
             <div class="status-grid mb-4">
               <div class="status-cell">
-                <div class="status-label">Old Nodes Removed</div>
+                <div class="status-label">已移除舊節點</div>
                 <div class="status-value">{{ result.old_node_count }}</div>
               </div>
               <div class="status-cell">
-                <div class="status-label">Nodes</div>
+                <div class="status-label">節點</div>
                 <div class="status-value green">{{ result.new_node_count }}</div>
               </div>
               <div class="status-cell">
-                <div class="status-label">Proxy Groups</div>
+                <div class="status-label">策略組</div>
                 <div class="status-value">{{ result.group_count }}</div>
               </div>
               <div class="status-cell">
-                <div class="status-label">Rules</div>
+                <div class="status-label">規則</div>
                 <div class="status-value">{{ result.rule_count }}</div>
               </div>
             </div>
 
             {% if output_filename %}
               <div class="terminal-alert mb-4">
-                <div class="panel-subtitle mb-2">Temporary Link</div>
+                <div class="panel-subtitle mb-2">臨時連結</div>
                 <div class="row g-3 align-items-center">
                   <div class="col-lg-4">
-                    <div class="status-label mb-1">File Name</div>
+                    <div class="status-label mb-1">檔案名稱</div>
                     <div class="mono output-filename">{{ output_filename }}</div>
                   </div>
                   <div class="col-lg-8">
-                    <label class="form-label mb-1" for="download-url">Temporary Link</label>
+                    <label class="form-label mb-1" for="download-url">臨時連結</label>
                     <div class="ui-actions">
                       <input id="download-url" class="form-control terminal-input mono" type="text" value="{{ download_url }}" readonly>
-                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal btn-sm">Copy Temporary Link</button>
+                      <button id="copy-download-url" type="button" class="btn btn-outline-terminal btn-terminal btn-sm">複製臨時連結</button>
                     </div>
                   </div>
                 </div>
@@ -185,7 +185,7 @@
 
             <div class="ui-actions">
               {% if output_filename %}
-                <a href="{{ file_download_url }}" class="btn btn-green btn-terminal ui-primary">Download YAML</a>
+                <a href="{{ file_download_url }}" class="btn btn-green btn-terminal ui-primary">下載 YAML</a>
               {% endif %}
 
               {% if upload_filename or output_filename %}
@@ -193,34 +193,34 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="upload_filename" value="{{ upload_filename }}">
                   <input type="hidden" name="output_filename" value="{{ output_filename }}">
-                  <button type="submit" class="btn btn-danger-terminal btn-terminal btn-sm">Delete Temp Files</button>
+                  <button type="submit" class="btn btn-danger-terminal btn-terminal btn-sm">刪除暫存檔案</button>
                 </form>
               {% endif %}
             </div>
 
             {% if upload_filename or output_filename %}
-              <div class="footer-mini mt-3">Original configuration backups in the backups directory are kept.</div>
+              <div class="footer-mini mt-3">backups 目錄中的原始設定備份會保留。</div>
             {% endif %}
           {% else %}
-            <div class="table-scroll" role="region" aria-label="Generation status table" tabindex="0"><table class="table-terminal">
+            <div class="table-scroll" role="region" aria-label="產生狀態表" tabindex="0"><table class="table-terminal">
               <thead>
                 <tr>
-                  <th>Item</th>
-                  <th class="text-end">Status</th>
+                  <th>項目</th>
+                  <th class="text-end">狀態</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>YAML Output</td>
-                  <td class="text-end muted">Not generated</td>
+                  <td>YAML 輸出</td>
+                  <td class="text-end muted">尚未產生</td>
                 </tr>
                 <tr>
-                  <td>Download File</td>
-                  <td class="text-end muted">Waiting</td>
+                  <td>下載檔案</td>
+                  <td class="text-end muted">等待中</td>
                 </tr>
                 <tr>
-                  <td>Temp Cleanup</td>
-                  <td class="text-end muted">Waiting</td>
+                  <td>暫存清理</td>
+                  <td class="text-end muted">等待中</td>
                 </tr>
               </tbody>
             </table></div>
@@ -233,27 +233,27 @@
       <section class="terminal-panel">
         <div class="panel-inner">
           <div class="panel-title-row">
-            <h2 class="panel-title">Notes</h2>
-            <span class="panel-subtitle">Usage / Security</span>
+            <h2 class="panel-title">說明</h2>
+            <span class="panel-subtitle">使用／安全</span>
           </div>
 
           <div class="row g-3">
             <div class="col-lg-7">
               <ol class="notes-list">
-                <li>Upload Clash/Mihomo YAML or use the built-in default when no file is selected.</li>
-                <li>Enter VMess / VLESS / Trojan / Shadowsocks / Hysteria2 nodes. Replace removes source proxies; Merge keeps them and appends new nodes.</li>
-                <li>Existing rules, rule-providers, DNS and proxy-group settings are preserved where possible.</li>
-                <li>Country flags, country groups and general policy groups are added automatically.</li>
-                <li>Select Policy Options to add new nodes to the corresponding special groups.</li>
-                <li>After generation, Generate Result shows the download link.</li>
-                <li>Output filenames follow tim_date_daily-sequence_random-id.yaml.</li>
+                <li>上傳 Clash/Mihomo YAML；未選擇檔案時使用內建預設 YAML。</li>
+                <li>輸入 VMess / VLESS / Trojan / Shadowsocks / Hysteria2 節點。「取代」會移除來源節點；「合併」會保留來源節點並追加新節點。</li>
+                <li>盡可能保留既有的 rules、rule-providers、DNS 與策略組設定。</li>
+                <li>自動加入國旗、國家組與一般策略組。</li>
+                <li>勾選「策略選項」可將新節點加入對應的特殊組。</li>
+                <li>產生後，「產生結果」會顯示下載連結。</li>
+                <li>輸出檔名格式為 tim_日期_當日序號_隨機識別碼.yaml。</li>
               </ol>
             </div>
             <div class="col-lg-5">
               <div class="footer-mini">
-                <p class="mb-2">Logs omit full node links, UUIDs and passwords.</p>
-                <p class="mb-2">Updates preserve .env, default YAML, outputs and backups.</p>
-                <p class="mb-0">Use HTTPS, Tailscale, WireGuard or a private network for access.</p>
+                <p class="mb-2">日誌不會記錄完整節點連結、UUID 與密碼。</p>
+                <p class="mb-2">升級會保留 .env、預設 YAML、輸出檔案與備份。</p>
+                <p class="mb-0">請透過 HTTPS、Tailscale、WireGuard 或私人網路存取。</p>
               </div>
             </div>
           </div>
@@ -269,29 +269,29 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="modal-header">
                 <div>
-                  <div class="panel-subtitle mb-1">SECURITY</div>
-                  <h5 class="modal-title" id="changePasswordModalLabel">Change management password</h5>
+                  <div class="panel-subtitle mb-1">安全</div>
+                  <h5 class="modal-title" id="changePasswordModalLabel">變更管理密碼</h5>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="關閉"></button>
               </div>
               <div class="modal-body">
                 <div class="mb-3">
-                  <label class="form-label" for="current_password">Current password</label>
+                  <label class="form-label" for="current_password">目前密碼</label>
                   <input type="password" class="form-control terminal-input" name="current_password" id="current_password" required autocomplete="current-password">
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="new_password">New password</label>
+                  <label class="form-label" for="new_password">新密碼</label>
                   <input type="password" class="form-control terminal-input" name="new_password" id="new_password" required autocomplete="new-password">
-                  <div class="form-text">Any non-empty password is accepted. Spaces and Unicode are preserved.</div>
+                  <div class="form-text">接受任何非空白密碼，空格與 Unicode 字元都會原樣保留。</div>
                 </div>
                 <div class="mb-2">
-                  <label class="form-label" for="confirm_password">Confirm new password</label>
+                  <label class="form-label" for="confirm_password">確認新密碼</label>
                   <input type="password" class="form-control terminal-input" name="confirm_password" id="confirm_password" required autocomplete="new-password">
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-danger-terminal btn-terminal" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-green btn-terminal ui-primary">Update Password</button>
+                <button type="button" class="btn btn-danger-terminal btn-terminal" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-green btn-terminal ui-primary">更新密碼</button>
               </div>
             </form>
           </div>
@@ -302,22 +302,23 @@
 
   <div id="operation-progress" class="progress-overlay" aria-hidden="true">
     <div class="progress-box">
-      <div id="operation-progress-kicker" class="panel-subtitle mb-2">GENERATING YAML</div>
-      <h2 id="operation-progress-title" class="panel-title mb-4">Please Wait</h2>
+      <div id="operation-progress-kicker" class="panel-subtitle mb-2">正在產生 YAML</div>
+      <h2 id="operation-progress-title" class="panel-title mb-4">請稍候</h2>
       <div class="progress-track mb-3">
         <div id="operation-progress-bar" class="progress-bar-terminal"></div>
       </div>
       <div class="d-flex justify-content-between gap-3 footer-mini">
-        <span id="operation-progress-text">Working...</span>
+        <span id="operation-progress-text">處理中…</span>
         <span id="operation-progress-percent" class="mono">0%</span>
       </div>
     </div>
   </div>
 
-  <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}{% if build_channel == 'main' %} <span class="badge text-bg-secondary" title="Development Build">DEV · Development Build</span>{% elif build_channel == 'local' %} · LOCAL{% elif build_channel == 'unknown' %} · Build metadata unavailable{% endif %}</div>
+  <div class="footer-mini text-center my-3">Clash YAML Manager v{{ app_version }}{% if build_channel == 'main' %} <span class="badge text-bg-secondary" title="開發版">DEV · 開發版</span>{% elif build_channel == 'local' %} · 本機版{% elif build_channel == 'unknown' %} · 無法取得版本資訊{% endif %}</div>
 
   {% if logged_in and request.endpoint in ['index', 'fixed.create', 'fixed.edit'] %}
   <script id="ui-display-phrases" type="application/json">{{ ui_display_phrases | tojson }}</script>
+  <script id="ui-display-labels" type="application/json">{{ ui_display_labels | tojson }}</script>
   {% endif %}
   <script src="{{ url_for('static', filename='ui.js') }}"></script>
   {% if logged_in %}
