@@ -30,7 +30,9 @@ RELEASE_PINS = {'v1.8.0': ('7657f2302545e74b1e9c1544e27ead9491e0d2a1',
                 'v1.8.2': ('e48d0f9a1eb114693805010735c727ad2793d8c9',
                          '47d24d723b0c326fd05ac5ec77580e3961a89e23'),
                 'v1.9.0': ('934ffee6e255b178dbbb4adc107c94119f4b82ae',
-                         'c0aeab353d534536d01090052d16b41aa8d97081')}
+                         'c0aeab353d534536d01090052d16b41aa8d97081'),
+                'v1.10.0': ('42caea7276f5acb8d3c4aae8b52101da4066e1dc',
+                          '7b223e51f54540e121f98b6f2d4f5a72a08a23b8')}
 MAX_GIT_BYTES = 8 * 1024 * 1024
 
 
